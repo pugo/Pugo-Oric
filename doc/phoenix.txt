@@ -1,0 +1,571 @@
+S.1   Step-by-step implementation of an emulator for Phoenix
+
+   Written by Brian Peek (peekb@union.edu) and Chris Hardy
+
+      PLEASE NOTE: Do not send email to Chris asking for help. He's got a
+   real job and plenty of other things to do...:) BUT, please DO feel free to
+   send email to me (Brian) if something doesn't work. I'm the one who has
+   actually typed all of this from his emails and my own experiences, so it's
+   my fault if anything has been ommitted or typed incorrectly.
+
+      So you want to write an emulator for your favorite arcade game, eh?
+   Well, this will HOPEFULLY take you step by step through the creation
+   process of an emulator using the game Phoenix. Almost all of the technical
+   information in this discussion comes from Chris Hardy, author of the
+   awesome Windows 95 Phoenix/Pleiades emulator using DirectX. Chris has
+   helped me along with my own emulator project, and taught me much about
+   writing an emulator by having me write my own Phoenix emulator. This
+   step-by-step will use the game Phoenix, Chris' technical information, and
+   my own experiences. Also, keep in mind that our emulators were written
+   using Marat Fayzullin's Z80 CPU emulation core. With the CPU stuff out
+   of the way, we can concentrate on graphics and whatever else needs to be
+   done.
+
+      I'll try to give some basic/generic information for each step, and then
+   give an example of what I'm talking about by using Phoenix. After
+   following all of the steps of this guide, you should actually have Phoenix
+   up and running on your screen!
+
+      Before you even attempt to write an emulator, please be aware that you
+   will need to know the following:
+
+   1) More than a basic knowledge of the C/C++ programming language,
+      especially things dealing with bit operators.
+
+   2) Assembly language.  It's not necessary to know a great deal about it,
+      but you should know what opcodes are, what registers are, how they
+      differ, and what a few opcodes do. You don't need to know what the game
+      is really doing while it's running, so a basic understanding of
+      assembly should be OK.
+
+   3) Graphics programming. You should know what bitplanes are, how to draw
+      pixels, use of blitting functions, etc. Again, not a great deal of
+      knowledge is required, but you should know the basics.
+
+   4) Hardware. You need to know what interrupts, cycles, vertical blanks,
+      and things of that nature are.
+
+   5) Your compiler. Each compiler had it's own little idiosyncracies that
+      need to be known. I work with Borland C++ 5.01 and all of the code
+      contained in this section is guaranteed to run on it. I haven't tested
+      it on any other compiler, so I don't know how it will react.
+      [Note: I've got it to work on DOS-based Turbo C++ 3.0, and
+             Borland C++ 3.1   (I know, I have ancient compilers...)]
+
+      I will try to explain as much of the above as I can while describing
+   the creation process of the emulator, but without a basic understanding of
+   the above, you might not understand what I'm trying to say.
+
+   Now, let's get started!
+
+S.1.1    Part I: Pre-coding
+
+   Before you start coding, you'll need to do the following:
+
+   1) Pick a game you want to emulate, preferably one with a Z80 processor
+      since that's what this guide will use, however I'm going to try to make
+      this as generic as possible so any processor will work.
+
+   2) If the game uses a Z80, congratulations! Now go download the Z80 CPU
+      emulator from http://www.freeflight.com/fms
+
+   3) READ AND STUDY IT! It's important to know what functions need to be
+      written by you and how they fit into the whole scheme of things.
+
+   4) Download the Virtual Gameboy source code from the same site as above.
+      This is an excellent example for the use of Marat's Z80 emulator.
+
+   5) READ AND STUDY IT! With this, you'll understand even more how the
+      functions fit into place.
+
+   6) Obtain a memory map or make one yourself. In the case of Phoenix,
+      there's an excellent memory map right in this text file.
+      [See section M.3.4 -- In fact, look over all of section M.3...]
+
+S.1.2    Part II: Low/High Endian
+
+      I'm giving this it's own section because it's so critical. And because
+   I forgot to check it when I started my emulator.  :)
+
+      In the "gb.c" file, (you should have already downloaded it and read
+   it!) there's a check for the "endian-ness" of the machine. This is very
+   important because it determines which byte is the most significant for
+   your machine/compiler. In my case (Borland C++ on a P166), it was requried
+   that I had LSB_FIRST defined in the "z80.h" header file. I suggest you cut
+   and paste the code from the "gb.c" file into a temporary file and run it.
+   It will then tell you if it needs to be defined or not.
+
+      The code is repeated here:
+
+   /*** STARTUP CODE starts here: ***/
+   T=(int *)"\01\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
+   #ifdef LSB_FIRST
+   if(*T!=1)
+   {
+     puts("********** This machine is high-endian. *********");
+     puts("Take #define LSB_FIRST out and compile VGB again.");
+     return(0);
+   }
+   #else
+   if(*T==1)
+   {
+     puts("********* This machine is low-endian. *********");
+     puts("Insert #define LSB_FIRST and compile VGB again.");
+     return(0);
+   }
+   #endif
+
+      You should #define LSB_FIRST and try running it. If it doesn't give an
+   error, you should define it in the actual Phoenix emulator we'll be
+   writing. Otherwise, try undefining LSB_FIRST and run it again. If no error
+   is shown this time, then do not define it in the acutal emulator.
+
+S.1.3    Part III: Let's start coding!
+
+   1) Read the ROMs into a "virtual" address space as they would be in the
+      real game. In the example of Phoenix, the following would be done:
+
+      byte *RAM;
+
+      RAM = malloc(0x8000);
+      if (!RAM) ERROR;
+
+      FILE *in;
+      in = fopen("phoenix.45", "rb"); //read in the phoenix ROM in binary mode
+      if (!in) ERROR;
+      fread(&RAM[0x0000], 0x800, 1, in);  //read in 0x800 bytes at position
+      fclose(in);                         //0x0000
+
+      in = fopen("phoenix.46", "rb");
+      if(!in) ERROR;
+      fread(&RAM[0x800], 0x800, 1, in);   //read in 0x800 bytes at position
+      fclose(in);                         //position 0x800
+
+      ...and so on. I used a "for" loop to do this, but wrote the steps out
+   here to show what is happening.
+
+      For Phoenix, we're loading 8 ROMs that are 2K each, or 2048 bytes, or
+   0x800. That's 16K to you and me. So, 16K = 16,384 bytes = 0x4000. We also
+   have 8K of RAM in Phoenix, so that's another 16K, or 16,384 bytes = 0x4000
+   for a grand total of 32K (32,768 bytes), or 0x8000.
+
+      Now, all of your ROMs should be located in "RAM". Please note that we
+   are only loading PROGRAM ROMs, and NOT character ROMs.
+
+   2) Since we're using Marat's Z80 core, we must code the functions that are
+      needed for the emulator to operate. In most cases, this should only be
+      M_RDMEM, M_WRMEM, DoIn, DoOut, Interrupt, and Debug. In M_RDMEM and
+      M_WRMEM we need to check to make sure we can read/write to/from the
+      location requested, and emulate any hardware that might be in any of
+      these locations (i.e. dipswitches).
+
+      For Phoenix, only M_RDMEM, M_WRMEM are needed. However, please keep in
+      mind that just because DoIn, DoOut, etc. are not being used for
+      anything doesn't mean they don't exist. You need to create empty
+      functions for ALL of the functions in the "z80.h" header file that
+      aren't being used. These functions should be DoIn, DoOut, Patch,
+      Interrupt, and Debug.
+
+      a) Now we need some background stuff. Phoenix uses vertical blanks to
+         update the screen instead of triggering an interrupt. In order to
+         trigger a vertical blank to update the screen, we need to count the
+         number of "cycles" that have occurred since the last vertical blank.
+         A "cycle" is a set period of time in which the processor will do
+         something. It is generally a time frame determined by the clock
+         speed of the processor. So, every instruction that is passed to the
+         CPU takes X amount of cycles to execute. We know (or can guess...)
+         the amount of cycles that can be executed in one video frame (60th
+         of a second for the US (NTSC), 30th of a second for Europe (PAL)).
+         Therefore, if we add up all of the cycle counts for each instruction
+         that the emulator executes, we can tell when we have executed a
+         "video frames" worth of instructions. When this has happened, we can
+         get the emulator to trigger a vertical blank or an interrupt.
+
+         Marat's Z80 code counts down instead of up and checks when the cycle
+         count is less than zero. If you've read through Marat's code like I
+         told you to above, you've probably noticed a #define for INTERRUPTS
+         and a couple of variables for working with interrupts, namely ICount
+         and IPeriod, in the file "z80.c". IPeriod should be set to the
+         number of cycles that should occur before triggering an interrupt
+         (or in our case, a vertical blank flag) which is 12000 for Phoenix.
+         So, the line in "z80.c" will read:
+
+            IPeriod = 12000;
+
+         So, ICount will count the number of cycles that have occurred, and
+         when it is less than 0, we can trigger a vertical blank. The way
+         Phoenix triggers a vertical blank is by setting bit 7 of the
+         dipswitch to 1.
+
+         The dipswitch for Phoenix is located at 0x7800, which is mirrored
+         from 0x7801-0x7bff. For Phoenix, what I did was create a variable
+         which would hold the current dipswitch settings. When this location
+         is then read, it knows it's time to update the screen. So, when you
+         are coding your M_RDMEM function, you need to return the proper
+         value of the vertical blank bit, as well as reset it back to 0.
+
+         To do this, I created a variable of type "byte" (defined in the
+         "z80.h" file if you read it) to hold the dipswitch settings. For
+         this example, we'll just use an int variable which will toggle
+         between 0 and 1 as desired.
+
+      b) Now we can code our M_RDMEM function!
+
+         int  DipSwitchSYNC = 0;          //global variable defined earlier
+   
+         byte M_RDMEM (word A) 
+         {
+           // decode the addresses (A)
+           if(A >= 0x7800 && A <=0x7bff)  //are we reading dip switch memory?
+           {
+             if(DipSwitchSYNC == 1)       //if SYNC bit of switch is 1
+             {
+               DipSwitchSYNC = 0;         //set it to 0
+               return 128;                //return value where bit 7 is 1
+             }
+             else       
+               return 0;                  //return value where bit 7 is 0
+           }
+           else if (A < 0x8000)           //We're reading from ROMs or RAM
+             return RAM[A];
+           //Default:  Display a warning and return memory value
+           printf("WARNING!  Reading from location %04X\n", A);
+           return RAM[A];
+         }
+
+      c) Our M_WRMEM function will be much similar, except here we're
+         assigning a value to a particular position in RAM instead of
+         returning it.
+
+         void M_WRMEM (word A, byte V) 
+         {
+           //decode the addresses (A)
+           if(A < 0x4000)                    //We're reading from the ROMs
+           {
+             printf("WARNING!  Attempting to write to ROM")
+             return;
+           }
+           else if(A > 0x3fff && A < 0x8000) //We're reading from RAM
+             RAM[A] = V;
+         }
+
+   3) Now we need to toggle the DipSwitchSYNC to 1 when the IPeriod number of
+      cycles has been reached. In the "z80.c" file, you'll see in the Z80()
+      function some code that reads:
+
+      #ifndef INTERRUPTS
+        blah blah blah
+      #else
+        blah blah blah
+
+      Well, since we've defined interrupts in the "z80.h" header file, we're
+      going to add some code that will trigger the vertical blank (but
+      remember, we're not REALLY doing an interrupt...).
+
+      So, under the line:
+
+        #else
+
+      we're going to add our own vertical blank trigger. We've already
+      created the global variable that toggles between 1 and 0, so we need
+      to toggle it to 1 when a "vertical blank's" number of cycles has
+      occured (12000 for Phoenix).
+
+      Our added code will look like this:
+
+      extern int DipSwitchSYNC; //defined at top of "z80.c"                  
+      extern byte *RAM;         //also defined at top of "z80.c"             
+      ...                                                                      
+      if(ICount<=0) {           //if we've exceeded the number of cycles     
+        ICount+=IPeriod;        //reset the count to 12000                   
+        if(!CPURunning) break;                                                 
+        DipSwitchSYNC = 1;      //set the switch to 1 so when the dipswitch
+      }                         //is read again, it will know it's time for a
+                                //VBlank, and reset it to 0
+  
+   4) OK. You may not realize it, but all of the code is now in place to
+      actually run Phoenix! But, we now have to write a bit more so it will
+      display something to the screen. For simplicity's sake, we'll just add
+      it to the above section of code, but normally this wouldn't be done.
+
+      a) More background information is needed. Phoenix uses nothing but
+         characters to display it's alphanumeric characters as well as
+         anything else you see on the screen. This is pretty rare. Normally
+         games use sprites to move objects around the screen (i.e. Pacman is
+         a sprite, but the dots are characters). For Phoenix, all we need to
+         do is emulate the characters, and no sprite routines are needed.
+
+         What we're about to write will update the ENTIRE screen everytime a
+         vertical blank is triggered. Normally we'd keep track of the
+         previous screen and only update the characters which have changed.
+         But, for the sake of simplicity and length of this guide, we'll just
+         redraw the entire screen.
+
+         The other thing to keep in mind is that Phoenix used a vertical
+         monitor, so we need to compensate for this when writing the
+         characters to the screen. The Phoenix display was 26 characters
+         horizontally by 32 characters vertically. We also need to remember
+         that the characters aren't stored in anything even close to ASCII.
+         What is stored in the video portion of memory is a reference to the
+         position of the appropriate character in the character ROM. Since
+         we're not doing true graphics right now, we only need to convert the
+         character reference to it's ASCII equivalent. Let's watch....
+
+         int x, y, pos;              //defined at top of function
+         unsigned char c;
+         ...
+         if(ICount<=0) {             //this is the same code as above...we're
+           ICount+=IPeriod;          //just adding a bit to it....:)
+           if(!CPURunning) break;
+           DipSwitchSYNC = 1;
+
+           gotoxy(1, 1);                    //start drawing at the top left
+                                            //ONLY FOR PC's!!!
+
+           for(y = 0; y < 32; y++) {        //rows of characters
+             int pos = 0x4000+32*(26-1)+y;  //position into video memory
+             for (x = 0; x < 26; x++) {     //columns of characters
+
+               c = RAM[pos];                //get character at current pos
+               if(c>=1 && c<=27)            //if it's a letter
+                 c+='A'-1;                  //turn it into one!
+               else if (c == 31)            //this is an asterisk
+                 c = '*';
+               else if (c > 30 && c < 42)   //these are numbers
+                 c+= 16;
+               else if (c == 43)            //this is a hyphen
+                 c = '-';
+               else if (c == 42)            //this is a period
+                 c = '.';
+               else if (c > 0x00)           //let's just draw X's for the rest
+                 c = 'X';
+               printf("%c", c);             //spit it out!
+               pos -= 32;                   //move to next character in VRAM
+             }                              //end for
+             printf("\n");                  //we're at end of row!
+           }                                //end for
+         }                                  //end if
+
+         I suppose that position line could use some explanation. Our video
+         area of RAM for the foreground characters starts at 0x4000 according
+         to our memory map. So, we're starting at 0x4000, adding the screen
+         height, multiplying by screen width minus 1, and adding the current
+         row we're on. You SHOULD be able to replace 26 and 32 above with the
+         width and height of the game you want to emulate.
+
+         Now whenever a vertical blank is called, it will redraw the screen!
+         Neat, eh?
+
+   5) We've got the ROMs loaded, vertical blanking is setup, and the screen
+      will be redrawn when necessary. Only one thing left to do... finish the
+      main() function!
+
+      Here, we need to reset the Z80 and start the actual emulation. You
+      might also want to clear the screen before actually starting the
+      emulation. So, right after the code that loads the ROM we'll add these
+      things:
+
+      reg R;            //defined at top of main function
+
+      textmode(C4350);  //set display to 50 lines - ONLY FOR PCs!!!
+      clrscr();         //guess...:)  - ONLY FOR PCs!!!
+      ResetZ80(&R);     //This resets the Z80 to its proper starting values
+      Z80(R);           //Actually starts the emulation
+
+S.1.4    Part IV: Run it!
+
+   1) If you have all of the above things in place, you should now be able to
+      compile and run this program! Make sure your Phoenix ROMs are in the
+      proper directory, and make sure all of your header files are included
+      as needed. You should need to include stdio.h, alloc.h, and conio.h.
+      You also need a reference to the "z80.h" header file in your main file.
+      Lastly, be sure that BOTH your main file (i.e. phoenix.c) AND "z80.c" 
+      are being compiled together!  In Borland C++, you would do this by
+      adding "phoenix.c" and "z80.c" to your project before compiling.
+
+      That should do it! Hopefully you should see Phoenix running on your
+      screen in a text display and you'll see something similar to this:
+
+        SCORE1  HI-SCORE  SCORE2
+        000000   000000   000000
+          X0     COIN00     X0
+
+
+              INSERT  COIN
+
+     
+      etc.
+
+      If not, try checking the "endian-ness" again and make sure you haven't
+      made any typos in the above functions. Also be sure you've put
+      everything in the right place.
+
+S.1.5    Part V: To be continued...
+
+      I'm going to end it here for now. At this point you should have a basic
+   understanding of what vertical blanks/interrupts are, how characters are
+   stored in memory, how to load ROMs into a virtual space, and a few other
+   things. The next installment (hopefully...) will contain some information
+   on how to do character graphics and keyboard input.
+
+M.4   Phoenix [provided by Ralph Kimmlingen (ub2f@rz.uni-karlsruhe.de)]
+                               
+M.4.1    Components
+      
+   - 8085 CPU @5.5 Mhz
+   - 8x2kB ROM
+   - Two plane display (CHARSET-A, CHARSET-B)
+     CHAR-A: 2x2kB ROM, 4x0.5kB RAM
+     CHAR-B: 2x2kB ROM, 4x0.5kB RAM
+   - 2x3 bit color DAC
+   - 8 bit vertical scroll register
+   - MN6221AA 2voice melody module
+   
+   please note: as Phoenix uses a 90 degree rotated picture tube, all 
+                references to 'horizontal' positions actually mean VERTICAL
+                ELECTRON BEAM positions.
+
+M.4.2    Functionality
+
+   The picture consists of two independent planes, where each pixel is
+   represented two bits. As the lower plane is used for scrolling (CHAR-A,
+   starfield), the first row is always invisible (scroll-buffer). All sprites
+   and text are displayed in the upper plane (except for eagles).
+
+   _____26x8 pixel___________
+   |xxxxxxxxxxxxxxxxxxxxxxxx| <-- first row (score count etc.)
+   |                        |
+   |                        |
+   |    /+\                 |
+   .                        .
+   :                        : <32x8 lines>
+   |     |                  |
+   |                        |
+   |     |                  |
+   |                        |
+   |_____^__________________|
+
+   The graphic data for each plane is drawn from a 8x8 charset and an
+   attached video ram of 2x1024 bytes. Only 26*32 bytes are actually used,
+   representing a screen size of 26*32 characters. Each video ram consists
+   of two banks, which allows for double buffering (see video control
+   register). Vertical scrolling is controlled by a 8 bit value, which
+   determines the first line to be drawn by the video logic. Example:
+
+   scrollreg= 9 --> video logic starts reading video ram at byte 32 and
+                    charset-rom at the second byte.
+                    After finishing row 26, row 0 is drawn (->wraparound).
+
+M.4.3    Colors
+
+   Two 8-to-3 lookup-tables (PAL's) are responsible for color output.
+   These PAL's allow for a palette of 6 bit (64 colors) :
+
+   7 bit value -->  Lookup-Table1  --> 3x1bit (RGB) --> DAC ] video out
+   7 bit value -->  Lookup-Table2  --> 3x1bit (RGB) --> DAC ] (RGB)
+   
+                        RED   BLUE  GREEN
+                        2bit  2bit  2bit 
+
+   The 8 bit value for lookup tables is composed of the following signals:
+
+   Bit   from
+   ---------------
+   0   ]
+   1   ] bit 5-7 of video ram value (divides 256 chars in 8 color sections)
+   2   ] 
+   3  ] 2 bit pixelcolor
+   4  ] (either from CHAR-A or CHAR-B, depends on Bit5)
+   5  0= CHAR-A, 1= CHAR-B 
+   6  palette flag (see video control reg.)
+   7  always 0
+
+
+M.4.4    Memory Map
+
+   0000-3fff   16kB ROM (code + tables)
+
+   4000-43ff   RAM A (1kB)
+         lower 32x26 bytes used for video ram (CHAR-A),
+         remaining 192 bytes for variables    
+
+   4800-4bff   RAM B (1kB)
+         lower 32x26 bytes used for video ram (CHAR-B),
+         remaining 192 bytes for variables    
+
+   5000     2 bit video control register (write only)
+         Bit   Used for
+         ---------------
+         0  switching between VIDEO RAM banks (double buffering)
+             0: r/w access to 4000-43ff or 4800-4bff
+                is directed to bank0
+             1: r/w access to 4000-43ff or 4800-4bff
+                is directed to bank1
+            1  color palette swap (blue/red eagles etc.)
+            this bit represents A6 of color PAL chip
+         2-7   not used
+   5000-53ff   video control (mirrored)
+   
+   5800     8 bit vertical scroll register (CHARSET-B)
+         this value determines the first of 32x8 vertical pixels
+         to be shown (wraparound fashion)
+   5800-5bff   scroll register (mirrored)
+   
+   6000     sound control A
+         Bit   Used for
+         ---------------
+         0  ]
+         1  ] frequency voice1
+         2  ] 
+         3  ]
+         4   ] volume voice1 (probably)
+         5   ] 
+         6  ] melody module command:
+         7  ] { <silence>, <for luise>, <???>, <alarm beep> }
+   6000-63ff   sound control A (mirrored)
+   
+   6800     sound control B
+         Bit   Used for
+         ---------------
+         0  ]
+         1  ] frequency voice2
+         2  ] 
+         3  ]
+         4   ] volume voice2 (probably)
+         5   ] 
+         6  ] noise channel (probably volume 0-3)
+         7  ]
+   6800-6bff   sound control B (mirrored)
+   
+   7000     8 bit game control (read only)
+         Bit   Used for
+         ---------------
+         0  coin
+         1  start1
+         2  start2
+         3  -
+         4  fire
+         5  right
+         6  left
+         7  barrier
+   7000-73ff   game control (mirrored)
+   
+   7800     8 bit dip-switch (read only)
+         Bit   Used for
+         ---------------
+         0  dip-settings
+         1  dip-settings
+         2  dip-settings
+         3  dip-settings
+         4  dip-settings
+         5  dip-settings
+         6  dip-settings
+         7  for video ciruits : flip picture vertical
+            when read by CPU:
+             ->horizontal sync: this signal is logical HIGH
+                        during video output of row 0*8-25*8,
+                        otherwise LOW.
+   7801-7bff   dip-switch (mirrored)
+      
+
+

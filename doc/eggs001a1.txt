@@ -1,0 +1,843 @@
+Emulating Games - Getting Started (v0.01a)
+==========================================
+
+Kevin Brisley
+kevin@isgtec.com
+http://www.icomm.ca/replay
+
+***
+***  NOTE:  This document is not finished.  I started it back in January
+***         but have just never gotten around to finishing it off (too
+***         much time spent writing actual emulations :-))
+***
+***         I may try and complete it sometime in the future but thought
+***         I would release it now in case it can be of any help to 
+***         anyone in its current form.
+***
+***         Kevin.
+***
+
+
+Contents
+========
+
+1.  Change History
+2.  Introduction
+3.  Document Status/Contributions
+4.  Selecting a Game
+5.  Development/Target Environment
+6.  CPU
+7.  Memory Mapping the Code
+8.  Reset
+9.  Interrupts
+10. Graphics Format
+11. Controls/Switch Settings, etc.
+
+A.  Useful Sites
+
+
+
+1.  Change History
+==================
+
++-----------------------+------+----------------------------------------------+
+| Date                  | Ver. | Comments                                     |
++-----------------------+------+----------------------------------------------+
+| January 19, 1997      | 0.10 | Initial, incomplete draft version.           |
++-----------------------+------+----------------------------------------------+
+
+
+2.  Introduction
+================
+
+When I first saw Dave Spicer's arcade emulator, I thought..."Cool, I can
+play some of my old arcade favourites!".  The next thing I thought was..."Hey
+it would be even cooler to write an emulator."  I didn't follow up on the 
+idea right away but after Sergio's Pengo emulator and Emu from Neil I thought
+that I really should give an arcade emulator a shot.
+
+I decided to try and emulate Burgertime first and have learned a lot along
+the way.  The one thing that I noticed that often came up in the 
+arcade emulation scene was requests for details on how to go about creating
+an emulator.  People have asked whether the authors kept detailed notes
+on the games they've emulated and whether they could provide details on
+the process they took.
+
+Since then there have been numerous sources of information on various aspects
+of emulator creation ranging from source code from Neil Bradley to the
+contributors to the emulator repository to the excellent "How-To" provided by 
+Michael Adcock.
+
+A lot of the information is concerned with the "results".  For example, source
+code for a 6502...but how do you know if a game uses a 6502 in the first place?
+Or a memory map for Space Invaders...but how did someone come up with this?
+
+What I've provided in this document is a view slightly different from the
+other information sources available.  What you'll find here is a walkthrough
+of the process I took in figuring out the Burgertime specifications and
+some notes on how this translates into the creation of my emulator entitled
+"Replay".  It's basically a formatted version of all of my notes from along 
+the way.
+
+My hope is that this will complement all of the excellent sources of information
+that already exist for writing arcade emulators.  The great thing about the
+emulation scene is the willingness of the authors to share the information
+they've gathered.  The more everyone knows, the more games will be emulated.
+And enjoying all of the old classics is really what it's all about.
+
+
+3.  Document Status/Contributions
+=================================
+
+This document is not complete yet and I intend to add more to it as I add 
+things like sound.
+
+If you find anything that is misleading or just plain wrong, please let
+me know and I'll fix it.  Also if you have *any* contributions I'll gladly
+add them with proper credit of course.
+
+
+4.  Selecting a Game
+====================
+
+The first question I asked myself when I decided to write an arcade emulator
+was "What game should I emulate".
+
+I considered the following factors which I believe are pretty good guidelines:
+
+Availability
+------------
+A biggie.  What's available for the game.  The more the better.  At a bare
+minimum you need ROMs for the game.  If they're already available on one of
+the archive sites then great, otherwise you need to find someone who will 
+dump them for you, or you need to dump them yourself.  Without ROMs, it's
+going to be tough going.  The Burgertime ROMs were available making it a good
+candidate.
+
+What else is available...schematics can be very useful, as can switch
+settings.  Check around, use DejaNews and other search archives and see 
+what's out there.  For Burgertime, schematics and switch settings were both
+available with a little searching.
+
+Complexity
+----------
+When you're coding an emulator for the first time, you probably want to start
+with something fairly simple.  Lots of games used 6502 or Z80 processors
+which are easier to implement than 68000 for example.  As well, there is
+source for 6502 and Z80 emulators available from Marat Fayzullin and others.
+Also, single CPU games are obviously easier than multi-CPU games.  Newer 
+games also have more dedicated hardware and custom chips, all of which add to 
+the complexity.  Burgertime is 6502 based and came out in 1982.  It does use 
+two CPUs, though one is strictly for sound and therefore a working emulation 
+(without sound of course) can be done by only emulating one processer.
+
+Duplication
+-----------
+A minor consideration might be whether or not someone has already produced
+an emulator for the game or is in the process of creating one.  Depending on
+your outlook you might consider this a pro or a con.  If there's someone out
+there who's already emulated it, chances are there is information about it
+and they may be able to help you.  On the other hand, it's nice to emulate
+something no one else has done.
+
+With Burgertime I  took the latter view and decided to emulate a new game 
+that hadn't been done before.
+
+Preference
+----------
+Perhaps the biggest consideration in choosing a game is your own personal 
+preference.  What game would you like to see emulated?  What old personal
+favourite do you want to play again?  I played Burgertime a lot during
+my high school days and I really wanted to see it running on my PC.
+
+
+5.  Development/Target Environment
+==================================
+
+There's been a lot of discussion on mailing lists and Usenet about this
+issue.  Should it run in Win95, should it be portable, etc.  All I'm going
+to say about this is pick an environment that fits your goals.  If you
+want it to be portable, do it in C.  If you want it to be blazing fast,
+do it in ASM.  If you always run DOS, do it in DOS.  If you run strictly on
+Unix, do it in Unix.  There's no, one right answer for this.
+
+I run Win95 and Linux at home so my goal was to create a playable emulator
+that ran under these environments on my P90.  I prefer developing under a Unix 
+environment simply because that's what I'm used to, so I created the emulator
+under Linux initially with portability in mind.  After it was running I 
+ported it to DOS.  To facilitate the portability, it's written completely
+in C.  
+
+"OK, that's fine but let's get to the good stuff...I've picked my game, how
+do I figure the rest out."
+
+
+6.  CPU
+=======
+
+Obviously a big piece of the puzzle is the number and types of CPUs used in
+the game.  If you're going to write a CPU emulator, you've got to know what
+you're emulating.
+
+The best way of determining the CPU type is first hand knowledge.  If you can,
+look at a board for the game, or the schematics, or ask around.   Of course
+if you knew the type of CPU you wouldn't be reading this section, so what
+if none of the above methods pan out.
+
+Well, the next thing to do is grab yourself some disassemblers for various
+processors and run them against the ROMs for the game.  There are some 
+clues you can check for that may help you identify the CPU used.
+
+The first thing, and probably the best, is to look through the disassembled
+code and see if any of it makes sense.  You don't have to be an expert on
+the processor to see if the code has some structure or if it's just junk.
+Remember, some of the ROMs contain code while others contain graphics, sound
+data, etc., so looking at just one ROM won't do it.  In the worst case, you'll
+need to scan each ROM before eliminating a particular CPU.  
+
+When scanning the code, look for things like small blocks of code that make
+sense like a loop that copies information from one area of memory to another.
+Also, look for 'Jump Subroutine' commands and check that code at the
+destination address does in fact look like a subroutine and has a 'Return
+from Subroutine' command.
+
+There are also some processor specific hints (if anyone has any more, please
+let me know and I'll add them):
+
+6502
+----
+One 'feature' of the 6502 is that it doesn't save the accumulator or index
+registers on an interrupt.  What this means is that the programmer has to
+save these himself (typically on the stack) at the start of the interrupt
+handler and read them back at the end.  Therefore a great way of identifying 
+6502 code is to look for something of the form:
+
+XXXX: pha
+XXXX: tya
+XXXX: pha
+XXXX: txa
+XXXX: pha
+...Some Interrupt Code.
+XXXX: pla
+XXXX: tax
+XXXX: pla
+XXXX: tay
+XXXX: pla
+XXXX: rti (or rts)
+
+If you find something like this, and other code makes sense, it's probably
+6502.
+
+Z80
+---
+* Note, I'm really not sure that what I say here about Z80 interrupts is
+totally correct so please take with a grain of salt (and correct me if
+it's wrong).
+
+Z80's handle non-maskable interrupts (NMIs) at address 0x0066 and maskable
+interrupts (IRQs) at address 0x0038.  So pretend each ROM starts at 0x0000
+and look at the code at 0x0038 and 0x0066.  Does it make sense?  Does it
+end in a RETI (return from interrupt) command?  If so, it's a good possibility
+that you're looking at Z80 code.
+
+Also, the Z80 has different interrupt modes which are set by a command
+like 'IM x' where X is 0, 1, or 2.  This is usually done right near the
+start of execution.  Since Z80 starts executing at 0x0000, look at each
+ROM and see if an 'IM x' instruction appears right near the top.  If so,
+you're probably looking at the first ROM of Z80 code.
+
+
+When I was trying to determine the CPUs in Burgertime, I had the schematics so
+I started there.  A quick inspections reveals two CPUs, one for sound 
+and one for the game.  The sound CPU is labelled 6502.  Great, that was 
+easy.  The game CPU on the other hand had the cryptic label "CPU 7".  Not 
+very helpful.  So the next thing I did was hit the ROMs with a couple 
+of disassemblers like I mentioned above.
+
+After disassembling the Burgertime ROMs with a 6502 disassembler, I scanned 
+for the 'pha, txa, pha, etc.' magic combinations and found the following in 
+AB06.13B:
+
+00000046:   pha
+00000047:   txa
+00000048:   pha
+00000049:   tya
+0000004A:   pha
+...Some code...
+00000094:   pla
+00000095:   tay
+00000096:   pla
+00000097:   tax
+00000098:   pla
+00000099:   rti
+
+It looked like a good 6502 candidate.  I checked other code in this file and
+determined that it made a lot of sense.  As a result, I determined that 
+the game CPU was a 6502 as well.  I wondered at the time why it was labelled
+differently than the sound CPU.  I later found out why, see sections later
+on for details.
+
+
+Emulation
+---------
+
+Once you know the types of CPUs used, you need an emulator for them.  There
+are two possibilities, either use one of the already existing CPU emulation
+cores or roll your own.  If you're primarly interested in getting the game
+going, it's probably best to at least start with one of the existing 
+ones.  If the intellectual exercise of writing your own appeals to you or
+you simply want your emulator to be completely your own then by all means
+write an emulation core up from scratch.
+
+For my emulator, I wanted to go through the exercise of writing all of the 
+emulation so I wrote my own 6502 core using some of the existing source
+as a reference.
+
+I won't go into *how* to write the CPU emulator as taking a look at existing
+source would probably be much more informative.  However, there are some
+things you may want to consider when writing one (or using an existing one
+for that matter).  It helps greatly to have some sort of tracer or debugger
+to go along with your emulation.  Later when you're really getting the
+emulation going, it is nice to be able to step through the code as it's
+executing in your emulator.  
+
+For Replay, I added a fairly complete debugger that includes windows that
+display the source, the stack, memory and status.  It allows you to set
+breakpoints on memory locations, opcodes or memory writes.  You can view 
+source and memory contents and turn on tracing which will log the commands
+as they execute to a log file.  All of this will help you in your 
+investigation.  
+
+It's fairly simple to add debugging capabilities to the existing emulation
+packages.  Take Marat's emulators for example.  They essentially execute
+in a loop that continually fetches an opcode, ups the program counter, 
+fetches the arguments based on the opcode and ups the program counter.  So
+to add a debugger, simply stick a function call into the loop that exits
+out to your debugging code.  Do what you want and then return.
+
+For example, you could have something like:
+
+    while (1)
+    {
+        /*  Retrive opcode.  */
+        op = MEMORY[pc];
+
+#ifdef DEBUG
+        /*  Give control to the debugger with the program counter & opcode.  */ 
+        CheckDebugger (pc, op);
+#endif
+
+        /*  Up the program counter now that the debugger is finished.  */
+        pc += 1;
+
+        /*  Execute the opcode.  */
+	    (*(fn[op])) ();
+    }
+
+#ifdef DEBUG
+CheckDebugger (Word pc, Byte op)
+{
+    /*  Check for breakpoints.  */
+    if (!Breakpoint (pc))
+    {
+        return;
+    }	
+
+    /*  Draw debugger, get command, process it, etc.  */
+}
+#endif
+
+The above example is *very* simplified but gives the general idea.  The 
+reason why the debugging stuff is in #ifdef's is that processing the debugger
+is going to slow the emulation down and once the game works, there's no need
+for it.
+
+
+7.  Memory Mapping the Code
+===========================
+
+Now that you've written your CPU emulator (that was easy eh? :), you probably
+want to try and run the ROMs for your game on it.  However, to do this,
+you've got to figure out where in memory, the ROMs with the code map to.
+
+This is actually fairly easy to do.  There are a couple of methods to use:
+inspect the disassembled code or check the schematics.  Obviously if you don't
+have the schematics you'll have to use the first method and actually, unless
+you're an electrical engineer (I'm not) I suggest the inspection method 
+anyways.
+
+Inspection
+----------
+I find the easiest way to go about this is to take each ROM that you think has
+code in it, edit the disassembly and look for jumps and subroutine calls. 
+Since these are absolute (i.e. the argument is the actual address to jump to)
+as opposed to branches which are relative (i.e. the argument is an offset)
+you can use the addresses in the jumps to help you.
+
+Unless the code is really spaghetti like, the majority of jumps and subroutines
+will be to addresses fairly near to the call.  Therefore if you look at a
+disassembly and find that the majority of the calls are to addresses of the
+form $Cxxx with a few calls here and there to $Dxxx and $Bxxx addresses then 
+it is a good bet that the ROM is mapped to $C000-$CFFF (assuming it's a 4K 
+ROM).
+
+Repeat this procedure for all of the code ROMs.  When you finish, you'll
+hopefully have each ROM mapped to a different location (if not, the method
+has obviously failed).  Once you've finished the process, you can check
+the addresses where the interrupts or interrupt vectors are located and see
+if they make sense (see the section on Reset/Interrupt).  You can also
+check some jumps that go from one ROM to another and see if the code
+at the destination looks reasonable.
+
+As an example, I'll look at the AB04.9B file of Burgertime.  If you 
+disassemble this with the 6502 disassembler and start searching for 'jmp'
+or 'jsr' calls, you'll find the following:
+
+0000: jmp $D046   
+0003: jmp $C00D  
+001B: jsr $C362  
+001E: jsr $C34D  
+0029: jsr $C7DD 
+0041: jsr $C44C     
+0046: jsr $CAFF       
+...and later...
+0886: jmp $C87D
+08F2: jsr $DB8C
+08F5: jsr $C999
+0901: jsr $CA21
+0909: jsr $CA21
+etc.
+
+Looked like a pretty good candidate for $C000-$CFFF.  Almost all calls are
+of the form $Cxxx with only a couple of $Dxxx calls here and there.
+
+After doing this for the rest of the ROMs, you will find the following:
+
+AB05A1.12B: $B000-$BFFF (game)
+AB04.9B:    $C000-$CFFF (game)
+AB06.13B:   $D000-$DFFF (game)
+AB05.10B:   $E000-$EFFF (game)
+AB07.15B:   $F000-$FFFF (game)
+AB14.12H:   $F000-$FFFF (sound)
+
+"Yikes, two ROMs mapped to $F000-$FFFF, how did you know which was which."
+Well, since there were two CPUs, there must be two ROMs that map to 
+the section of memory where execution starts (for 6502, that's the
+reset vector at $FFFC/$FFFD) otherwise both CPUs would be running the
+same code.
+
+Using the inspection method it's fairly obvious that AB14.12H corresponds to 
+the sound CPU and AB07.15B corresponds to the game CPU since there are no jumps
+out of the $F000-$FFFF range in AB14.12H and there are out of AB07.15B.  I
+guess the alternate conclusion is that the first 5 ROMs listed are for the
+sound and only the last one is for the game, but then it would have to be
+a pretty simple game with some kick ass sound :)
+
+
+Schematics
+----------
+If you're good at reading schematics, you can skip this section.  Unless
+of course you'd like to rewrite it for me, since this is really not my 
+specialty.  When I started this project, I had no idea how to read a schematic 
+but I've managed to figure out enough to make pretty good use of them.  
+They can tell you a lot if you know what to look for.
+
+One very important point here...if you don't know which ROM files correspond
+to which ROM chips on the schematic, this method will not work.  Fortunately,
+most of the archived ROMs out there use some sort of naming convention that
+corresponds to the schematics.
+
+First some basics (really, really basic :-):
+
+o  The CPU should be connected up to an address bus and a data bus through
+address and data lines respectively on the CPU.  Anything connected to the
+buses can put bits onto the bus or take them off.
+
+o  When the CPU writes a value, it sends the bits of the address out through
+the address lines onto the address bus and the bits of the value out through 
+the data lines onto the data bus.  When it reads a value, it sends the bits
+of the address out through the address lines onto the address bus and reads
+the result off the data bus through the data lines.
+
+For example, let's say the 6502 CPU does a 'lda #$99; sta $4444':
+$99 is 10011001 in binary so it will send 1 out on data line 0, 0 out on 
+data line 1, 0 out on data line 2, ... , and 1 out on data line 7.
+$4444 is 0100010001000100 in binary so it will send 0 out on data line 0,
+0 out on data line 1, 1 out on data line 2, ..., and 0 out on data line 15.
+
+o There is a line out of the CPU which indicates whether the operation is
+a read or a write.  So assuming that 0 means write and 1 means read, this
+line would have contained a 0 in the previous example.
+
+o ROM chips have an input line that indicates when the chip is active (i.e.
+when to read the address from the address bus and put the value onto the
+data bus.
+
+o Gluing all of this together are a bunch of integrated circuits (ICs) that
+spend their time redirecting and massaging the bits.
+
+
+Now, what we want to figure out the address range for a particular ROM chip,
+so we want to know what is on the address bus when the chip gets enabled.
+So to determine it's mapping, we just need to trace the activation line back 
+to find out under what circumstances the chip becomes active.
+
+To do this, you need some knowledge of how the various ICs work.  There are
+some good resources on the internet for this (see the References appendix)
+and lots of books available that can help.
+
+The best way to explain how to go about this is with an example.  Grab
+a copy of the Burgertime Schematics so you can follow along, I'm not
+going to try and duplicate stuff with ASCII art :) 
+
+Let's take the AB04.9B file that is used in the Inspection example.  Looking 
+at the Burgertime sound board schematics there are 6 2732's (4K ROM chips)
+near the top.  These are connected directly to the address bus and the
+data bus and therefore look like they may contain code.  Also, they
+are labelled, 7B (not used), 12B, 9B, 13B, 10B and 15B.  Since I found
+code in AB05A1.12B, AB04.9B, AB06.13B, AB05.10B and AB07.15B it's a good
+bet that these files correspond to the ROM chips.
+
+To figure out when AB04.9B becomes active, we trace the activation line
+back.  This line is labelled "OE/VPP" and is pin 20.  
+
+1)  For it to be active, the line must have a value of zero on it.
+2)  So tracing the line back, we determine that the LS138 at location
+    10A needs to put out a 0 on "Y4" (pin 11).
+3)  Checking our IC reference, we find out that a LS138 is a "1-8 
+    inverting decoder/demultiplexer".  Yeah whatever.  The thing we're
+    really interested in is what makes pin 11 have a value of 0?  Well
+    looking at the truth table provided reveals the following:
+            +---+----+----+---+---+---+---+
+     Name:  |EN1|/EN2|/EN3| S2| S1| S0I/Y4|
+     Pin:   | 6 | 5  | 4  | 3 | 2 | 1 I 11|
+            +===+====+====+===+===+===+===+
+            | 1 | 0  | 0  | 1 | 0 | 0 I 0 |
+            +---+----+----+---+---+---+---+
+    Therefore, we need pins 6 and 3 to be 1, and pins 5, 4, 2, and 1 to be 0
+    for pin 11 to be 0.
+4)  Since we are trying to find the address of the ROM, we're really only
+    interested in things that trace back to the address lines.  If we trace 
+    pin 6 back...we find it goes through an LS367 at location 14A which
+    gets input from something called B02 from the CPU and the R/W line
+    from the CPU.  We'll assume that the R/W line must be set to Read
+    (since this is read only) and we won't worry about B02 since it's not
+    an address line.
+5)  If we trace pin 5 back, it ultimately comes from the same LS367 as pin
+    6, so we won't worry about it either.
+6)  Pin 4 comes from an LS00 at 9A.  An LS00 is a 2 input NAND gate with
+    the forumla:   __
+                /Y=AB
+    Therefore pins 12 and 13 must be 1 for the output to be 0.  Pin 13 is
+    connected to a +5V, so it will always be 1.  Therefore, we need pin 12
+    to be 1 as well.  For pin 12 to be 1, BA15 must be 1.  BA15 is address
+    line 15, so we've found an interesting piece of the puzzle, for the
+    ROM to be active, the address must be of the form: 1xxxxxxxxxxxxxxx.
+7)  Pin 3 comes directly from BA14, so for pin 3 to be 1, BA14 must be 1.
+    Now the address must be of the form: 11xxxxxxxxxxxxxx.
+8)  Pin 2 comes directly from BA13, so BA13 must be 0 and the
+    address must be of the form: 110xxxxxxxxx.
+9)  Finally, pin 1 comes directly from BA12 and therefore BA12 must be
+    0.  So all pins contributing to whether ROM AB04.9B becomes active 
+    have been identified leaving us with an address of the form:
+    1100xxxxxxxxxxxx, which is $Cxxx.  Therefore, AB04.9B starts at $C000
+    and since it's 4096 bytes long, it ends at $CFFF.
+
+So the schematic method tells us that AB04.9B fits into $C000-$CFFF in 
+memory, just like the Investigation method revealed.  
+
+If we repeat the above for the remainder of the ROMs, we would see that
+it confirms what we determined from the Investigation method.
+
+As I said earlier, it's much easier (at least I think so) to use the 
+investigation method than trace the schematic.  However, the schematic 
+method is very useful in identifying things like where dip switches and 
+controls are located in memory since Investigation is a little more difficult 
+for those type of things.
+
+Once you've done all of that and are fairly confident about where the ROMs
+go, you can add some code to your emulator to read the ROMs into a buffer
+at the correct locations.  
+
+For example:
+
+void LoadROMs (byte *memory)
+{
+    static struct ROM_AddressMap
+    {
+        char *ROMName;
+        word  Address;
+        word  Size;   
+    }
+    map[] =
+    {
+        { "AB05A1.12B", 0xb000, 0x1000 },
+        { "A04.9B",     0xc000, 0x1000 },
+        { "AB06.13B",   0xd000, 0x1000 },
+        { "AB05.10B",   0xe000, 0x1000 },
+        { "AB07.15B",   0xf000, 0x1000 },
+        { (char *)NULL, 0x0000, 0x1000 }
+    };
+
+    int i;
+    FILE *fp;
+
+    fp = fopen (map[i].ROMName, "rb");
+    for (i = 0 ; map[i].ROMName != (char *)NULL ; i ++)
+    {
+        fread (memory + map[i].Address, map[i].Size, fp);
+    }
+    fclose (fp);
+}
+    
+
+8.  Reset
+=========
+
+Now that you've got the ROM code loaded into your memory buffer, you'd
+like your emulator to start executing the code.  But where is the "start"
+of the code?
+
+The answer is different for each CPU.  
+
+For the 6502, there is a reset vector that tells the CPU where to start 
+executing the code.  This is located at locations $FFFC and $FFFD.  
+
+The 6809 also has a reset vector.  It is located at $FFFE and $FFFF.
+
+For the Z80.  The code always starts executing at location $0000.
+
+So for Burgertime, to find the start of code, we need to get the bytes from
+locations $FFFC and $FFFD.  Using hexdump (or any binary dumper or editor)
+on the file AB07.15B, we get:
+
+ fff0:   0 ff  0 ff  0 ff  0 ff  0 ff  0 ff  0 ff  3 ff ................
+
+The above line just shows the values of the bytes from $FFF0-$FFFF.  So
+we get:
+    $FFFC = 0
+    $FFFD = FF
+Therefore, in Burgertime, code begins at location $FF00.  If we take a look
+at the disassembled code at this location we find:
+
+FF00:  jmp $FF09
+...
+FF09:   lda  $4003
+FF0C:   and  #$10
+FF0E:   beq  $FF33
+FF10:   lda  $4003
+FF13:   and  #$20
+FF15:   beq  $FF44
+FF17:   jmp  $C003
+
+Which basically branches to different locations based on the value of $4003.
+(Could $4003 be a dip switch perhaps?  We'll see soon enough :-)
+
+So the code looks pretty good for the starting point of our game.
+
+What does this mean?  Well, if you are using a pre-rolled CPU emulator, it
+already knows these things and will start at the correct address.  Otherwise,
+you will need to load the program counter of your emulator with the correct
+address to begin execution.
+
+Your emulator should now be able to execute the original ROMs.  Of course you 
+don't have any graphics, controls or sound but hey it's a start.  If you've 
+put in a debugger or tracer, you should be able to follow the execution as 
+your emulator runs through the code.
+
+
+9.  Interrupts
+==============
+
+Interrupts can be very important in game emulation.  Interrupts are when
+the flow of code is interrupted by some sort of system signal (an interrupt)
+which is then handled by running a specific piece of code (an interrupt
+handler).  Without them, some things may not work in your game.  For 
+example, the game may generate an interrupt when a coin is inserted and
+in the interrupt handler code, increment the variable that counts the 
+number of credits.  Without this occurring, you'd never be able to start
+a game because the game would never think you've inserted any coins.
+
+Interrupts usually come in two flavours, maskable (IRQ) and non-maskable (NMI).
+Maskable interrupts are interrupts that the CPU can be told to ignore, 
+whereas non-maskable interrupts will always occur.
+
+Depending on the processor, interrupt handlers are stored at various 
+locations.
+
+6502
+----
+In the 6502, there is an interrupt vector (which works just like the reset
+vector) at locations $FFFE and $FFFF.  The non-maskable interrupt vector
+is located at locations $FFFA and $FFFB.
+
+Z80
+---
+*Note:  Again, I'm not sure about the following.  At this time I haven't
+done much work with Z80.  It probably depends on the interrupt mode (IM x).
+Feel free to correct this.
+
+In the Z80, the interrupt handler is located at location 0x0038 and
+the non-maskable interrupt handler is located at location 0x0066.
+
+6809
+----
+The 6809 has an interrupt vector at locations $FFF8 and $FFF9.  The non-
+maskable interrupt vector is located at locations $FFFC and $FFFD.  
+
+There is also a fast hardware interrupt vector at locations $FFF6 and $FFF7 as
+well as some instruction interrupt vectors  at $FFF2/$FFF3, $FFF4/$FFF5
+and $FFFA/$FFFB.  I'm not sure what these are for.
+
+Well, that's all just great, but what do we do about it?  It seems the
+easiest solution is to have your emulator break out of its 'fetch opcode -
+execute instruction' loop every X cycles and use this as if an interrupt
+occurred.  You can see something similar in Marat's 6502 source code.  
+Your code would look something like:
+
+6502 ()
+{
+...
+    /*
+     *  Read opcode and execute instruction.
+     */
+    op = M_RDMEM(PC++)
+    (*(func[op])) ();
+
+    /*
+     *  Update the cycle count.  If it's greater than X cycles then interrupt.
+     */
+    cycles += cycle_count[op];
+    if (cycles > X)
+    {
+        int i = Interrupt ();
+
+        /*
+         *  If the interrupt is not maskable or its maskable but the
+         *  interrupt ignore flag is not st then process the interrupt.
+         */
+        if ((i == INT_NMI) || ((i == INT_IRQ) && !(PS.I_FLAG)))
+        {
+            /*
+             *  Push current PC onto stack, load PC with address
+             *  of required interrupt handler and continue on normally.
+             */
+            ...
+        }
+    }
+    ...
+} 
+
+During the "Interrupt()" call is a good time to do all of your hardware
+processing.  This would include updating the display, and checking for 
+keystrokes or joystick controls.  The function should return whether
+something has caused an IRQ (and therefore the IRQ handler should be
+called) or if something has caused an NMI (and therefore the NMI handler
+should be called).  It's possible that there is no need for an actual
+interrupt in the emulated game and therefore, something like INT_NONE
+should be returned.  For example, maybe you took the opportunity to update
+the screen, but no controls were being pressed; then perhaps there is no
+need to call an interrupt handler.  
+
+How do you determine what actions during your Interrupt() function should
+cause an IRQ and what actions should cause an NMI?  Well, you can try
+and look at the code in the handlers and see if you can figure out what
+it is responding to.  For instance, maybe you can tell that it is updating
+the location of your character which would lead you to believe that you
+should return an INT_IRQ after you detect a key press or joystick control.
+
+Probably the easiest way is to just not return any interrupt indication
+at first and see how your game runs.  If it seems to get stuck, try
+returning INT_IRQ or INT_NMI for things like the key presses for coin
+inserts, the key presses for controls, or just always return an interrupt.
+See what works.
+
+Don't forgert that your emulator code should ignore IRQ's if the 
+interrupt disable flag is set (e.g. through a SEI call in 6502).  NMI's
+should always result in a call to the NMI handler.
+
+So for Burgertime, to find the interrupt handler locations, we need to get the 
+bytes from locations $FFFA/$FFFB and $FFFE/$FFFF.  Using hexdump (or any 
+binary dumper or editor) on the file AB07.15B, we get:
+
+ fff0:   0 ff  0 ff  0 ff  0 ff  0 ff  0 ff  0 ff  3 ff ................
+
+Therefore the IRQ handler should be located at $FF03 and the NMI handler
+should be located at $FF00.  The first thing I found strange about this was
+that the NMI handler was at the same location as the start of the code.  
+I figured that a possible solution was that there were no NMIs.  However
+looking at the schematics indicated that the coinbox was hooked up to the
+CPU through the NMI pin which would indicate that there were NMIs.  
+
+So I thought I'd try to figure out the IRQ.  The first thing I did was set
+a couple of opcode breakpoints in my 6502 debugger to break whenever a 
+set interrupt disable (SEI) or a clear interrupt disable (CLI) instruction
+was hit.  Upon running the ROM I found that basically, the interrupt is
+disabled pretty much throughout the execution of the code.  This led me
+to believe that it was actually IRQ's that didn't exist in Burgertime.
+So maybe the handlers were reversed (i.e. the IRQ handler is actually the
+NMI handler).  This seemed quite possible since the Burgertime 6502 is 
+a modified one (the pinout described on the schematic is different from
+a standard 6502).
+
+To confirm that this was the case, I took a look at the routine at $FF03.
+It jumps around alot but after tracing through it looks like it is used
+to check for coin insertion.  
+
+So my Interrupt() function looked something like:
+
+int Interrupt ()
+{
+    if (key_pressed(COIN_INSERT))
+    { 
+        /*
+         *  Set bits that indicate coin insert.  See later section for 
+         *  details.
+         */ 
+
+        return (INT_NMI);
+    }
+    else
+    if (key_pressed(CONTROLS))
+    {
+        /*
+         *  Set bits that indicate that the joystick or button has been
+         *  used.  See later section for details.
+         */
+    }
+    return (INT_NONE);
+}
+
+Of course I also had to modify my 6502 emulation to swap the IRQ with NMI
+handlers but in the normal case you shouldn't have to worry about that :)
+
+After hooking all this up, Burgertime behaved correctly.
+
+
+10.  Graphics Format
+====================
+
+
+A.  Useful Sites
+================
+Below are some of sites where you can find useful information to help with
+your emulation:
+
+Arcade Emulation Programming Repository:
+http://emulate.simplenet.com/EmuProgramming/index.html
+
+Chip Directory:
+ftp://ftp.unina.it/pub/chipdir/chipdir.html
+
+Motorola Chip Info:
+http://www.infodex.com/demo/motorola/
+
+Giant Internet IC Masturbator:
+http://www.paranoia.com/~filipg/HTML/cgi-bin/giicm_form.html
+
+JROK's Schematic:
+http://www.cyberpass.net/~jrok/
+
+Wiretap Archive:
+http://www.spies.com/arcade/
+

@@ -1,0 +1,14 @@
+Emulator programming links
+--------------------------
+
+
+6502 links
+----------
+
+
+Oric links
+----------
+ * Muso's ORIC Site:
+   
+    http://www.48katmos.freeuk.com/
+
