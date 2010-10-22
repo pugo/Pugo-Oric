@@ -23,6 +23,8 @@
 #include "datatypes.h"
 
 #include <iostream>
+#include <ostream>
+
 
 /**
 	@author Anders Karlsson <pugo@pugo.org>
@@ -34,13 +36,32 @@ class Memory
     ~Memory();
 
     void load(std::string path, word address);
-
     unsigned int getSize() { return size; }
-    
-    byte * mem;
 
+    void setPos(unsigned int pos) { mempos = pos; }
+    void show(unsigned int pos, unsigned int length);
+
+    friend Memory& operator>>(Memory& is, Memory& obj)
+    {
+        std::cout << ">>" << std::endl;
+        //obj.mem[obj.mempos++] = is;
+        return is;
+    }
+
+
+    friend Memory& operator<<(Memory& os, unsigned int i)
+    {
+        os.mem[os.mempos++] = i & 0xff;
+        return os;
+    }
+
+    byte* mem;
+    
   protected:
     unsigned int size;
+    int mempos;
 };
+
+
 
 #endif // MEMORY_H

@@ -20,6 +20,9 @@ mandir = ${prefix}/man
 CXX = c++
 CXXFLAGS = -g -O3
 
+CXXTESTDIR = /home/pugo/src/cxxtest
+CXXTESTGEN = $(CXXTESTDIR)/cxxtestgen.py
+
 LDFLAGS = 
 LIBS = 
 INSTALL = /usr/bin/install
@@ -39,10 +42,12 @@ LFLAGS       = $(LIBPATHS) $(LIBS)
 
 ## Objects ################################################
 
-COMMON_OBJECTS  = oric.o \
-				  cpu.o \
+COMMON_OBJECTS  = cpu.o \
 				  mos6502.o \
 				  memory.o
+
+EMU_OBJECTS = $(COMMON_OBJECTS) \
+			  oric.o
 
 
 ## Implicit rules #########################################
@@ -62,8 +67,8 @@ COMMON_OBJECTS  = oric.o \
 all: oric
 
 
-oric: $(COMMON_OBJECTS) $(CONFIG)
-	$(CXX) $(COMMON_OBJECTS) -o oric $(LFLAGS)
+oric: $(EMU_OBJECTS) $(CONFIG)
+	$(CXX) $(EMU_OBJECTS) -o oric $(LFLAGS)
 
 
 clean:
@@ -72,13 +77,20 @@ clean:
 	rm -f core*
 	rm -f config.cache config.log
 	rm -f -r doxygen/html doxygen/latex
-
+	rm -f tests/tests.cpp
 
 install:
 	install -m 755 -s $(TARGET) $(BUILDROOT)/$(bindir)
 
 doc:
 	doxygen doxygen/doxygen.cfg
+
+
+tests/tests.cpp: tests/test1.h
+	$(CXXTESTGEN) --error-printer -o tests/tests.cpp tests/test1.h
+
+selftest: tests/tests.cpp $(COMMON_OBJECTS)
+	$(CXX) -I$(CXXTESTDIR) -I. tests/tests.cpp cpu.o mos6502.o memory.o -o selftest
 
 
 count:

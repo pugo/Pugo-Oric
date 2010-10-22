@@ -35,8 +35,9 @@ class CPU
     void run();
     virtual void execInstruction() = 0;
 
-  protected:
     Memory * memory;
+
+  protected:
     bool running;
 };
 

@@ -35,11 +35,12 @@
 using namespace std;
 
 Memory::Memory(unsigned int size) :
-    size(size)
+    size(size), mempos(START_VECTOR)
 {
-	cout << "Memory::Memory( " << size << " )" << endl;
+	//cout << "Memory::Memory( " << size << " )" << endl;
 
     mem = new byte[size];
+    
     
 //     mem[0x0010] = 0x00;
 //     mem[0x0011] = 0x10;
@@ -147,11 +148,13 @@ Memory::~Memory()
 {
 }
 
+
 void error_exit( string description )
 {
     cout << endl << "!!! Error: " << description << endl << endl;
     exit( 1 );
 }
+
 
 
 void Memory::load(std::string path, word address)
@@ -173,7 +176,7 @@ void Memory::load(std::string path, word address)
     while ( file_size-count > 0 )
     {
         ssize_t result = read( fd, buff, 1 );
-        
+
         if ( result == 0 )
             break;
         if ( result == -1 )
@@ -186,4 +189,12 @@ void Memory::load(std::string path, word address)
 
 	free( buff );
     return;
+}
+
+
+void Memory::show(unsigned int pos, unsigned int length)
+{
+    cout << "Showing " << length << " bytes from " << pos << endl;
+    for (unsigned int i=0; i < length; i++)
+        cout << "[" << pos + i << "] " << (unsigned int)mem[pos + i] << " (" << hex << (unsigned int)mem[pos + i] << ")" << endl;
 }

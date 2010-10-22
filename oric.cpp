@@ -35,9 +35,12 @@ using namespace std;
 int main(int argc, char *argv[])
 {
 	cout << "Hello, world!" << endl;
+	char pwd[1024];
+	getcwd( pwd, 1024 );
+	cout << "pwd: " << pwd << endl;
 
 	Memory * memory = new Memory( 65536 );
-	memory->load("ROMS/basic10.rom", 0xc000);
+	memory->load("/home/pugo/projekt/oric/ROMS/basic10.rom", 0xc000);
 	
 	MOS6502 * cpu = new MOS6502( memory );
 

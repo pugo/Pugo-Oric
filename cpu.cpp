@@ -23,7 +23,6 @@
 CPU::CPU() :
     running(false)
 {
-    std::cout << "CPU::CPU()" << std::endl;
 }
 
 
