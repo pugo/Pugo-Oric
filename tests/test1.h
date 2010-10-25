@@ -43,6 +43,27 @@ public:
 };
 
 
+int decToBCD(int dec)
+{
+    int major = dec / 10;
+    int minor = dec - major*10;
+    //std::cout << "D2BCD - major: " << major << ", minor: " << minor << ", result: " 
+    //          << std::hex << major * 16 + minor << std::endl;
+    return major * 16 + minor;
+}
+
+int bcdToDec(int bcd)
+{
+    int major = bcd / 16;
+    int minor = bcd - major*16;
+    //std::cout << "BCD2D - major: " << major << ", minor: " << minor << ", result: " 
+    //          << std::hex << major * 16 + minor << std::endl;
+    return major * 10 + minor;
+}
+
+
+
+
 
 class MOS6502TestSuite : public CxxTest::TestSuite 
 {
@@ -537,6 +558,808 @@ class MOS6502TestSuite : public CxxTest::TestSuite
 
             cpu.run();
             TS_ASSERT_EQUALS( memory.mem[0x1234], 0x3f );
+        }
+
+
+    // ADC
+
+    void testOpADC_IMM( void )
+        {
+            // Normal mode
+            for (int i=0; i<12; i++)
+            {
+                Memory memory( 65536 );
+                MOS6502 cpu( &memory );
+                cpu.D = false;
+                cpu.A = 0x11;
+                
+                memory << CLC;
+                memory << ADC_IMM;
+                memory << 0x13 * i;
+                memory << BRK;
+                
+                cpu.run();
+                TS_ASSERT_EQUALS( cpu.A, 0x11 + 0x13 * i );
+            }
+        }
+
+    void testOpADC_IMM_DEC( void )
+        {
+            // Decimal mode
+            short a[] = {0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88};
+            short b[] = {0x88, 0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11};
+            short v[] = {0,    1,    1,    1,    1,    1,    1,    0 };
+
+            for (int i=0; i < 8; i++)
+            { 
+                Memory memory( 65536 );
+                MOS6502 cpu( &memory );
+                cpu.D = true;
+                cpu.A = a[i];
+                
+                memory << CLC;
+                memory << ADC_IMM;
+                memory << b[i];
+                memory << BRK;
+                
+                cpu.run();
+                TS_ASSERT_EQUALS( cpu.A, 0x99 );
+                TS_ASSERT_EQUALS( cpu.V, v[i] );
+            }
+        }
+
+    void testOpADC_IMM_DEC2( void )
+        {
+            for (int a=0; a <= 99; a++)
+            {
+                for (int b=0; b <= 99; b++)
+                { 
+                    //std::cout << "  -- a: " << std::dec << a << ", b: " << b << std::endl;
+                    Memory memory( 65536 );
+                    MOS6502 cpu( &memory );
+                    cpu.D = true;
+                    cpu.A = decToBCD(a);
+                    
+                    memory << CLC;
+                    memory << ADC_IMM;
+                    memory << decToBCD(b);
+                    memory << BRK;
+                    
+                    cpu.run();
+                    TS_ASSERT_EQUALS( bcdToDec(cpu.A), (a+b) % 100 );
+                }
+            }
+        }
+
+    void testOpADC_ZP( void )
+        {
+            // Normal mode
+            for (int i=0; i<12; i++)
+            {
+                Memory memory( 65536 );
+                MOS6502 cpu( &memory );
+                cpu.D = false;
+                cpu.A = 0x11;
+                memory.mem[0x15] = 0x13 * i;
+                
+                memory << CLC;
+                memory << ADC_ZP;
+                memory << 0x15;
+                memory << BRK;
+                
+                cpu.run();
+                TS_ASSERT_EQUALS( cpu.A, 0x11 + 0x13 * i );
+            }
+        }
+
+    void testOpADC_ZP_DEC( void )
+        {
+            for (int a=0; a <= 99; a++)
+            {
+                for (int b=0; b <= 99; b++)
+                {
+                    Memory memory( 65536 );
+                    MOS6502 cpu( &memory );
+                    cpu.D = true;
+                    cpu.A = decToBCD(a);
+                    memory.mem[0x15] = decToBCD(b);
+                    
+                    memory << CLC;
+                    memory << ADC_ZP;
+                    memory << 0x15;
+                    memory << BRK;
+                    
+                    cpu.run();
+                    TS_ASSERT_EQUALS( bcdToDec(cpu.A), (a+b) % 100 );
+                }
+            }
+        }
+
+    void testOpADC_ZP_X( void )
+        {
+            // Normal mode
+            for (int i=0; i<12; i++)
+            {
+                Memory memory( 65536 );
+                MOS6502 cpu( &memory );
+                cpu.D = false;
+                cpu.A = 0x11;
+                cpu.X = 0x05;
+                memory.mem[0x15] = 0x13 * i;
+                
+                memory << CLC;
+                memory << ADC_ZP_X;
+                memory << 0x10;
+                memory << BRK;
+                
+                cpu.run();
+                TS_ASSERT_EQUALS( cpu.A, 0x11 + 0x13 * i );
+            }
+        }
+
+    void testOpADC_ZP_X_DEC( void )
+        {
+            for (int a=0; a <= 99; a++)
+            {
+                for (int b=0; b <= 99; b++)
+                {
+                    Memory memory( 65536 );
+                    MOS6502 cpu( &memory );
+                    cpu.D = true;
+                    cpu.A = decToBCD(a);
+                    cpu.X = 0x05;
+                    memory.mem[0x15] = decToBCD(b);
+                    
+                    memory << CLC;
+                    memory << ADC_ZP_X;
+                    memory << 0x10;
+                    memory << BRK;
+                    
+                    cpu.run();
+                    TS_ASSERT_EQUALS( bcdToDec(cpu.A), (a+b) % 100 );
+                }
+            }
+        }
+
+    void testOpADC_ABS( void )
+        {
+            // Normal mode
+            for (int i=0; i<12; i++)
+            {
+                Memory memory( 65536 );
+                MOS6502 cpu( &memory );
+                cpu.D = false;
+                cpu.A = 0x12;
+                memory.mem[0x1234] = 0x13 * i;
+                
+                memory << CLC;
+                memory << ADC_ABS;
+                memory << 0x34 << 0x12;
+                memory << BRK;
+                
+                cpu.run();
+                TS_ASSERT_EQUALS( cpu.A, 0x12 + 0x13 * i );
+            }
+        }
+
+    void testOpADC_ABS_DEC( void )
+        {
+            for (int a=0; a <= 99; a++)
+            {
+                for (int b=0; b <= 99; b++)
+                {
+                    Memory memory( 65536 );
+                    MOS6502 cpu( &memory );
+                    cpu.D = true;
+                    cpu.A = decToBCD(a);
+                    memory.mem[0x1234] = decToBCD(b);
+                    
+                    memory << CLC;
+                    memory << ADC_ABS;
+                    memory << 0x34 << 0x12;
+                    memory << BRK;
+                    
+                    cpu.run();
+                    TS_ASSERT_EQUALS( bcdToDec(cpu.A), (a+b) % 100 );
+                }
+            }
+        }
+
+    void testOpADC_ABS_X( void )
+        {
+            // Normal mode
+            for (int i=0; i<12; i++)
+            {
+                Memory memory( 65536 );
+                MOS6502 cpu( &memory );
+                cpu.D = false;
+                cpu.A = 0x12;
+                cpu.X = 0x11;
+                memory.mem[0x1245] = 0x13 * i;
+                
+                memory << CLC;
+                memory << ADC_ABS_X;
+                memory << 0x34 << 0x12;
+                memory << BRK;
+                
+                cpu.run();
+                TS_ASSERT_EQUALS( cpu.A, 0x12 + 0x13 * i );
+            }
+        }
+
+    void testOpADC_ABS_X_DEC( void )
+        {
+            for (int a=0; a <= 99; a++)
+            {
+                for (int b=0; b <= 99; b++)
+                {
+                    Memory memory( 65536 );
+                    MOS6502 cpu( &memory );
+                    cpu.D = true;
+                    cpu.A = decToBCD(a);
+                    cpu.X = 0x11;
+                    memory.mem[0x1245] = decToBCD(b);
+                    
+                    memory << CLC;
+                    memory << ADC_ABS_X;
+                    memory << 0x34 << 0x12;
+                    memory << BRK;
+                    
+                    cpu.run();
+                    TS_ASSERT_EQUALS( bcdToDec(cpu.A), (a+b) % 100 );
+                }
+            }
+        }
+
+    void testOpADC_ABS_Y( void )
+        {
+            // Normal mode
+            for (int i=0; i<12; i++)
+            {
+                Memory memory( 65536 );
+                MOS6502 cpu( &memory );
+                cpu.D = false;
+                cpu.A = 0x12;
+                cpu.Y = 0x12;
+                memory.mem[0x1246] = 0x13 * i;
+                
+                memory << CLC;
+                memory << ADC_ABS_Y;
+                memory << 0x34 << 0x12;
+                memory << BRK;
+                
+                cpu.run();
+                TS_ASSERT_EQUALS( cpu.A, 0x12 + 0x13 * i );
+            }
+        }
+
+    void testOpADC_ABS_Y_DEC( void )
+        {
+            for (int a=0; a <= 99; a++)
+            {
+                for (int b=0; b <= 99; b++)
+                {
+                    Memory memory( 65536 );
+                    MOS6502 cpu( &memory );
+                    cpu.D = true;
+                    cpu.A = decToBCD(a);
+                    cpu.Y = 0x12;
+                    memory.mem[0x1246] = decToBCD(b);
+                    
+                    memory << CLC;
+                    memory << ADC_ABS_Y;
+                    memory << 0x34 << 0x12;
+                    memory << BRK;
+                    
+                    cpu.run();
+                    TS_ASSERT_EQUALS( bcdToDec(cpu.A), (a+b) % 100 );
+                }
+            }
+        }
+
+    void testOpADC_IND_X( void )
+        {
+            // Normal mode
+            for (int i=0; i<12; i++)
+            {
+                Memory memory( 65536 );
+                MOS6502 cpu( &memory );
+                memory.mem[0x14] = 0x11;
+                memory.mem[0x15] = 0x47;
+                memory.mem[0x4711] = 0x13 * i;
+                cpu.D = false;
+                cpu.A = 0x12;                
+                cpu.X = 0x04;
+                
+                memory << CLC;
+                memory << ADC_IND_X;
+                memory << 0x10;
+                memory << BRK;
+                
+                cpu.run();
+                TS_ASSERT_EQUALS( cpu.A, 0x12 + 0x13 * i );
+            }
+        }
+
+    void testOpADC_IND_X_DEC( void )
+        {
+            for (int a=0; a <= 99; a++)
+            {
+                for (int b=0; b <= 99; b++)
+                {
+                    Memory memory( 65536 );
+                    MOS6502 cpu( &memory );
+                    memory.mem[0x14] = 0x11;
+                    memory.mem[0x15] = 0x47;
+                    memory.mem[0x4711] = decToBCD(b);;
+                    cpu.D = true;
+                    cpu.A = decToBCD(a);
+                    cpu.X = 0x04;
+                    
+                    memory << CLC;
+                    memory << ADC_IND_X;
+                    memory << 0x10;
+                    memory << BRK;
+                    
+                    cpu.run();
+                    TS_ASSERT_EQUALS( bcdToDec(cpu.A), (a+b) % 100 );
+                }
+            }
+        }
+
+    void testOpADC_IND_Y( void )
+        {
+            // Normal mode
+            for (int i=0; i<12; i++)
+            {
+                Memory memory( 65536 );
+                MOS6502 cpu( &memory );
+                memory.mem[0x10] = 0x00;
+                memory.mem[0x11] = 0x47;
+                memory.mem[0x4711] = 0x13 * i;
+                cpu.D = false;
+                cpu.A = 0x12;              
+                cpu.Y = 0x11;
+                
+                memory << CLC;
+                memory << ADC_IND_Y;
+                memory << 0x10;
+                memory << BRK;
+                
+                cpu.run();
+                TS_ASSERT_EQUALS( cpu.A, 0x12 + 0x13 * i );
+            }
+        }
+
+    void testOpADC_IND_Y_DEC( void )
+        {
+            for (int a=0; a <= 99; a++)
+            {
+                for (int b=0; b <= 99; b++)
+                {
+                    Memory memory( 65536 );
+                    MOS6502 cpu( &memory );
+                    memory.mem[0x10] = 0x00;
+                    memory.mem[0x11] = 0x47;
+                    memory.mem[0x4711] = decToBCD(b);;
+                    cpu.D = true;
+                    cpu.A = decToBCD(a);
+                    cpu.Y = 0x11;
+                    
+                    memory << CLC;
+                    memory << ADC_IND_Y;
+                    memory << 0x10;
+                    memory << BRK;
+                    
+                    cpu.run();
+                    TS_ASSERT_EQUALS( bcdToDec(cpu.A), (a+b) % 100 );
+                }
+            }
+        }
+
+
+    // SBC
+
+    void testOpSBC_IMM( void )
+        {
+            // Normal mode
+            for (int i=0; i<12; i++)
+            {
+                Memory memory( 65536 );
+                MOS6502 cpu( &memory );
+                cpu.D = false;
+                cpu.A = 0x11;
+                
+                memory << SEC;
+                memory << SBC_IMM;
+                memory << 0x13 * i;
+                memory << BRK;
+                
+                cpu.run();
+                int ok = 0x11 - 0x13*i;
+                if (ok < 0)  ok = 256 - abs(ok);
+                TS_ASSERT_EQUALS( cpu.A, ok );
+            }
+        }
+
+
+    void testOpSBC_IMM_DEC( void )
+        {
+            for (int a=0; a <= 99; a++)
+            {
+                for (int b=0; b <= 99; b++)
+                { 
+                    //std::cout << "  -- a: " << std::dec << a << ", b: " << b << std::endl;
+                    Memory memory( 65536 );
+                    MOS6502 cpu( &memory );
+                    cpu.D = true;
+                    cpu.A = decToBCD(a);
+                    
+                    memory << SEC;
+                    memory << SBC_IMM;
+                    memory << decToBCD(b);
+                    memory << BRK;
+                    
+                    cpu.run();
+                    int ok = a - b; 
+                    if (ok < 0) ok = 100 - abs(ok);
+                    TS_ASSERT_EQUALS( bcdToDec(cpu.A), ok );
+                }
+            }
+        }
+
+    void testOpSBC_ZP( void )
+        {
+            // Normal mode
+            for (int i=0; i<12; i++)
+            {
+                Memory memory( 65536 );
+                MOS6502 cpu( &memory );
+                cpu.D = false;
+                cpu.A = 0x11;
+                memory.mem[0x15] = 0x13 * i;
+                
+                memory << SEC;
+                memory << SBC_ZP;
+                memory << 0x15;
+                memory << BRK;
+                
+                cpu.run();
+                int ok = 0x11 - 0x13*i;
+                if (ok < 0)  ok = 256 - abs(ok);
+                TS_ASSERT_EQUALS( cpu.A, ok );
+            }
+        }
+
+    void testOpSBC_ZP_DEC( void )
+        {
+            for (int a=0; a <= 99; a++)
+            {
+                for (int b=0; b <= 99; b++)
+                {
+                    Memory memory( 65536 );
+                    MOS6502 cpu( &memory );
+                    cpu.D = true;
+                    cpu.A = decToBCD(a);
+                    memory.mem[0x15] = decToBCD(b);
+                    
+                    memory << SEC;
+                    memory << SBC_ZP;
+                    memory << 0x15;
+                    memory << BRK;
+                    
+                    cpu.run();
+                    int ok = a - b; 
+                    if (ok < 0) ok = 100 - abs(ok);
+                    TS_ASSERT_EQUALS( bcdToDec(cpu.A), ok );
+                }
+            }
+        }
+
+    void testOpSBC_ZP_X( void )
+        {
+            // Normal mode
+            for (int i=0; i<12; i++)
+            {
+                Memory memory( 65536 );
+                MOS6502 cpu( &memory );
+                cpu.D = false;
+                cpu.A = 0x11;
+                cpu.X = 0x05;
+                memory.mem[0x15] = 0x13 * i;
+                
+                memory << SEC;
+                memory << SBC_ZP_X;
+                memory << 0x10;
+                memory << BRK;
+                
+                cpu.run();
+                int ok = 0x11 - 0x13*i;
+                if (ok < 0)  ok = 256 - abs(ok);
+                TS_ASSERT_EQUALS( cpu.A, ok );
+            }
+        }
+
+    void testOpSBC_ZP_X_DEC( void )
+        {
+            for (int a=0; a <= 99; a++)
+            {
+                for (int b=0; b <= 99; b++)
+                {
+                    Memory memory( 65536 );
+                    MOS6502 cpu( &memory );
+                    cpu.D = true;
+                    cpu.A = decToBCD(a);
+                    cpu.X = 0x05;
+                    memory.mem[0x15] = decToBCD(b);
+                    
+                    memory << SEC;
+                    memory << SBC_ZP_X;
+                    memory << 0x10;
+                    memory << BRK;
+                    
+                    cpu.run();
+                    int ok = a - b; 
+                    if (ok < 0) ok = 100 - abs(ok);
+                    TS_ASSERT_EQUALS( bcdToDec(cpu.A), ok );
+                }
+            }
+        }
+
+    void testOpSBC_ABS( void )
+        {
+            // Normal mode
+            for (int i=0; i<12; i++)
+            {
+                Memory memory( 65536 );
+                MOS6502 cpu( &memory );
+                cpu.D = false;
+                cpu.A = 0x12;
+                memory.mem[0x1234] = 0x13 * i;
+                
+                memory << SEC;
+                memory << SBC_ABS;
+                memory << 0x34 << 0x12;
+                memory << BRK;
+                
+                cpu.run();
+                int ok = 0x12 - 0x13*i;
+                if (ok < 0)  ok = 256 - abs(ok);
+                TS_ASSERT_EQUALS( cpu.A, ok );
+            }
+        }
+
+    void testOpSBC_ABS_DEC( void )
+        {
+            for (int a=0; a <= 99; a++)
+            {
+                for (int b=0; b <= 99; b++)
+                {
+                    Memory memory( 65536 );
+                    MOS6502 cpu( &memory );
+                    cpu.D = true;
+                    cpu.A = decToBCD(a);
+                    memory.mem[0x1234] = decToBCD(b);
+                    
+                    memory << SEC;
+                    memory << SBC_ABS;
+                    memory << 0x34 << 0x12;
+                    memory << BRK;
+                    
+                    cpu.run();
+                    int ok = a - b; 
+                    if (ok < 0) ok = 100 - abs(ok);
+                    TS_ASSERT_EQUALS( bcdToDec(cpu.A), ok );
+                }
+            }
+        }
+
+    void testOpSBC_ABS_X( void )
+        {
+            // Normal mode
+            for (int i=0; i<12; i++)
+            {
+                Memory memory( 65536 );
+                MOS6502 cpu( &memory );
+                cpu.D = false;
+                cpu.A = 0x12;
+                cpu.X = 0x11;
+                memory.mem[0x1245] = 0x13 * i;
+                
+                memory << SEC;
+                memory << SBC_ABS_X;
+                memory << 0x34 << 0x12;
+                memory << BRK;
+                
+                cpu.run();
+                int ok = 0x12 - 0x13*i;
+                if (ok < 0)  ok = 256 - abs(ok);
+                TS_ASSERT_EQUALS( cpu.A, ok );
+            }
+        }
+
+    void testOpSBC_ABS_X_DEC( void )
+        {
+            for (int a=0; a <= 99; a++)
+            {
+                for (int b=0; b <= 99; b++)
+                {
+                    Memory memory( 65536 );
+                    MOS6502 cpu( &memory );
+                    cpu.D = true;
+                    cpu.A = decToBCD(a);
+                    cpu.X = 0x11;
+                    memory.mem[0x1245] = decToBCD(b);
+                    
+                    memory << SEC;
+                    memory << SBC_ABS_X;
+                    memory << 0x34 << 0x12;
+                    memory << BRK;
+                    
+                    cpu.run();
+                    int ok = a - b; 
+                    if (ok < 0) ok = 100 - abs(ok);
+                    TS_ASSERT_EQUALS( bcdToDec(cpu.A), ok );
+                }
+            }
+        }
+
+    void testOpSBC_ABS_Y( void )
+        {
+            // Normal mode
+            for (int i=0; i<12; i++)
+            {
+                Memory memory( 65536 );
+                MOS6502 cpu( &memory );
+                cpu.D = false;
+                cpu.A = 0x12;
+                cpu.Y = 0x12;
+                memory.mem[0x1246] = 0x13 * i;
+                
+                memory << SEC;
+                memory << SBC_ABS_Y;
+                memory << 0x34 << 0x12;
+                memory << BRK;
+                
+                cpu.run();
+                int ok = 0x12 - 0x13*i;
+                if (ok < 0)  ok = 256 - abs(ok);
+                TS_ASSERT_EQUALS( cpu.A, ok );
+            }
+        }
+
+    void testOpSBC_ABS_Y_DEC( void )
+        {
+            for (int a=0; a <= 99; a++)
+            {
+                for (int b=0; b <= 99; b++)
+                {
+                    Memory memory( 65536 );
+                    MOS6502 cpu( &memory );
+                    cpu.D = true;
+                    cpu.A = decToBCD(a);
+                    cpu.Y = 0x12;
+                    memory.mem[0x1246] = decToBCD(b);
+                    
+                    memory << SEC;
+                    memory << SBC_ABS_Y;
+                    memory << 0x34 << 0x12;
+                    memory << BRK;
+                    
+                    cpu.run();
+                    int ok = a - b; 
+                    if (ok < 0) ok = 100 - abs(ok);
+                    TS_ASSERT_EQUALS( bcdToDec(cpu.A), ok );
+                }
+            }
+        }
+
+    void testOpSBC_IND_X( void )
+        {
+            // Normal mode
+            for (int i=0; i<12; i++)
+            {
+                Memory memory( 65536 );
+                MOS6502 cpu( &memory );
+                memory.mem[0x14] = 0x11;
+                memory.mem[0x15] = 0x47;
+                memory.mem[0x4711] = 0x13 * i;
+                cpu.D = false;
+                cpu.A = 0x12;                
+                cpu.X = 0x04;
+                
+                memory << SEC;
+                memory << SBC_IND_X;
+                memory << 0x10;
+                memory << BRK;
+                
+                cpu.run();
+                int ok = 0x12 - 0x13*i;
+                if (ok < 0)  ok = 256 - abs(ok);
+                TS_ASSERT_EQUALS( cpu.A, ok );
+            }
+        }
+
+    void testOpSBC_IND_X_DEC( void )
+        {
+            for (int a=0; a <= 99; a++)
+            {
+                for (int b=0; b <= 99; b++)
+                {
+                    Memory memory( 65536 );
+                    MOS6502 cpu( &memory );
+                    memory.mem[0x14] = 0x11;
+                    memory.mem[0x15] = 0x47;
+                    memory.mem[0x4711] = decToBCD(b);;
+                    cpu.D = true;
+                    cpu.A = decToBCD(a);
+                    cpu.X = 0x04;
+                    
+                    memory << SEC;
+                    memory << SBC_IND_X;
+                    memory << 0x10;
+                    memory << BRK;
+                    
+                    cpu.run();
+                    int ok = a - b; 
+                    if (ok < 0) ok = 100 - abs(ok);
+                    TS_ASSERT_EQUALS( bcdToDec(cpu.A), ok );
+                }
+            }
+        }
+
+    void testOpSBC_IND_Y( void )
+        {
+            // Normal mode
+            for (int i=0; i<12; i++)
+            {
+                Memory memory( 65536 );
+                MOS6502 cpu( &memory );
+                memory.mem[0x10] = 0x00;
+                memory.mem[0x11] = 0x47;
+                memory.mem[0x4711] = 0x13 * i;
+                cpu.D = false;
+                cpu.A = 0x12;              
+                cpu.Y = 0x11;
+                
+                memory << SEC;
+                memory << SBC_IND_Y;
+                memory << 0x10;
+                memory << BRK;
+                
+                cpu.run();
+                int ok = 0x12 - 0x13*i;
+                if (ok < 0)  ok = 256 - abs(ok);
+                TS_ASSERT_EQUALS( cpu.A, ok );
+            }
+        }
+
+    void testOpSBC_IND_Y_DEC( void )
+        {
+            for (int a=0; a <= 99; a++)
+            {
+                for (int b=0; b <= 99; b++)
+                {
+                    Memory memory( 65536 );
+                    MOS6502 cpu( &memory );
+                    memory.mem[0x10] = 0x00;
+                    memory.mem[0x11] = 0x47;
+                    memory.mem[0x4711] = decToBCD(b);;
+                    cpu.D = true;
+                    cpu.A = decToBCD(a);
+                    cpu.Y = 0x11;
+                    
+                    memory << SEC;
+                    memory << SBC_IND_Y;
+                    memory << 0x10;
+                    memory << BRK;
+                    
+                    cpu.run();
+                    int ok = a - b; 
+                    if (ok < 0) ok = 100 - abs(ok);
+                    TS_ASSERT_EQUALS( bcdToDec(cpu.A), ok );
+                }
+            }
         }
 
 

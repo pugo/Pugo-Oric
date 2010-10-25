@@ -221,7 +221,7 @@ int inline MOS6502::signedByteToInt(byte b)
 
 void MOS6502::adc(byte val)
 {
-	if (D)
+	if (D)  // Decimal mode
 	{
 		word low = (A & 0x0f) + (val & 0x0f) + (C ? 1 : 0);
 		word high = (A >> 4) + (val >> 4);
@@ -236,7 +236,7 @@ void MOS6502::adc(byte val)
 		C = high > 0x0f;
 		A = (high << 4) | (low & 0x0f);
 	}
-	else
+	else   // Normal mode
 	{
 		word w = A + val + (C ? 1 : 0);
 		C = w > 0xff;
@@ -244,7 +244,7 @@ void MOS6502::adc(byte val)
 		SET_FLAG_NZ(A = w);
 	}
 
-	cout << "A now: " << hex << A << endl;
+	//cout << "A now: " << hex << static_cast<short>(A) << endl;
 }
 
 
@@ -277,7 +277,7 @@ void MOS6502::sbc(byte val)
 		SET_FLAG_NZ(A = w);
 	}
 
-	cout << "A now: " << hex << A << endl;
+	//cout << "A now: " << hex << A << endl;
 }
 
 
@@ -920,6 +920,6 @@ void MOS6502::execInstruction()
 	};
 
 
-	printf("[%04X] %10s  |  SP: %02X  |  A: %02X, X: %02X, Y: %02X  |  Z: %d, C: %d\n",
-		pc_initial, opcodenames[instruction], SP, A, X, Y, Z, C);
+	//printf("[%04X] %10s  |  SP: %02X  |  A: %02X, X: %02X, Y: %02X  |  Z: %d, C: %d, V: %d\n",
+	//	pc_initial, opcodenames[instruction], SP, A, X, Y, Z, C, V);
 }

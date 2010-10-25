@@ -35,7 +35,7 @@
 using namespace std;
 
 Memory::Memory(unsigned int size) :
-    size(size), mempos(START_VECTOR)
+    mem(NULL), size(size), mempos(START_VECTOR)
 {
 	//cout << "Memory::Memory( " << size << " )" << endl;
 
@@ -146,6 +146,8 @@ Memory::Memory(unsigned int size) :
 
 Memory::~Memory()
 {
+    if (mem)
+        delete[] mem;
 }
 
 
