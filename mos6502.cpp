@@ -24,92 +24,6 @@
 #include <iostream>
 #include "stdio.h"
 
-const char * opcodenames[256] = {
-	"BRK",     "ORA_IND_X", "(none)",  "(none)", "(none)",    "ORA_ZP",    "ASL_ZP",    "(none)",  // 00
-	"PHP",     "ORA_IMM",   "ASL_ACC", "(none)", "(none)",    "ORA_ABS",   "ASL_ABS",   "(none)", 
-	"BPL",     "ORA_IND_Y", "(none)",  "(none)", "(none)",    "ORA_ZP_X",  "ASL_ZP_X",  "(none)",  // 10
-	"CLC",     "ORA_ABS_Y", "(none)",  "(none)", "(none)",    "ORA_ABS_X", "ASL_ABS_X", "(none)", 
-	"JSR",     "AND_IND_X", "(none)",  "(none)", "BIT_ZP",    "AND_ZP",    "ROL_ZP",    "(none)",  // 20
-	"PLP",     "AND_IMM",   "ROL_ACC", "(none)", "BIT_ABS",   "AND_ABS",   "ROL_ABS",   "(none)", 
-	"BMI ",    "AND_IND_Y", "(none)",  "(none)", "(none)",    "AND_ZP_X",  "ROL_ZP_X",  "(none)",  // 30
-	"SEC",     "AND_ABS_Y", "(none)",  "(none)", "(none)",    "AND_ABS_X", "ROL_ABS_X", "(none)", 
-	"RTI",     "EOR_IND_X", "(none)",  "(none)", "(none)",    "EOR_ZP",    "LSR_ZP",    "(none)",  // 40
-	"PHA",     "EOR_IMM",   "LSR_ACC", "(none)", "JMP_ABS",   "EOR_ABS",   "LSR_ABS",   "(none)", 
-	"BVC",     "EOR_IND_Y", "(none)",  "(none)", "(none)",    "EOR_ZP_X",  "LSR_ZP_X",  "(none)",  // 50
-	"CLI",     "EOR_ABS_Y", "(none)",  "(none)", "(none)",    "EOR_ABS_X", "LSR_ABS_X", "(none)", 
-	"RTS",     "ADC_IND_X", "(none)",  "(none)", "(none)",    "ADC_ZP",    "ROR_ZP",    "(none)",  // 60
-	"PLA",     "ADC_IMM",   "ROR_ACC", "(none)", "JMP_IND",   "ADC_ABS",   "ROR_ABS",   "(none)", 
-	"BVS",     "ADC_IND_Y", "(none)",  "(none)", "(none)",    "ADC_ZP_X",  "ROR_ZP_X",  "(none)",  // 70
-	"SEI",     "ADC_ABS_Y", "(none)",  "(none)", "(none)",    "ADC_ABS_X", "ROR_ABS_X", "(none)", 
-	"STA_ABS", "STA_IND_X", "(none)",  "(none)", "STY_ZP",    "STA_ZP",    "STX_ZP",    "(none)",  // 80
-	"DEY",     "(none)",    "TXA",     "(none)", "STY_ABS",   "(none)",    "STX_ABS",   "(none)", 
-	"BCC",     "STA_IND_Y", "(none)",  "(none)", "STY_ZP_X",  "STA_ZP_X",  "STX_ZP_Y",  "(none)",  // 90
-	"TYA",     "STA_ABS_Y", "TXS",     "(none)", "(none)",    "STA_ABS_X", "(none)",    "(none)", 
-	"LDY_IMM", "LDA_IND_X", "LDX_IMM", "(none)", "LDY_ZP",    "LDA_ZP",    "LDX_ZP",    "(none)",  // a0
-	"TAY",     "LDA_IMM",   "TAX",     "(none)", "LDY_ABS",   "LDA_ABS",   "LDX_ABS",   "(none)", 
-	"BCS",     "LDA_IND_Y", "(none)",  "(none)", "LDY_ZP_X",  "LDA_ZP_X",  "LDX_ZP_Y",  "(none)",  // b0
-	"CLV",     "LDA_ABS_Y", "TSX",     "(none)", "LDY_ABS_X", "LDA_ABS_X", "LDX_ABS_Y", "(none)", 
-	"CPY_IMM", "CMP_IND_X", "(none)",  "(none)", "CPY_ZP",    "CMP_ZP",    "DEC_ZP",    "(none)",  // c0
-	"INY",     "CMP_IMM",   "DEX",     "(none)", "CPY_ABS",   "CMP_ABS",   "DEC_ABS",   "(none)", 
-	"BNE",     "CMP_IND_Y", "(none)",  "(none)", "(none)",    "CMP_ZP_X",  "DEC_ZP_X",  "(none)",  // d0
-	"CLD",     "CMP_ABS_Y", "(none)",  "(none)", "(none)",    "CMP_ABS_X", "DEC_ABS_X", "(none)", 
-	"CPX_IMM", "SBC_IND_X", "(none)",  "(none)", "CPX_ZP",    "SBC_ZP",    "INC_ZP",    "(none)",  // e0
-	"INX",     "SBC_IMM",   "NOP",     "(none)", "CPX_ABS",   "SBC_ABS",   "INC_ABS",   "(none)", 
-	"BEQ",     "SBC_IND_Y", "(none)",  "(none)", "(none)",    "SBC_ZP_X",  "INC_ZP_X",  "(none)",  // f0
-    "SED",     "SBC_ABS_Y", "(none)",  "(none)", "(none)",    "SBC_ABS_X", "INC_ABS_X", "(none)", 
-};
-
-
-
-using namespace std;
-
-MOS6502::MOS6502( Memory * memory ) :
-	A(0), X(0), Y(0), SP(0), N(0), Z(0), V(false), B(false), D(false), I(false), C(false)
-{
-	this->memory = memory;
-	PC = START_VECTOR;
-
-//     for ( int i=0xc000; i <= 0xffff; i++ )
-//         printf("%X: %X = %s\n", i, memory->mem[i], opcodenames[memory->mem[i]]);
-}
-
-
-MOS6502::~MOS6502()
-{
-}
-
-
-byte inline MOS6502::read_byte(word address)
-{
-	return memory->mem[address];
-}
-
-byte inline MOS6502::read_byte_zp(byte address)
-{
-	return memory->mem[address];
-}
-
-word inline MOS6502::read_word(word address)
-{
-	return memory->mem[address] | memory->mem[address+1]<<8;
-}
-
-word inline MOS6502::read_word_zp(byte address)
-{
-	return memory->mem[address] | memory->mem[address+1 & 0xff]<<8;
-}
-
-void inline MOS6502::write_byte(word address, byte val)
-{
-	memory->mem[address] = val;
-}
-
-void inline MOS6502::write_byte_zp(byte address, byte val)
-{
-	memory->mem[address] = val;
-}
-
-
 // Macros for addressing modes
 #define READ_BYTE_IMM()     read_byte(PC++)
 
@@ -142,14 +56,144 @@ void inline MOS6502::write_byte_zp(byte address, byte val)
 #define READ_BYTE_IND_Y()   read_byte(READ_ADDR_IND_Y())
 
 #define PUSH_BYTE_STACK(b)  (memory->mem[ (SP--) | STACK_BOTTOM ] = (b))
-#define POP_BYTE_STACK(b)   memory->mem[ (++SP) | STACK_BOTTOM ]
+#define POP_BYTE_STACK      (memory->mem[ (++SP) | STACK_BOTTOM ])
 
 
 // Macros for flag handling
-#define SET_FLAG_NZ(B)     (N = Z = B)
+#define SET_FLAG_NZ(B)     (N_INTERN = Z_INTERN = B)
 
-#define IS_ZERO            (!Z)
-#define IS_NEGATIVE        (!!(N & 0x80))
+#define Z	(!Z_INTERN)
+#define N	(!!(N_INTERN & 0x80))
+
+
+const char * opcodenames[256] = {
+	"BRK",     "ORA_IND_X", "(none)",  "(none)", "(none)",    "ORA_ZP",    "ASL_ZP",    "(none)",  // 00
+	"PHP",     "ORA_IMM",   "ASL_ACC", "(none)", "(none)",    "ORA_ABS",   "ASL_ABS",   "(none)", 
+	"BPL",     "ORA_IND_Y", "(none)",  "(none)", "(none)",    "ORA_ZP_X",  "ASL_ZP_X",  "(none)",  // 10
+	"CLC",     "ORA_ABS_Y", "(none)",  "(none)", "(none)",    "ORA_ABS_X", "ASL_ABS_X", "(none)", 
+	"JSR",     "AND_IND_X", "(none)",  "(none)", "BIT_ZP",    "AND_ZP",    "ROL_ZP",    "(none)",  // 20
+	"PLP",     "AND_IMM",   "ROL_ACC", "(none)", "BIT_ABS",   "AND_ABS",   "ROL_ABS",   "(none)", 
+	"BMI ",    "AND_IND_Y", "(none)",  "(none)", "(none)",    "AND_ZP_X",  "ROL_ZP_X",  "(none)",  // 30
+	"SEC",     "AND_ABS_Y", "(none)",  "(none)", "(none)",    "AND_ABS_X", "ROL_ABS_X", "(none)", 
+	"RTI",     "EOR_IND_X", "(none)",  "(none)", "(none)",    "EOR_ZP",    "LSR_ZP",    "(none)",  // 40
+	"PHA",     "EOR_IMM",   "LSR_ACC", "(none)", "JMP_ABS",   "EOR_ABS",   "LSR_ABS",   "(none)", 
+	"BVC",     "EOR_IND_Y", "(none)",  "(none)", "(none)",    "EOR_ZP_X",  "LSR_ZP_X",  "(none)",  // 50
+	"CLI",     "EOR_ABS_Y", "(none)",  "(none)", "(none)",    "EOR_ABS_X", "LSR_ABS_X", "(none)", 
+	"RTS",     "ADC_IND_X", "(none)",  "(none)", "(none)",    "ADC_ZP",    "ROR_ZP",    "(none)",  // 60
+	"PLA",     "ADC_IMM",   "ROR_ACC", "(none)", "JMP_IND",   "ADC_ABS",   "ROR_ABS",   "(none)", 
+	"BVS",     "ADC_IND_Y", "(none)",  "(none)", "(none)",    "ADC_ZP_X",  "ROR_ZP_X",  "(none)",  // 70
+	"SEI",     "ADC_ABS_Y", "(none)",  "(none)", "(none)",    "ADC_ABS_X", "ROR_ABS_X", "(none)", 
+	"(none)",  "STA_IND_X", "(none)",  "(none)", "STY_ZP",    "STA_ZP",    "STX_ZP",    "(none)",  // 80
+	"DEY",     "(none)",    "TXA",     "(none)", "STY_ABS",   "STA_ABS",    "STX_ABS",   "(none)", 
+	"BCC",     "STA_IND_Y", "(none)",  "(none)", "STY_ZP_X",  "STA_ZP_X",  "STX_ZP_Y",  "(none)",  // 90
+	"TYA",     "STA_ABS_Y", "TXS",     "(none)", "(none)",    "STA_ABS_X", "(none)",    "(none)", 
+	"LDY_IMM", "LDA_IND_X", "LDX_IMM", "(none)", "LDY_ZP",    "LDA_ZP",    "LDX_ZP",    "(none)",  // a0
+	"TAY",     "LDA_IMM",   "TAX",     "(none)", "LDY_ABS",   "LDA_ABS",   "LDX_ABS",   "(none)", 
+	"BCS",     "LDA_IND_Y", "(none)",  "(none)", "LDY_ZP_X",  "LDA_ZP_X",  "LDX_ZP_Y",  "(none)",  // b0
+	"CLV",     "LDA_ABS_Y", "TSX",     "(none)", "LDY_ABS_X", "LDA_ABS_X", "LDX_ABS_Y", "(none)", 
+	"CPY_IMM", "CMP_IND_X", "(none)",  "(none)", "CPY_ZP",    "CMP_ZP",    "DEC_ZP",    "(none)",  // c0
+	"INY",     "CMP_IMM",   "DEX",     "(none)", "CPY_ABS",   "CMP_ABS",   "DEC_ABS",   "(none)", 
+	"BNE",     "CMP_IND_Y", "(none)",  "(none)", "(none)",    "CMP_ZP_X",  "DEC_ZP_X",  "(none)",  // d0
+	"CLD",     "CMP_ABS_Y", "(none)",  "(none)", "(none)",    "CMP_ABS_X", "DEC_ABS_X", "(none)", 
+	"CPX_IMM", "SBC_IND_X", "(none)",  "(none)", "CPX_ZP",    "SBC_ZP",    "INC_ZP",    "(none)",  // e0
+	"INX",     "SBC_IMM",   "NOP",     "(none)", "CPX_ABS",   "SBC_ABS",   "INC_ABS",   "(none)", 
+	"BEQ",     "SBC_IND_Y", "(none)",  "(none)", "(none)",    "SBC_ZP_X",  "INC_ZP_X",  "(none)",  // f0
+    "SED",     "SBC_ABS_Y", "(none)",  "(none)", "(none)",    "SBC_ABS_X", "INC_ABS_X", "(none)", 
+};
+
+
+
+using namespace std;
+
+MOS6502::MOS6502(Memory* memory) :
+	A(0), X(0), Y(0), N_INTERN(0), Z_INTERN(0), V(false), B(false), D(false), I(false), C(false)
+{
+	this->memory = memory;
+	reset();
+}
+
+
+MOS6502::~MOS6502()
+{
+}
+
+
+void MOS6502::reset()
+{
+	PC = START_VECTOR;
+	SP = 0xff;
+}
+
+
+void MOS6502::printStat()
+{
+	printf("PC: %04X  |  SP: %02X  |  A: %02X, X: %02X, Y: %02X  |  Z: %d, C: %d, V: %d\n", PC, SP, A, X, Y, Z, C, V);
+}
+
+
+byte inline MOS6502::read_byte(word address)
+{
+	if (address >= 0x300 && address < 0x400)
+	{
+		cout << "read: " << hex << address << endl;
+		return memory_read_handler(address);
+	}
+
+	return memory->mem[address];
+}
+
+byte inline MOS6502::read_byte_zp(byte address)
+{
+	if (address >= 0x300 && address < 0x400)
+	{
+		cout << "read: " << hex << address << endl;
+		return memory_read_handler(address);
+	}
+
+	return memory->mem[address];
+}
+
+word inline MOS6502::read_word(word address)
+{
+	if (address >= 0x300 && address < 0x400)
+	{
+		cout << "read: " << hex << address << endl;
+		return memory_read_handler(address);
+	}
+
+	return memory->mem[address] | memory->mem[address+1]<<8;
+}
+
+word inline MOS6502::read_word_zp(byte address)
+{
+	if (address >= 0x300 && address < 0x400)
+	{
+		cout << "read: " << hex << address << endl;
+		return memory_read_handler(address);
+	}
+	return memory->mem[address] | memory->mem[address+1 & 0xff]<<8;
+}
+
+void inline MOS6502::write_byte(word address, byte val)
+{
+	if (address >= 0x300 && address < 0x400)
+	{
+		cout << "write: " << hex << address << endl;
+	}
+
+	memory->mem[address] = val;
+}
+
+void inline MOS6502::write_byte_zp(byte address, byte val)
+{
+	if (address >= 0x300 && address < 0x400)
+	{
+		cout << "write: " << hex << address << endl;
+	}
+	memory->mem[address] = val;
+}
+
+
 
 
 //   7                           0
@@ -160,12 +204,12 @@ byte MOS6502::getP()
 {
 	byte result = 0;
 	//printf("getP: before: N=%d, V=%d, B=%d, D=%d, I=%d, Z=%d, C=%d\n", N, V, B, D, I, Z, C);
-	result |= IS_NEGATIVE ? FLAG_N : 0;
+	result |= N ? FLAG_N : 0;
 	result |= V ? FLAG_V : 0;
 	result |= B ? FLAG_B : 0;
 	result |= D ? FLAG_D : 0;
 	result |= I ? FLAG_I : 0;
-	result |= IS_ZERO ? FLAG_Z : 0;
+	result |= Z ? FLAG_Z : 0;
 	result |= C ? FLAG_C : 0;
 	return result;
 }
@@ -174,20 +218,20 @@ byte MOS6502::getP()
 void MOS6502::setP(byte new_p)
 {
 	//printf("setP: incoming byte: %X\n", new_p);
-	N = (new_p & FLAG_N) ? FLAG_N : 0;
+	N_INTERN = (new_p & FLAG_N) ? FLAG_N : 0;
 	V = !! (new_p & FLAG_V);
 	B = !! (new_p & FLAG_B);
 	D = !! (new_p & FLAG_D);
 	I = !! (new_p & FLAG_I);
-	Z = (new_p & FLAG_Z) ? 0 : 1;
+	Z_INTERN = (new_p & FLAG_Z) ? 0 : 1;
 	C = !! (new_p & FLAG_C);
-	//printf("setP: results: N=%d, V=%d, B=%d, D=%d, I=%d, Z=%d, C=%d\n", N, V, B, D, I, Z, C);
+	//printf("setP: results: N=%d, V=%d, B=%d, D=%d, I=%d, Z=%d, C=%d\n", IS_NEGATIVE, V, B, D, I, IN_ZERO, C);
 }
 
 
 void MOS6502::NMI()
 {
-	cout << "IRQ" << endl;
+	cout << "NMI interrupt" << endl;
 	PUSH_BYTE_STACK(PC >> 8);
 	PUSH_BYTE_STACK(PC);
 	PUSH_BYTE_STACK(getP());
@@ -204,8 +248,8 @@ void MOS6502::IRQ()
 	PUSH_BYTE_STACK(PC >> 8);
 	PUSH_BYTE_STACK(PC);
 	PUSH_BYTE_STACK(getP());
-	PC = read_word(IRQ_VECTOR_L);
 	I = true;
+	PC = read_word(IRQ_VECTOR_L);
 }
 
 
@@ -224,15 +268,16 @@ void MOS6502::adc(byte val)
 	if (D)  // Decimal mode
 	{
 		word low = (A & 0x0f) + (val & 0x0f) + (C ? 1 : 0);
-		word high = (A >> 4) + (val >> 4);
-
 		if (low > 9) low += 6;    // 11 + 6 = (0xb + 6) = 0x11
-		if (low > 0x0f) ++high;   // remainder from low figure -> high
+		word high = (A >> 4) + (val >> 4) + (low > 0x0f);	// remainder from low figure -> high
 
-		SET_FLAG_NZ((A + val + (C ? 1 : 0)) & 0xff);
-		V = (((high << 4) ^ A) & 0x80) && !((A ^ val) & 0x80);
+
+		Z_INTERN = (A + val + (C ? 1 : 0)) & 0xff;
+		N_INTERN = (high & 0x08) ? FLAG_N : 0;
+		V = ~(A ^ val) & (A ^ (high << 4)) & 0x80;
 
 		if (high > 9) high += 6;  // 11 + 6 = (0xb + 6) = 0x11
+
 		C = high > 0x0f;
 		A = (high << 4) | (low & 0x0f);
 	}
@@ -240,11 +285,9 @@ void MOS6502::adc(byte val)
 	{
 		word w = A + val + (C ? 1 : 0);
 		C = w > 0xff;
-		V = !((A ^ val) & 0x80) && ((A ^ w) & 0x80);
+		V = ~(A ^ val) & (A ^ w) & 0x80;
 		SET_FLAG_NZ(A = w);
 	}
-
-	//cout << "A now: " << hex << static_cast<short>(A) << endl;
 }
 
 
@@ -266,14 +309,14 @@ void MOS6502::sbc(byte val)
 
 		word w = SET_FLAG_NZ(A - val - (C ? 0 : 1));
 		C = w < 0x100;
-		V = ((A ^ val) & 0x80) && ((A ^ w) & 0x80);
+		V = (A ^ val) & (A ^ w) & 0x80;
 		A = (high << 4) | (low & 0x0f);
 	}
 	else
 	{
 		word w = A - val - (C ? 0 : 1);
 		C = w < 0x100;
-		V = ((A ^ val) & 0x80) && ((A ^ w) & 0x80);
+		V = (A ^ val) & (A ^ w) & 0x80;
 		SET_FLAG_NZ(A = w);
 	}
 
@@ -281,14 +324,16 @@ void MOS6502::sbc(byte val)
 }
 
 
-void MOS6502::execInstruction()
+bool MOS6502::execInstruction()
 {
+	bool run = true;
 	byte b1, b2;
 	word addr, w;
+	int i;
 
 	//usleep(100000);
-	byte instruction = READ_BYTE_IMM();
 	word pc_initial = PC;
+	byte instruction = READ_BYTE_IMM();
 
 	switch(instruction)
 	{
@@ -584,22 +629,22 @@ void MOS6502::execInstruction()
 		case ASL_ZP:
 			b1 = read_byte_zp(addr = READ_ADDR_ZP());
 			C = b1 & 0x80;
-			write_byte_zp(addr, SET_FLAG_NZ( b1 <<= 1));
+			write_byte_zp(addr, SET_FLAG_NZ(b1 <<= 1));
 			break;
 		case ASL_ZP_X:
 			b1 = read_byte_zp(addr = READ_ADDR_ZP_X());
 			C = b1 & 0x80;
-			write_byte_zp(addr, SET_FLAG_NZ( b1 <<= 1));
+			write_byte_zp(addr, SET_FLAG_NZ(b1 <<= 1));
 			break;
 		case ASL_ABS:
 			b1 = read_byte(addr = READ_ADDR_ABS());
 			C = b1 & 0x80;
-			write_byte(addr, SET_FLAG_NZ( b1 <<= 1));
+			write_byte(addr, SET_FLAG_NZ(b1 <<= 1));
 			break;
 		case ASL_ABS_X:
 			b1 = read_byte(addr = READ_ADDR_ABS_X());
 			C = b1 & 0x80;
-			write_byte(addr, SET_FLAG_NZ( b1 <<= 1));
+			write_byte(addr, SET_FLAG_NZ(b1 <<= 1));
 			break;
 
 			//      +-+-+-+-+-+-+-+-+
@@ -637,31 +682,31 @@ void MOS6502::execInstruction()
 			//     +-+-+-+-+-+-+-+-+    +-+             / / / _ _ _
 		case ROL_ACC:
 			b2 = A & 0x80;
-			SET_FLAG_NZ(A = C ? (A<<=1)|0x01 : A<<=1);
+			SET_FLAG_NZ(A = C ? (A<<=1) + 1 : A<<=1);
 			C = b2;
 			break;
 		case ROL_ZP:
 			b1 = read_byte_zp(addr = READ_ADDR_ZP());
 			b2 = b1 & 0x80;
-			write_byte_zp(addr, SET_FLAG_NZ(C ? (b1<<=1)|0x01 : b1<<=1));
+			write_byte_zp(addr, SET_FLAG_NZ(C ? (b1<<=1) + 1 : b1<<=1));
 			C = b2;
 			break;
 		case ROL_ZP_X:
 			b1 = read_byte_zp(addr = READ_ADDR_ZP_X());
 			b2 = b1 & 0x80;
-			write_byte_zp(addr, SET_FLAG_NZ(C ? (b1<<=1)|0x01 : b1<<=1));
+			write_byte_zp(addr, SET_FLAG_NZ(C ? (b1<<=1) + 1 : b1<<=1));
 			C = b2;
 			break;
 		case ROL_ABS:
 			b1 = read_byte(addr = READ_ADDR_ABS());
 			b2 = b1 & 0x80;
-			write_byte(addr, SET_FLAG_NZ(C ? (b1<<=1)|0x01 : b1<<=1));
+			write_byte(addr, SET_FLAG_NZ(C ? (b1<<=1) + 1 : b1<<=1));
 			C = b2;
 			break;
 		case ROL_ABS_X:
 			b1 = read_byte(addr = READ_ADDR_ABS_X());
 			b2 = b1 & 0x80;
-			write_byte(addr, SET_FLAG_NZ(C ? (b1<<=1)|0x01 : b1<<=1));
+			write_byte(addr, SET_FLAG_NZ(C ? (b1<<=1) + 1 : b1<<=1));
 			C = b2;
 			break;
 
@@ -672,31 +717,31 @@ void MOS6502::execInstruction()
 			//     +-+    +-+-+-+-+-+-+-+-+             / / / _ _ _
 		case ROR_ACC:
 			b2 = A & 0x01;
-			SET_FLAG_NZ(A = C ? (A>>=1)|0x01 : A>>=1);
+			SET_FLAG_NZ(A = C ? (A>>=1)|0x80 : A>>=1);
 			C = b2;
 			break;
 		case ROR_ZP:
 			b1 = read_byte_zp(addr = READ_ADDR_ZP());
 			b2 = b1 & 0x01;
-			write_byte_zp(addr, SET_FLAG_NZ(C ? (b1>>=1)|0x01 : b1>>=1));
+			write_byte_zp(addr, SET_FLAG_NZ(C ? (b1>>=1)|0x80 : b1>>=1));
 			C = b2;
 			break;
 		case ROR_ZP_X:
 			b1 = read_byte_zp(addr = READ_ADDR_ZP_X());
 			b2 = b1 & 0x01;
-			write_byte_zp(addr, SET_FLAG_NZ(C ? (b1>>=1)|0x01 : b1>>=1));
+			write_byte_zp(addr, SET_FLAG_NZ(C ? (b1>>=1)|0x80 : b1>>=1));
 			C = b2;
 			break;
 		case ROR_ABS:
 			b1 = read_byte(addr = READ_ADDR_ABS());
 			b2 = b1 & 0x01;
-			write_byte(addr, SET_FLAG_NZ(C ? (b1>>=1)|0x01 : b1>>=1));
+			write_byte(addr, SET_FLAG_NZ(C ? (b1>>=1)|0x80 : b1>>=1));
 			C = b2;
 			break;
 		case ROR_ABS_X:
 			b1 = read_byte(addr = READ_ADDR_ABS_X());
 			b2 = b1 & 0x01;
-			write_byte(addr, SET_FLAG_NZ(C ? (b1>>=1)|0x01 : b1>>=1));
+			write_byte(addr, SET_FLAG_NZ(C ? (b1>>=1)|0x80 : b1>>=1));
 			C = b2;
 			break;
 
@@ -715,27 +760,27 @@ void MOS6502::execInstruction()
 				++PC;
 			break;
 		case BEQ:
-			if (IS_ZERO)
+			if (Z)
 				PC = READ_JUMP_ADDR();
 			else
 				++PC;
 			break;
 		case BNE:
-			if (! IS_ZERO)
+			if (!Z)
 				PC = READ_JUMP_ADDR();
 			else
 				++PC;
 			break;
 
 		case BMI:
-			if (IS_NEGATIVE)
+			if (N)
 				PC = READ_JUMP_ADDR();
 			else
 				++PC;
 			break;
 
 		case BPL:
-			if (! IS_NEGATIVE)
+			if (! N)
 				PC = READ_JUMP_ADDR();
 			else
 				++PC;
@@ -757,97 +802,109 @@ void MOS6502::execInstruction()
 
 		case BIT_ZP:
 			b1 = READ_BYTE_ZP();
-			N = b1;           // bit 7 -> N
+			N_INTERN = Z_INTERN = A & b1;
 			V = b1 & FLAG_V;  // bit 6 -> V
-			Z = A & b1;
 			break;
 		case BIT_ABS:
 			b1 = READ_BYTE_ABS();
-			N = b1;           // bit 7 -> N
+			N_INTERN = Z_INTERN = A & b1;
 			V = b1 & FLAG_V;  // bit 6 -> V
-			Z = A & b1;
 			break;
 
 		case SEC: // Set carry flag
-			C = 1;
+			C = true;
 			break;
 		case SED: // Set decimal flag
-			D = 1;
+			D = true;
 			break;
 		case SEI: // Set interrupt flag
-			I = 1;
+			I = true;
 			break;
 
 		case CLC: // Clear carry flag
-			C = 0;
+			C = false;
 			break;
 		case CLD: // Clear decimal flag
-			D = 0;
+			D = false;
 			break;
 		case CLI: // Clear interrupt flag
-			I = 0;
+			I = false;
 			break;
 		case CLV: // Clear overflow flag
-			V = 0;
+			V = false;
 			break;
 
 		case CMP_IMM:
-			SET_FLAG_NZ(b1 = A - READ_BYTE_IMM());
-			C = b1 >= 0;
+		        i = A - READ_BYTE_IMM();
+			C = i >= 0;
+			SET_FLAG_NZ((byte)i);
 			break;
 		case CMP_ZP:
-			SET_FLAG_NZ(b1 = A - READ_BYTE_ZP());
-			C = b1 >= 0;
+		        i = A - READ_BYTE_ZP();
+			C = i >= 0;
+			SET_FLAG_NZ((byte)i);
 			break;
 		case CMP_ZP_X:
-			SET_FLAG_NZ(b1 = A - READ_BYTE_ZP_X());
-			C = b1 >= 0;
+		        i = A - READ_BYTE_ZP_X();
+			C = i >= 0;
+			SET_FLAG_NZ((byte)i);
 			break;
 		case CMP_ABS:
-			SET_FLAG_NZ(b1 = A - READ_BYTE_ABS());
-			C = b1 >= 0;
+		        i = A - READ_BYTE_ABS();
+			C = i >= 0;
+			SET_FLAG_NZ((byte)i);
 			break;
 		case CMP_ABS_X:
-			SET_FLAG_NZ(b1 = A - READ_BYTE_ABS_X());
-			C = b1 >= 0;
+		        i = A - READ_BYTE_ABS_X();
+			C = i >= 0;
+			SET_FLAG_NZ((byte)i);
 			break;
 		case CMP_ABS_Y:
-			SET_FLAG_NZ(b1 = A - READ_BYTE_ABS_Y());
-			C = b1 >= 0;
+		        i = A - READ_BYTE_ABS_Y();
+			C = i >= 0;
+			SET_FLAG_NZ((byte)i);
 			break;
 		case CMP_IND_X:
-			SET_FLAG_NZ(b1 = A - READ_BYTE_IND_X());
-			C = b1 >= 0;
+		        i = A - READ_BYTE_IND_X();
+			C = i >= 0;
+			SET_FLAG_NZ((byte)i);
 			break;
 		case CMP_IND_Y:
-			SET_FLAG_NZ(b1 = A - READ_BYTE_IND_Y());
-			C = b1 >= 0;
+		        i = A - READ_BYTE_IND_Y();
+			C = i >= 0;
+			SET_FLAG_NZ((byte)i);
 			break;
 
 		case CPX_IMM:
-			SET_FLAG_NZ(b1 = X - READ_BYTE_IMM());
-			C = b1 >= 0;
+		        i = X - READ_BYTE_IMM();
+			C = i >= 0;
+			SET_FLAG_NZ((byte)i);
 			break;
 		case CPX_ZP:
-			SET_FLAG_NZ(b1 = X - READ_BYTE_ZP());
-			C = b1 >= 0;
+		        i = X - READ_BYTE_ZP();
+			C = i >= 0;
+			SET_FLAG_NZ((byte)i);
 			break;
 		case CPX_ABS:
-			SET_FLAG_NZ(b1 = X - READ_BYTE_ABS());
-			C = b1 >= 0;
+		        i = X - READ_BYTE_ABS();
+			C = i >= 0;
+			SET_FLAG_NZ((byte)i);
 			break;
 
 		case CPY_IMM:
-			SET_FLAG_NZ(b1 = Y - READ_BYTE_IMM());
-			C = b1 >= 0;
+		        i = Y - READ_BYTE_IMM();
+			C = i >= 0;
+			SET_FLAG_NZ((byte)i);
 			break;
 		case CPY_ZP:
-			SET_FLAG_NZ(b1 = Y - READ_BYTE_ZP());
-			C = b1 >= 0;
+		        i = Y - READ_BYTE_ZP();
+			C = i >= 0;
+			SET_FLAG_NZ((byte)i);
 			break;
 		case CPY_ABS:
-			SET_FLAG_NZ(b1 = Y - READ_BYTE_ABS());
-			C = b1 >= 0;
+		        i = Y - READ_BYTE_ABS();
+			C = i >= 0;
+			SET_FLAG_NZ((byte)i);
 			break;
 
 		case JMP_ABS:
@@ -858,43 +915,43 @@ void MOS6502::execInstruction()
 			break;
 
 		case JSR:
-			PUSH_BYTE_STACK(PC+1 >> 8);
+		        PUSH_BYTE_STACK((PC+1) >> 8); // Store 1 before next instruction
 			PUSH_BYTE_STACK(PC+1);
 			PC = READ_ADDR_ABS();
 			break;
 
 		case RTS:
-			PC = (POP_BYTE_STACK() | (POP_BYTE_STACK() << 8)) + 1;
+			PC = (POP_BYTE_STACK | (POP_BYTE_STACK << 8)) + 1;
 			break;
 
 		case BRK:
-			PUSH_BYTE_STACK((PC+1) >> 8);
+		        PUSH_BYTE_STACK((PC+1) >> 8); // Byte after BRK will not be executed on return!
 			PUSH_BYTE_STACK(PC+1);
-			PUSH_BYTE_STACK(getP() | FLAG_I);
+			PUSH_BYTE_STACK(getP() | FLAG_B);
 			PC = read_word(IRQ_VECTOR_L);
 			I = true;
-			running = 0;
+			run = false;
 			break;
 
 		case RTI:  // Return from interrupt
-			setP(POP_BYTE_STACK() & 0xdb);
-			PC = POP_BYTE_STACK() | (POP_BYTE_STACK() << 8);
+		        setP(POP_BYTE_STACK); //  & 0xdb);
+			PC = POP_BYTE_STACK | (POP_BYTE_STACK << 8);
 			break;
 
 		case NOP:
 			break;
 
 		case PHA:  // Push accumulator to stack
-			memory->mem[--SP + STACK_BOTTOM] = A;
+		        PUSH_BYTE_STACK(A);
 			break;
 		case PLA:  // Pull accumulator from stack
-			A = memory->mem[SP++ + STACK_BOTTOM];
+		        A = POP_BYTE_STACK;
 			break;
 		case PHP:  // Push status to stack
-			memory->mem[--SP + STACK_BOTTOM] = getP();
+		        PUSH_BYTE_STACK(getP());
 			break;
 		case PLP:  // Pull status from stack
-			setP(memory->mem[SP++ + STACK_BOTTOM]);
+		        setP(POP_BYTE_STACK);
 			break;
 
 		case TAX:  // Transfer A to X
@@ -919,7 +976,8 @@ void MOS6502::execInstruction()
 			break;
 	};
 
+	//	 	printf("[%04X] %10s  |  SP: %02X  |  A: %02X, X: %02X, Y: %02X  |  N: %d, Z: %d, C: %d, V: %d --- (%02X)\n",
+	//	       pc_initial, opcodenames[instruction], SP, A, X, Y, N, Z, C, V, instruction);
 
-	//printf("[%04X] %10s  |  SP: %02X  |  A: %02X, X: %02X, Y: %02X  |  Z: %d, C: %d, V: %d\n",
-	//	pc_initial, opcodenames[instruction], SP, A, X, Y, Z, C, V);
+	return run;
 }

@@ -17,51 +17,43 @@
 *   Free Software Foundation, Inc.,                                       *
 *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
 ***************************************************************************/
-#ifndef MEMORY_H
-#define MEMORY_H
 
-#include "datatypes.h"
+#ifndef ORIC_H
+#define ORIC_H
 
 #include <iostream>
-#include <ostream>
 
+#include "datatypes.h"
+#include "mos6502.h"
+#include "memory.h"
 
-/**
-	@author Anders Karlsson <pugo@pugo.org>
-*/
-class Memory
+class Oric
 {
 public:
-	Memory(unsigned int size);
-	~Memory();
+	Oric();
+	~Oric();
 
-	void load(std::string path, word address);
-	unsigned int getSize() { return size; }
+	Memory* getMemory() { return memory; }
+	MOS6502* getCPU() { return cpu; }
 
-	void setPos(unsigned int pos) { mempos = pos; }
-	void show(unsigned int pos, unsigned int length);
+	void run(long steps = 0);
+	void run(word address, long steps = 0) { cpu->setPC(address); run(steps); }
+	void stop() { running = false; last_command = ""; }
 
-	friend Memory& operator>>(Memory& is, Memory& obj)
-	{
-		std::cout << ">>" << std::endl;
-		//obj.mem[obj.mempos++] = is;
-		return is;
-	}
+	void monitor();
 
-
-	friend Memory& operator<<(Memory& os, unsigned int i)
-	{
-		os.mem[os.mempos++] = i & 0xff;
-		return os;
-	}
-
-	byte* mem;
+	static byte memoryReadHandler(word address);
+	static void memoryWriteHandler(word address, byte data);
 
 protected:
-	unsigned int size;
-	int mempos;
+	bool handleCommand(std::string cmd);
+	word stringToWord(std::string addr);
+
+	Memory* memory;
+	MOS6502* cpu;
+
+	bool running;
+	std::string last_command;
 };
 
-
-
-#endif // MEMORY_H
+#endif // ORIC_H

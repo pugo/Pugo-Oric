@@ -18,7 +18,7 @@ libdir = ${exec_prefix}/lib
 mandir = ${prefix}/man
 
 CXX = c++
-CXXFLAGS = -g -O3
+CXXFLAGS = -g -O3 -std=c++0x
 
 CXXTESTDIR = /home/pugo/src/cxxtest
 CXXTESTGEN = $(CXXTESTDIR)/cxxtestgen.py

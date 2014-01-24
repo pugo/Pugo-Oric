@@ -20,8 +20,7 @@
 #include "cpu.h"
 #include <iostream>
 
-CPU::CPU() :
-    running(false)
+CPU::CPU()
 {
 }
 
@@ -31,13 +30,3 @@ CPU::~CPU()
 }
 
 
-
-void CPU::run()
-{
-    running = true;
-
-    while(running)
-    {
-        execInstruction();
-    }
-}
