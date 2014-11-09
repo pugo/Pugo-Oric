@@ -77,7 +77,7 @@ void Oric::run(long steps)
 		for (long i = 0; i < steps; i++)
 		{
 			if (brk) return;
-			if (!cpu->execInstructions(4000))
+			if (!cpu->execInstructions(1))
 				return;
 		}
 	}
@@ -129,15 +129,30 @@ bool Oric::handleCommand(string line)
 		line = last_command;
 	}
 	else
-		last_command = line;std::vector<std::string> parts;
+		last_command = line;
+
+	std::vector<std::string> parts;
 	boost::split(parts, line, boost::is_any_of("\t "));
 	string cmd = parts[0];
 
-	if (cmd == "g")			// go <address>
+	if (cmd == "h")
+	{
+		cout << "Available monitor commands:" << endl << endl;
+		cout << "h              : help (showing this text)" << endl;
+		cout << "g <address>    : go to address and run" << endl;
+		cout << "pc <address>   : set program counter to address" << endl;
+		cout << "s [n]          : step one or possible n steps" << endl;
+		cout << "i              : print machine info" << endl;
+		cout << "m <address> <n>: dump memory from address and n bytes ahead" << endl;
+		cout << "" << endl;
+		return true;
+	}
+
+	if (cmd == "g")			// go <address>>> >> 
 	{
 		long steps = 0;
 		if (parts.size() == 2)
-			steps = std::stol(parts[2]);
+			steps = std::stol(parts[1]);
 
 		run(steps);
 	}
@@ -244,8 +259,8 @@ int main(int argc, char *argv[])
 	// 	oric.getMemory()->load("/home/pugo/projekt/oric/ROMS/dayofweek.rom", 0xc000);
 	//oric.getMemory()->load("/home/pugo/projekt/oric/ROMS/AllSuiteA.rom", 0x4000);
 
-	oric.getMemory()->load("/home/pugo/projekt/oric/ROMS/basic11b.rom", 0xc000);
-	oric.getMemory()->load("/home/pugo/projekt/oric/ROMS/font.rom", 0xb400);
+	oric.getMemory()->load("ROMS/basic11b.rom", 0xc000);
+	oric.getMemory()->load("ROMS/font.rom", 0xb400);
 
 	oric.reset();
 	cout << endl;

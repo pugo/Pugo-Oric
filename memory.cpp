@@ -25,6 +25,8 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <fstream>
+#include <sstream>
+#include <iomanip>
 #include <string.h>
 
 #include "memory.h"
@@ -220,7 +222,26 @@ void Memory::load(std::string path, word address)
 
 void Memory::show(unsigned int pos, unsigned int length)
 {
-	cout << "Showing " << length << " bytes from " << hex << pos << endl;
+	cout << "Showing 0x" << length << " bytes from " << hex << pos << endl;
+	ostringstream chars;
+
 	for (unsigned int i=0; i < length; i++)
-		cout << "[" << pos + i << "] " << (unsigned int)mem[pos + i] << " (" << (char)(mem[pos + i] & 0x7f) << ")" << endl;
+	{
+		if ((i % 16) == 0)
+		{
+			cout << "    " << chars.str() << endl << "[" << pos + i << "] " << hex;
+			chars.str("");
+		}
+
+		cout << setw(2) << setfill('0') << (unsigned int)mem[pos + i] << " ";
+		if ((mem[pos + i] & 0x7f) >= 32)
+			chars << (char)(mem[pos + i] & 0x7f) << " ";
+		else
+			chars << "  ";
+	}
+	cout << endl;
 }
+
+
+// " (" << (char)(mem[pos + i] & 0x7f) << ")" << endl;
+
