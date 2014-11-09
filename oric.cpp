@@ -44,6 +44,7 @@ using namespace std;
 
 Oric::Oric() : 
 	running(false),
+	brk(false),
 	last_command("")
 {
 	memory = new Memory(65536);
@@ -60,23 +61,33 @@ Oric::~Oric()
 }
 
 
+void Oric::reset()
+{
+	cpu->reset();
+}
+
+
 void Oric::run(long steps)
 {
-	running = true;
+	short cycles;
+	brk = false;
 
 	if (steps > 0)
 	{
 		for (long i = 0; i < steps; i++)
-		  {
-			cpu->execInstruction();
-		  }
+		{
+			if (brk) return;
+			if (!cpu->execInstructions(4000))
+				return;
+		}
 	}
 	else
 	{
-		while(running)
-		  {
-			running = cpu->execInstruction();
-		  }
+		while(!brk)
+		{
+			if (!cpu->execInstructions(4000))
+				return;
+		}
 	}
 }
 
@@ -118,26 +129,17 @@ bool Oric::handleCommand(string line)
 		line = last_command;
 	}
 	else
-		last_command = line;
-
-	std::vector<std::string> parts;
+		last_command = line;std::vector<std::string> parts;
 	boost::split(parts, line, boost::is_any_of("\t "));
 	string cmd = parts[0];
 
 	if (cmd == "g")			// go <address>
 	{
 		long steps = 0;
-		if (parts.size() < 2)
-		{
-			cout << "Error: missing address" << endl;
-			return true;
-		}
-
-		if (parts.size() == 3)
+		if (parts.size() == 2)
 			steps = std::stol(parts[2]);
 
-		word addr = stringToWord(parts[1]);
-		run(addr, steps);
+		run(steps);
 	}
 
 	else if (cmd == "pc")	// step
@@ -149,16 +151,20 @@ bool Oric::handleCommand(string line)
 		}
 		word addr = stringToWord(parts[1]);
 		cpu->setPC(addr);
+		cpu->printStat(cpu->getPC());
 	}
 
 	else if (cmd == "s")	// step
 	{
-		cpu->execInstruction();
+		if (parts.size() == 2)
+			run(std::stol(parts[1]));
+		else
+			cpu->execInstructions(1);
 	}
 
 	else if (cmd == "i")	// info
 	{
-		cpu->printStat();
+		cpu->printStat(cpu->getPC());
 	}
 
 	else if (cmd == "m")	// info
@@ -169,6 +175,11 @@ bool Oric::handleCommand(string line)
 			return true;
 		}
 		memory->show(stringToWord(parts[1]), stringToWord(parts[2]));
+	}
+
+	else if (cmd == "quiet")
+	{
+		cpu->setQuiet(true);
 	}
 
 	else if (cmd == "q")	// quit
@@ -189,6 +200,7 @@ byte Oric::memoryReadHandler(word address)
 
 void Oric::memoryWriteHandler(word address, byte data)
 {
+	cout << "memoryWriteHandler( " << hex << address << ", " << hex << (unsigned int)data << " )" << endl;
 }
 
 
@@ -205,10 +217,8 @@ Oric oric;
 static void signal_handler(int sig)
 {
 	cout << "Signal: " << sig << endl;
-// 	if (sig == SIGINT)
-// 	{
-// 		oric.stop();
-// 	}
+	if (sig == SIGINT)
+		oric.stop();
 }
 
 
@@ -221,6 +231,7 @@ void init_signals(void)
 }
 
 
+
 int main(int argc, char *argv[])
 {
 	char pwd[1024];
@@ -229,13 +240,16 @@ int main(int argc, char *argv[])
 
 	init_signals();
 	
-	oric.getMemory()->load("/home/pugo/projekt/oric/ROMS/basic10.rom", 0xc000);
-	oric.getMemory()->load("/home/pugo/projekt/oric/ROMS/font.rom", 0xb400);
+	//oric.getMemory()->load("/home/pugo/projekt/oric/ROMS/basic10.rom", 0xc000);
 	// 	oric.getMemory()->load("/home/pugo/projekt/oric/ROMS/dayofweek.rom", 0xc000);
-// 	oric.getCPU()->C = true;
+	//oric.getMemory()->load("/home/pugo/projekt/oric/ROMS/AllSuiteA.rom", 0x4000);
 
+	oric.getMemory()->load("/home/pugo/projekt/oric/ROMS/basic11b.rom", 0xc000);
+	oric.getMemory()->load("/home/pugo/projekt/oric/ROMS/font.rom", 0xb400);
+
+	oric.reset();
+	cout << endl;
 	oric.monitor();
-	oric.run(0x200, 0);
 
 	return 0;
 }

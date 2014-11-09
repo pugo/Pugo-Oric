@@ -219,5 +219,10 @@
 #define TYA			0x98
 
 
+typedef struct cycle_info {
+ unsigned char cycles;
+ unsigned char cross_page;
+} cycle_info;
+
 
 #endif // MOS6502_OPCODES_H

@@ -4,3 +4,5 @@ oric.kdevelop.filelist
 oric.kdevelop.pcs
 oric.kdevses
 .depend
+*.o
+oric

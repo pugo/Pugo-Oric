@@ -25,7 +25,6 @@
 
 #include "mos6502_opcodes.h"
 
-#define START_VECTOR 0x1000
 #define STACK_BOTTOM 0x0100
 
 #define NMI_VECTOR_L 0xFFFA
@@ -52,8 +51,8 @@ public:
 	~MOS6502();
 
 	void reset();
-	void printStat();
-	bool execInstruction();
+	void printStat(word address);
+	bool execInstructions(unsigned int cycles);
 
 	// Registers
 	byte A;
@@ -65,8 +64,8 @@ public:
 	// +---+---+---+---+---+---+---+---+
 	// | N | V |   | B | D | I | Z | C |  <-- flag, 0/1 = reset/set
 	// +---+---+---+---+---+---+---+---+
-	short N_INTERN; // negative
-	short Z_INTERN; // zero
+	byte N_INTERN; // negative
+	byte Z_INTERN; // zero
 	bool V; // overflow
 	bool B; // break
 	bool D; // decimal
@@ -96,7 +95,9 @@ public:
 
 	f_memory_read_handler memory_read_handler;
 	f_memory_write_handler memory_write_handler;
-	
+
+	std::string disassemble(word address);
+
 protected:
 
 };

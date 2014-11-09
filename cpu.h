@@ -33,14 +33,16 @@ public:
 
 	void setPC(word pc) { PC = pc; }
 	word getPC() { return PC; }
+	void setQuiet(bool val) { quiet = val; }
 
-	virtual bool execInstruction() = 0;
+	virtual bool execInstructions(unsigned int cycles) = 0;
 
 	Memory* memory;
 
 protected:
 	word PC;
 	byte SP;
+	bool quiet;
 };
 
 #endif

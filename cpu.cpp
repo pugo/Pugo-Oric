@@ -21,6 +21,7 @@
 #include <iostream>
 
 CPU::CPU()
+	: quiet(false)
 {
 }
 

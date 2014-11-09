@@ -44,6 +44,7 @@ LFLAGS       = $(LIBPATHS) $(LIBS)
 
 COMMON_OBJECTS  = cpu.o \
 				  mos6502.o \
+				  mos6502_disasm.o \
 				  memory.o
 
 EMU_OBJECTS = $(COMMON_OBJECTS) \

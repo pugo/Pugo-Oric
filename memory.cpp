@@ -25,7 +25,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <fstream>
-
+#include <string.h>
 
 #include "memory.h"
 
@@ -35,11 +35,12 @@
 using namespace std;
 
 Memory::Memory(unsigned int size) :
-	mem(NULL), size(size), mempos(START_VECTOR)
+	mem(NULL), size(size)
 {
 	//cout << "Memory::Memory( " << size << " )" << endl;
 
-mem = new byte[size];
+	mem = new byte[size];
+	memset(mem, 0, size);
 
 //     mem[0x0010] = 0x00;
 //     mem[0x0011] = 0x10;
@@ -56,9 +57,9 @@ mem = new byte[size];
      // 	mem[0x0102] = 0x00;
      // 	mem[0x0103] = 0x02;
      // mem[0x0104] = BRK;
- 
+
      // mem[0x0200] = SED;
- 
+
      // mem[0x0201] = LDA_IMM;
      // mem[0x0202] = 0x6f;
      // mem[0x0203] = ADC_IMM;
@@ -71,9 +72,9 @@ mem = new byte[size];
      // mem[0x0209] = PHP;
      // mem[0x020A] = PLP;
      // mem[0x020B] = PLA;
-     
+
      // mem[0x020C] = RTS;
-	
+
 // 
 //     mem[0x0205] = ADC_ABS;
 //     mem[0x0206] = 0x00;
@@ -83,13 +84,18 @@ mem = new byte[size];
 //     mem[0x0201] = NOP;
 // 
 //     mem[0x0202] = LDA_IMM;
-//     mem[0x0203] = 0x9b;
-//     mem[0x0204] = SBC_IMM;
+//     mem[0x0203] = 0x01;
+//     mem[0x0204] = STA_ZP;
 //     mem[0x0205] = 0x00;
-//     mem[0x0206] = NOP;
+//     mem[0x0206] = ROR_ZP;
+//     mem[0x0207] = 0x00;
+//     mem[0x0208] = ROR_ZP;
+//     mem[0x0209] = 0x00;
+//     mem[0x020a] = ROR_ZP;
+//     mem[0x020b] = 0x00;
 // 
-//     mem[0x0207] = BRK;
-
+//     mem[0x020c] = BRK;
+// 
 
 //     mem[0x0300] = 0x01;
 
@@ -178,6 +184,7 @@ void error_exit( string description )
 
 void Memory::load(std::string path, word address)
 {
+	cout << "Memory: loading " << path << " -> $" << hex << address << endl;
 	// stat to check existance and size
 	struct stat file_info;
 	if (stat(path.c_str(), &file_info))
@@ -215,5 +222,5 @@ void Memory::show(unsigned int pos, unsigned int length)
 {
 	cout << "Showing " << length << " bytes from " << hex << pos << endl;
 	for (unsigned int i=0; i < length; i++)
-		cout << "[" << pos + i << "] " << (unsigned int)mem[pos + i] << " (" << (char)mem[pos + i] << ")" << endl;
+		cout << "[" << pos + i << "] " << (unsigned int)mem[pos + i] << " (" << (char)(mem[pos + i] & 0x7f) << ")" << endl;
 }

@@ -36,14 +36,17 @@ public:
 	Memory* getMemory() { return memory; }
 	MOS6502* getCPU() { return cpu; }
 
-	void run(long steps = 0);
-	void run(word address, long steps = 0) { cpu->setPC(address); run(steps); }
-	void stop() { running = false; last_command = ""; }
+	void reset();
+	void run(long steps);
+	void run(word address, long steps) { cpu->setPC(address); run(steps); }
+	void stop() { brk = true; }
 
 	void monitor();
 
 	static byte memoryReadHandler(word address);
 	static void memoryWriteHandler(word address, byte data);
+
+	bool brk;
 
 protected:
 	bool handleCommand(std::string cmd);
