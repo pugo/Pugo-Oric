@@ -25,6 +25,7 @@
 
 #include "datatypes.h"
 #include "mos6502.h"
+#include "mos6522.h"
 #include "memory.h"
 
 class Oric
@@ -54,6 +55,7 @@ protected:
 
 	Memory* memory;
 	MOS6502* cpu;
+	MOS6522* mos_6522;
 
 	bool running;
 	std::string last_command;

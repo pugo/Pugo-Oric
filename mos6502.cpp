@@ -339,664 +339,669 @@ void MOS6502::sbc(byte val)
 }
 
 
-bool MOS6502::execInstructions(unsigned int cycles)
+bool inline MOS6502::execInstructionCycles(int cycles)
+{
+	bool brk = false;
+	while (!brk && cycles >= 0)
+		cycles -= execInstruction(brk);
+	return !brk;
+}
+
+short inline MOS6502::execInstruction(bool& brk)
 {
 	byte b1, b2;
 	word addr, w;
 	int i;
 
-	while (cycles >= 0)
+	word pc_initial = PC;
+	byte instruction = READ_BYTE_IMM();
+
+	switch(instruction)
 	{
-		word pc_initial = PC;
-		byte instruction = READ_BYTE_IMM();
-		cycles -= opcode_cycles[instruction].cycles;
+		case LDA_IMM:
+			SET_FLAG_NZ(A = READ_BYTE_IMM());
+			break;
+		case LDA_ZP:
+			SET_FLAG_NZ(A = READ_BYTE_ZP());
+			break;
+		case LDA_ZP_X:
+			SET_FLAG_NZ(A = READ_BYTE_ZP_X());
+			break;
+		case LDA_ABS:
+			SET_FLAG_NZ(A = READ_BYTE_ABS());
+			break;
+		case LDA_ABS_X:
+			SET_FLAG_NZ(A = READ_BYTE_ABS_X());
+			break;
+		case LDA_ABS_Y:
+			SET_FLAG_NZ(A = READ_BYTE_ABS_Y());
+			break;
+		case LDA_IND_X:
+			SET_FLAG_NZ(A = READ_BYTE_IND_X());
+			break;
+		case LDA_IND_Y:
+			SET_FLAG_NZ(A = READ_BYTE_IND_Y());
+			break;
 
-		switch(instruction)
-		{
-			case LDA_IMM:
-				SET_FLAG_NZ(A = READ_BYTE_IMM());
-				break;
-			case LDA_ZP:
-				SET_FLAG_NZ(A = READ_BYTE_ZP());
-				break;
-			case LDA_ZP_X:
-				SET_FLAG_NZ(A = READ_BYTE_ZP_X());
-				break;
-			case LDA_ABS:
-				SET_FLAG_NZ(A = READ_BYTE_ABS());
-				break;
-			case LDA_ABS_X:
-				SET_FLAG_NZ(A = READ_BYTE_ABS_X());
-				break;
-			case LDA_ABS_Y:
-				SET_FLAG_NZ(A = READ_BYTE_ABS_Y());
-				break;
-			case LDA_IND_X:
-				SET_FLAG_NZ(A = READ_BYTE_IND_X());
-				break;
-			case LDA_IND_Y:
-				SET_FLAG_NZ(A = READ_BYTE_IND_Y());
-				break;
+		case LDX_IMM:
+			SET_FLAG_NZ(X = READ_BYTE_IMM());
+			break;
+		case LDX_ZP:
+			SET_FLAG_NZ(X = READ_BYTE_ZP());
+			break;
+		case LDX_ZP_Y:
+			SET_FLAG_NZ(X = READ_BYTE_ZP_Y());
+			break;
+		case LDX_ABS:
+			SET_FLAG_NZ(X = READ_BYTE_ABS());
+			break;
+		case LDX_ABS_Y:
+			SET_FLAG_NZ(X = READ_BYTE_ABS_Y());
+			break;
 
-			case LDX_IMM:
-				SET_FLAG_NZ(X = READ_BYTE_IMM());
-				break;
-			case LDX_ZP:
-				SET_FLAG_NZ(X = READ_BYTE_ZP());
-				break;
-			case LDX_ZP_Y:
-				SET_FLAG_NZ(X = READ_BYTE_ZP_Y());
-				break;
-			case LDX_ABS:
-				SET_FLAG_NZ(X = READ_BYTE_ABS());
-				break;
-			case LDX_ABS_Y:
-				SET_FLAG_NZ(X = READ_BYTE_ABS_Y());
-				break;
+		case LDY_IMM:
+			SET_FLAG_NZ(Y = READ_BYTE_IMM());
+			break;
+		case LDY_ZP:
+			SET_FLAG_NZ(Y = READ_BYTE_ZP());
+			break;
+		case LDY_ZP_X:
+			SET_FLAG_NZ(Y = READ_BYTE_ZP_X());
+			break;
+		case LDY_ABS:
+			SET_FLAG_NZ(Y = READ_BYTE_ABS());
+			break;
+		case LDY_ABS_X:
+			SET_FLAG_NZ(Y = READ_BYTE_ABS_X());
+			break;
 
-			case LDY_IMM:
-				SET_FLAG_NZ(Y = READ_BYTE_IMM());
-				break;
-			case LDY_ZP:
-				SET_FLAG_NZ(Y = READ_BYTE_ZP());
-				break;
-			case LDY_ZP_X:
-				SET_FLAG_NZ(Y = READ_BYTE_ZP_X());
-				break;
-			case LDY_ABS:
-				SET_FLAG_NZ(Y = READ_BYTE_ABS());
-				break;
-			case LDY_ABS_X:
-				SET_FLAG_NZ(Y = READ_BYTE_ABS_X());
-				break;
+		case STA_ZP:
+			write_byte(READ_ADDR_ZP(), A);
+			break;
+		case STA_ZP_X:
+			write_byte(READ_ADDR_ZP_X(), A);
+			break;
+		case STA_ABS:
+			write_byte(READ_ADDR_ABS(), A);
+			break;
+		case STA_ABS_X:
+			write_byte(READ_ADDR_ABS_X(), A);
+			break;
+		case STA_ABS_Y:
+			write_byte(READ_ADDR_ABS_Y(), A);
+			break;
+		case STA_IND_X:
+			write_byte(READ_ADDR_IND_X(), A);
+			break;
+		case STA_IND_Y:
+			write_byte(READ_ADDR_IND_Y(), A);
+			break;
 
-			case STA_ZP:
-				write_byte(READ_ADDR_ZP(), A);
-				break;
-			case STA_ZP_X:
-				write_byte(READ_ADDR_ZP_X(), A);
-				break;
-			case STA_ABS:
-				write_byte(READ_ADDR_ABS(), A);
-				break;
-			case STA_ABS_X:
-				write_byte(READ_ADDR_ABS_X(), A);
-				break;
-			case STA_ABS_Y:
-				write_byte(READ_ADDR_ABS_Y(), A);
-				break;
-			case STA_IND_X:
-				write_byte(READ_ADDR_IND_X(), A);
-				break;
-			case STA_IND_Y:
-				write_byte(READ_ADDR_IND_Y(), A);
-				break;
+		case STX_ZP:
+			write_byte(READ_ADDR_ZP(), X);
+			break;
+		case STX_ZP_Y:
+			write_byte(READ_ADDR_ZP_Y(), X);
+			break;
+		case STX_ABS:
+			write_byte(READ_ADDR_ABS(), X);
+			break;
 
-			case STX_ZP:
-				write_byte(READ_ADDR_ZP(), X);
-				break;
-			case STX_ZP_Y:
-				write_byte(READ_ADDR_ZP_Y(), X);
-				break;
-			case STX_ABS:
-				write_byte(READ_ADDR_ABS(), X);
-				break;
+		case STY_ZP:
+			write_byte(READ_ADDR_ZP(), Y);
+			break;
+		case STY_ZP_X:
+			write_byte(READ_ADDR_ZP_X(), Y);
+			break;
+		case STY_ABS:
+			write_byte(READ_ADDR_ABS(), Y);
+			break;
 
-			case STY_ZP:
-				write_byte(READ_ADDR_ZP(), Y);
-				break;
-			case STY_ZP_X:
-				write_byte(READ_ADDR_ZP_X(), Y);
-				break;
-			case STY_ABS:
-				write_byte(READ_ADDR_ABS(), Y);
-				break;
+		// ADD to accumulator with carry
+		case ADC_IMM:
+			adc(READ_BYTE_IMM());
+			break;
+		case ADC_ZP:
+			adc(READ_BYTE_ZP());
+			break;
+		case ADC_ZP_X:
+			adc(READ_BYTE_ZP_X());
+			break;
+		case ADC_ABS:
+			adc(READ_BYTE_ABS());
+			break;
+		case ADC_ABS_X:
+			adc(READ_BYTE_ABS_X());
+			break;
+		case ADC_ABS_Y:
+			adc(READ_BYTE_ABS_Y());
+			break;
+		case ADC_IND_X:
+			adc(READ_BYTE_IND_X());
+			break;
+		case ADC_IND_Y:
+			adc(READ_BYTE_IND_Y());
+			break;
 
-			// ADD to accumulator with carry
-			case ADC_IMM:
-				adc(READ_BYTE_IMM());
-				break;
-			case ADC_ZP:
-				adc(READ_BYTE_ZP());
-				break;
-			case ADC_ZP_X:
-				adc(READ_BYTE_ZP_X());
-				break;
-			case ADC_ABS:
-				adc(READ_BYTE_ABS());
-				break;
-			case ADC_ABS_X:
-				adc(READ_BYTE_ABS_X());
-				break;
-			case ADC_ABS_Y:
-				adc(READ_BYTE_ABS_Y());
-				break;
-			case ADC_IND_X:
-				adc(READ_BYTE_IND_X());
-				break;
-			case ADC_IND_Y:
-				adc(READ_BYTE_IND_Y());
-				break;
+		// Subtract from accumulator with borrow
+		case SBC_IMM:
+			sbc(READ_BYTE_IMM());
+			break;
+		case SBC_ZP:
+			sbc(READ_BYTE_ZP());
+			break;
+		case SBC_ZP_X:
+			sbc(READ_BYTE_ZP_X());
+			break;
+		case SBC_ABS:
+			sbc(READ_BYTE_ABS());
+			break;
+		case SBC_ABS_X:
+			sbc(READ_BYTE_ABS_X());
+			break;
+		case SBC_ABS_Y:
+			sbc(READ_BYTE_ABS_Y());
+			break;
+		case SBC_IND_X:
+			sbc(READ_BYTE_IND_X());
+			break;
+		case SBC_IND_Y:
+			sbc(READ_BYTE_IND_Y());
+			break;
 
-			// Subtract from accumulator with borrow
-			case SBC_IMM:
-				sbc(READ_BYTE_IMM());
-				break;
-			case SBC_ZP:
-				sbc(READ_BYTE_ZP());
-				break;
-			case SBC_ZP_X:
-				sbc(READ_BYTE_ZP_X());
-				break;
-			case SBC_ABS:
-				sbc(READ_BYTE_ABS());
-				break;
-			case SBC_ABS_X:
-				sbc(READ_BYTE_ABS_X());
-				break;
-			case SBC_ABS_Y:
-				sbc(READ_BYTE_ABS_Y());
-				break;
-			case SBC_IND_X:
-				sbc(READ_BYTE_IND_X());
-				break;
-			case SBC_IND_Y:
-				sbc(READ_BYTE_IND_Y());
-				break;
+		// Increment memory by one
+		case INC_ZP:
+			addr = READ_ADDR_ZP();
+			write_byte(addr, SET_FLAG_NZ(read_byte(addr) + 1));
+			break;
+		case INC_ZP_X:
+			addr = READ_ADDR_ZP_X();
+			write_byte(addr, SET_FLAG_NZ(read_byte(addr) + 1));
+			break;
+		case INC_ABS:
+			addr = READ_ADDR_ABS();
+			write_byte(addr, SET_FLAG_NZ(read_byte(addr) + 1));
+			break;
+		case INC_ABS_X:
+			addr = READ_ADDR_ABS_X();
+			write_byte(addr, SET_FLAG_NZ(read_byte(addr) + 1));
+			break;
 
-			// Increment memory by one
-			case INC_ZP:
-				addr = READ_ADDR_ZP();
-				write_byte(addr, SET_FLAG_NZ(read_byte(addr) + 1));
-				break;
-			case INC_ZP_X:
-				addr = READ_ADDR_ZP_X();
-				write_byte(addr, SET_FLAG_NZ(read_byte(addr) + 1));
-				break;
-			case INC_ABS:
-				addr = READ_ADDR_ABS();
-				write_byte(addr, SET_FLAG_NZ(read_byte(addr) + 1));
-				break;
-			case INC_ABS_X:
-				addr = READ_ADDR_ABS_X();
-				write_byte(addr, SET_FLAG_NZ(read_byte(addr) + 1));
-				break;
+		// Decrease memory by one
+		case DEC_ZP:
+			addr = READ_ADDR_ZP();
+			write_byte(addr, SET_FLAG_NZ(read_byte(addr) - 1));
+			break;
+		case DEC_ZP_X:
+			addr = READ_ADDR_ZP_X();
+			write_byte(addr, SET_FLAG_NZ(read_byte(addr) - 1));
+			break;
+		case DEC_ABS:
+			addr = READ_ADDR_ABS();
+			write_byte(addr, SET_FLAG_NZ(read_byte(addr) - 1));
+			break;
+		case DEC_ABS_X:
+			addr = READ_ADDR_ABS_X();
+			write_byte(addr, SET_FLAG_NZ(read_byte(addr) - 1));
+			break;
 
-			// Decrease memory by one
-			case DEC_ZP:
-				addr = READ_ADDR_ZP();
-				write_byte(addr, SET_FLAG_NZ(read_byte(addr) - 1));
-				break;
-			case DEC_ZP_X:
-				addr = READ_ADDR_ZP_X();
-				write_byte(addr, SET_FLAG_NZ(read_byte(addr) - 1));
-				break;
-			case DEC_ABS:
-				addr = READ_ADDR_ABS();
-				write_byte(addr, SET_FLAG_NZ(read_byte(addr) - 1));
-				break;
-			case DEC_ABS_X:
-				addr = READ_ADDR_ABS_X();
-				write_byte(addr, SET_FLAG_NZ(read_byte(addr) - 1));
-				break;
+		// Increase X by one
+		case INX:
+			SET_FLAG_NZ(++X);
+			break;
+		// Decrease X by one
+		case DEX:
+			SET_FLAG_NZ(--X);
+			break;
+		// Increase Y by one
+		case INY:
+			SET_FLAG_NZ(++Y);
+			break;
+		// Decrease Y by one
+		case DEY:
+			SET_FLAG_NZ(--Y);
+			break;
 
-			// Increase X by one
-			case INX:
-				SET_FLAG_NZ(++X);
-				break;
-			// Decrease X by one
-			case DEX:
-				SET_FLAG_NZ(--X);
-				break;
-			// Increase Y by one
-			case INY:
-				SET_FLAG_NZ(++Y);
-				break;
-			// Decrease Y by one
-			case DEY:
-				SET_FLAG_NZ(--Y);
-				break;
+		// And accumulator with memory
+		case AND_IMM:
+			SET_FLAG_NZ(A &= READ_BYTE_IMM());
+			break;
+		case AND_ZP:
+			SET_FLAG_NZ(A &= READ_BYTE_ZP());
+			break;
+		case AND_ZP_X:
+			SET_FLAG_NZ(A &= READ_BYTE_ZP_X());
+			break;
+		case AND_ABS:
+			SET_FLAG_NZ(A &= READ_BYTE_ABS());
+			break;
+		case AND_ABS_X:
+			SET_FLAG_NZ(A &= READ_BYTE_ABS_X());
+			break;
+		case AND_ABS_Y:
+			SET_FLAG_NZ(A &= READ_BYTE_ABS_Y());
+			break;
+		case AND_IND_X:
+			SET_FLAG_NZ(A &= READ_BYTE_IND_X());
+			break;
+		case AND_IND_Y :
+			SET_FLAG_NZ(A &= READ_BYTE_IND_Y());
+			break;
 
-			// And accumulator with memory
-			case AND_IMM:
-				SET_FLAG_NZ(A &= READ_BYTE_IMM());
-				break;
-			case AND_ZP:
-				SET_FLAG_NZ(A &= READ_BYTE_ZP());
-				break;
-			case AND_ZP_X:
-				SET_FLAG_NZ(A &= READ_BYTE_ZP_X());
-				break;
-			case AND_ABS:
-				SET_FLAG_NZ(A &= READ_BYTE_ABS());
-				break;
-			case AND_ABS_X:
-				SET_FLAG_NZ(A &= READ_BYTE_ABS_X());
-				break;
-			case AND_ABS_Y:
-				SET_FLAG_NZ(A &= READ_BYTE_ABS_Y());
-				break;
-			case AND_IND_X:
-				SET_FLAG_NZ(A &= READ_BYTE_IND_X());
-				break;
-			case AND_IND_Y :
-				SET_FLAG_NZ(A &= READ_BYTE_IND_Y());
-				break;
+		// Or accumulator with memory
+		case ORA_IMM:
+			SET_FLAG_NZ(A |= READ_BYTE_IMM());
+			break;
+		case ORA_ZP:
+			SET_FLAG_NZ(A |= READ_BYTE_ZP());
+			break;
+		case ORA_ZP_X:
+			SET_FLAG_NZ(A |= READ_BYTE_ZP_X());
+			break;
+		case ORA_ABS:
+			SET_FLAG_NZ(A |= READ_BYTE_ABS());
+			break;
+		case ORA_ABS_X:
+			SET_FLAG_NZ(A |= READ_BYTE_ABS_X());
+			break;
+		case ORA_ABS_Y:
+			SET_FLAG_NZ(A |= READ_BYTE_ABS_Y());
+			break;
+		case ORA_IND_X:
+			SET_FLAG_NZ(A |= READ_BYTE_IND_X());
+			break;
+		case ORA_IND_Y:
+			SET_FLAG_NZ(A |= READ_BYTE_IND_Y());
+			break;
 
-			// Or accumulator with memory
-			case ORA_IMM:
-				SET_FLAG_NZ(A |= READ_BYTE_IMM());
-				break;
-			case ORA_ZP:
-				SET_FLAG_NZ(A |= READ_BYTE_ZP());
-				break;
-			case ORA_ZP_X:
-				SET_FLAG_NZ(A |= READ_BYTE_ZP_X());
-				break;
-			case ORA_ABS:
-				SET_FLAG_NZ(A |= READ_BYTE_ABS());
-				break;
-			case ORA_ABS_X:
-				SET_FLAG_NZ(A |= READ_BYTE_ABS_X());
-				break;
-			case ORA_ABS_Y:
-				SET_FLAG_NZ(A |= READ_BYTE_ABS_Y());
-				break;
-			case ORA_IND_X:
-				SET_FLAG_NZ(A |= READ_BYTE_IND_X());
-				break;
-			case ORA_IND_Y:
-				SET_FLAG_NZ(A |= READ_BYTE_IND_Y());
-				break;
+		// Exclusive or accumulator with memory
+		case EOR_IMM:
+			SET_FLAG_NZ(A ^= READ_BYTE_IMM());
+			break;
+		case EOR_ZP:
+			SET_FLAG_NZ(A ^= READ_BYTE_ZP());
+			break;
+		case EOR_ZP_X:
+			SET_FLAG_NZ(A ^= READ_BYTE_ZP_X());
+			break;
+		case EOR_ABS:
+			SET_FLAG_NZ(A ^= READ_BYTE_ABS());
+			break;
+		case EOR_ABS_X:
+			SET_FLAG_NZ(A ^= READ_BYTE_ABS_X());
+			break;
+		case EOR_ABS_Y:
+			SET_FLAG_NZ(A ^= READ_BYTE_ABS_Y());
+			break;
+		case EOR_IND_X:
+			SET_FLAG_NZ(A ^= READ_BYTE_IND_X());
+			break;
+		case EOR_IND_Y:
+			SET_FLAG_NZ(A ^= READ_BYTE_IND_Y());
+			break;
 
-			// Exclusive or accumulator with memory
-			case EOR_IMM:
-				SET_FLAG_NZ(A ^= READ_BYTE_IMM());
-				break;
-			case EOR_ZP:
-				SET_FLAG_NZ(A ^= READ_BYTE_ZP());
-				break;
-			case EOR_ZP_X:
-				SET_FLAG_NZ(A ^= READ_BYTE_ZP_X());
-				break;
-			case EOR_ABS:
-				SET_FLAG_NZ(A ^= READ_BYTE_ABS());
-				break;
-			case EOR_ABS_X:
-				SET_FLAG_NZ(A ^= READ_BYTE_ABS_X());
-				break;
-			case EOR_ABS_Y:
-				SET_FLAG_NZ(A ^= READ_BYTE_ABS_Y());
-				break;
-			case EOR_IND_X:
-				SET_FLAG_NZ(A ^= READ_BYTE_IND_X());
-				break;
-			case EOR_IND_Y:
-				SET_FLAG_NZ(A ^= READ_BYTE_IND_Y());
-				break;
+			//      +-+-+-+-+-+-+-+-+
+			// C <- |7|6|5|4|3|2|1|0| <- 0              N Z C I D V
+			//      +-+-+-+-+-+-+-+-+                   / / / _ _ _
+		case ASL_ACC:
+			C = A & 0x80;
+			SET_FLAG_NZ(A <<= 1);
+			break;
+		case ASL_ZP:
+			b1 = read_byte_zp(addr = READ_ADDR_ZP());
+			C = b1 & 0x80;
+			write_byte_zp(addr, SET_FLAG_NZ(b1 <<= 1));
+			break;
+		case ASL_ZP_X:
+			b1 = read_byte_zp(addr = READ_ADDR_ZP_X());
+			C = b1 & 0x80;
+			write_byte_zp(addr, SET_FLAG_NZ(b1 <<= 1));
+			break;
+		case ASL_ABS:
+			b1 = read_byte(addr = READ_ADDR_ABS());
+			C = b1 & 0x80;
+			write_byte(addr, SET_FLAG_NZ(b1 <<= 1));
+			break;
+		case ASL_ABS_X:
+			b1 = read_byte(addr = READ_ADDR_ABS_X());
+			C = b1 & 0x80;
+			write_byte(addr, SET_FLAG_NZ(b1 <<= 1));
+			break;
 
-				//      +-+-+-+-+-+-+-+-+
-				// C <- |7|6|5|4|3|2|1|0| <- 0              N Z C I D V
-				//      +-+-+-+-+-+-+-+-+                   / / / _ _ _
-			case ASL_ACC:
-				C = A & 0x80;
-				SET_FLAG_NZ(A <<= 1);
-				break;
-			case ASL_ZP:
-				b1 = read_byte_zp(addr = READ_ADDR_ZP());
-				C = b1 & 0x80;
-				write_byte_zp(addr, SET_FLAG_NZ(b1 <<= 1));
-				break;
-			case ASL_ZP_X:
-				b1 = read_byte_zp(addr = READ_ADDR_ZP_X());
-				C = b1 & 0x80;
-				write_byte_zp(addr, SET_FLAG_NZ(b1 <<= 1));
-				break;
-			case ASL_ABS:
-				b1 = read_byte(addr = READ_ADDR_ABS());
-				C = b1 & 0x80;
-				write_byte(addr, SET_FLAG_NZ(b1 <<= 1));
-				break;
-			case ASL_ABS_X:
-				b1 = read_byte(addr = READ_ADDR_ABS_X());
-				C = b1 & 0x80;
-				write_byte(addr, SET_FLAG_NZ(b1 <<= 1));
-				break;
+			//      +-+-+-+-+-+-+-+-+
+			// 0 -> |7|6|5|4|3|2|1|0| -> C              N Z C I D V
+			//      +-+-+-+-+-+-+-+-+                   0 / / _ _ _
+		case LSR_ACC:
+			C = A & 0x01;
+			SET_FLAG_NZ(A >>= 1);
+			break;
+		case LSR_ZP:
+			b1 = read_byte_zp(addr = READ_ADDR_ZP());
+			C = b1 & 0x01;
+			write_byte_zp(addr, SET_FLAG_NZ( b1 >>= 1));
+			break;
+		case LSR_ZP_X:
+			b1 = read_byte_zp(addr = READ_ADDR_ZP_X());
+			C = b1 & 0x01;
+			write_byte_zp(addr, SET_FLAG_NZ( b1 >>= 1));
+			break;
+		case LSR_ABS:
+			b1 = read_byte(addr = READ_ADDR_ABS());
+			C = b1 & 0x01;
+			write_byte(addr, SET_FLAG_NZ( b1 >>= 1));
+			break;
+		case LSR_ABS_X:
+			b1 = read_byte(addr = READ_ADDR_ABS_X());
+			C = b1 & 0x01;
+			write_byte(addr, SET_FLAG_NZ( b1 >>= 1));
+			break;
 
-				//      +-+-+-+-+-+-+-+-+
-				// 0 -> |7|6|5|4|3|2|1|0| -> C              N Z C I D V
-				//      +-+-+-+-+-+-+-+-+                   0 / / _ _ _
-			case LSR_ACC:
-				C = A & 0x01;
-				SET_FLAG_NZ(A >>= 1);
-				break;
-			case LSR_ZP:
-				b1 = read_byte_zp(addr = READ_ADDR_ZP());
-				C = b1 & 0x01;
-				write_byte_zp(addr, SET_FLAG_NZ( b1 >>= 1));
-				break;
-			case LSR_ZP_X:
-				b1 = read_byte_zp(addr = READ_ADDR_ZP_X());
-				C = b1 & 0x01;
-				write_byte_zp(addr, SET_FLAG_NZ( b1 >>= 1));
-				break;
-			case LSR_ABS:
-				b1 = read_byte(addr = READ_ADDR_ABS());
-				C = b1 & 0x01;
-				write_byte(addr, SET_FLAG_NZ( b1 >>= 1));
-				break;
-			case LSR_ABS_X:
-				b1 = read_byte(addr = READ_ADDR_ABS_X());
-				C = b1 & 0x01;
-				write_byte(addr, SET_FLAG_NZ( b1 >>= 1));
-				break;
+			// +------------------------------+
+			// |         M or A               |
+			// |   +-+-+-+-+-+-+-+-+    +-+   |
+			// +-< |7|6|5|4|3|2|1|0| <- |C| <-+         N Z C I D V
+			//     +-+-+-+-+-+-+-+-+    +-+             / / / _ _ _
+		case ROL_ACC:
+			b2 = A & 0x80;
+			SET_FLAG_NZ(A = C ? (A<<=1) + 1 : A<<=1);
+			C = b2;
+			break;
+		case ROL_ZP:
+			b1 = read_byte_zp(addr = READ_ADDR_ZP());
+			b2 = b1 & 0x80;
+			write_byte_zp(addr, SET_FLAG_NZ(C ? (b1<<=1) + 1 : b1<<=1));
+			C = b2;
+			break;
+		case ROL_ZP_X:
+			b1 = read_byte_zp(addr = READ_ADDR_ZP_X());
+			b2 = b1 & 0x80;
+			write_byte_zp(addr, SET_FLAG_NZ(C ? (b1<<=1) + 1 : b1<<=1));
+			C = b2;
+			break;
+		case ROL_ABS:
+			b1 = read_byte(addr = READ_ADDR_ABS());
+			b2 = b1 & 0x80;
+			write_byte(addr, SET_FLAG_NZ(C ? (b1<<=1) + 1 : b1<<=1));
+			C = b2;
+			break;
+		case ROL_ABS_X:
+			b1 = read_byte(addr = READ_ADDR_ABS_X());
+			b2 = b1 & 0x80;
+			write_byte(addr, SET_FLAG_NZ(C ? (b1<<=1) + 1 : b1<<=1));
+			C = b2;
+			break;
 
-				// +------------------------------+
-				// |         M or A               |
-				// |   +-+-+-+-+-+-+-+-+    +-+   |
-				// +-< |7|6|5|4|3|2|1|0| <- |C| <-+         N Z C I D V
-				//     +-+-+-+-+-+-+-+-+    +-+             / / / _ _ _
-			case ROL_ACC:
-				b2 = A & 0x80;
-				SET_FLAG_NZ(A = C ? (A<<=1) + 1 : A<<=1);
-				C = b2;
-				break;
-			case ROL_ZP:
-				b1 = read_byte_zp(addr = READ_ADDR_ZP());
-				b2 = b1 & 0x80;
-				write_byte_zp(addr, SET_FLAG_NZ(C ? (b1<<=1) + 1 : b1<<=1));
-				C = b2;
-				break;
-			case ROL_ZP_X:
-				b1 = read_byte_zp(addr = READ_ADDR_ZP_X());
-				b2 = b1 & 0x80;
-				write_byte_zp(addr, SET_FLAG_NZ(C ? (b1<<=1) + 1 : b1<<=1));
-				C = b2;
-				break;
-			case ROL_ABS:
-				b1 = read_byte(addr = READ_ADDR_ABS());
-				b2 = b1 & 0x80;
-				write_byte(addr, SET_FLAG_NZ(C ? (b1<<=1) + 1 : b1<<=1));
-				C = b2;
-				break;
-			case ROL_ABS_X:
-				b1 = read_byte(addr = READ_ADDR_ABS_X());
-				b2 = b1 & 0x80;
-				write_byte(addr, SET_FLAG_NZ(C ? (b1<<=1) + 1 : b1<<=1));
-				C = b2;
-				break;
-
-				// +------------------------------+
-				// |                              |
-				// |   +-+    +-+-+-+-+-+-+-+-+   |
-				// +-> |C| -> |7|6|5|4|3|2|1|0| >-+         N Z C I D V
-				//     +-+    +-+-+-+-+-+-+-+-+             / / / _ _ _
-			case ROR_ACC:
-				b2 = A & 0x01;
-				SET_FLAG_NZ(A = C ? (A>>=1)|0x80 : A>>=1);
-				C = b2;
-				break;
-			case ROR_ZP:
-				b1 = read_byte_zp(addr = READ_ADDR_ZP());
-				b2 = b1 & 0x01;
-				write_byte_zp(addr, SET_FLAG_NZ(C ? (b1>>=1)|0x80 : b1>>=1));
-				C = b2;
-				break;
-			case ROR_ZP_X:
-				b1 = read_byte_zp(addr = READ_ADDR_ZP_X());
-				b2 = b1 & 0x01;
-				write_byte_zp(addr, SET_FLAG_NZ(C ? (b1>>=1)|0x80 : b1>>=1));
-				C = b2;
-				break;
-			case ROR_ABS:
-				b1 = read_byte(addr = READ_ADDR_ABS());
-				b2 = b1 & 0x01;
-				write_byte(addr, SET_FLAG_NZ(C ? (b1>>=1)|0x80 : b1>>=1));
-				C = b2;
-				break;
-			case ROR_ABS_X:
-				b1 = read_byte(addr = READ_ADDR_ABS_X());
-				b2 = b1 & 0x01;
-				write_byte(addr, SET_FLAG_NZ(C ? (b1>>=1)|0x80 : b1>>=1));
-				C = b2;
-				break;
+			// +------------------------------+
+			// |                              |
+			// |   +-+    +-+-+-+-+-+-+-+-+   |
+			// +-> |C| -> |7|6|5|4|3|2|1|0| >-+         N Z C I D V
+			//     +-+    +-+-+-+-+-+-+-+-+             / / / _ _ _
+		case ROR_ACC:
+			b2 = A & 0x01;
+			SET_FLAG_NZ(A = C ? (A>>=1)|0x80 : A>>=1);
+			C = b2;
+			break;
+		case ROR_ZP:
+			b1 = read_byte_zp(addr = READ_ADDR_ZP());
+			b2 = b1 & 0x01;
+			write_byte_zp(addr, SET_FLAG_NZ(C ? (b1>>=1)|0x80 : b1>>=1));
+			C = b2;
+			break;
+		case ROR_ZP_X:
+			b1 = read_byte_zp(addr = READ_ADDR_ZP_X());
+			b2 = b1 & 0x01;
+			write_byte_zp(addr, SET_FLAG_NZ(C ? (b1>>=1)|0x80 : b1>>=1));
+			C = b2;
+			break;
+		case ROR_ABS:
+			b1 = read_byte(addr = READ_ADDR_ABS());
+			b2 = b1 & 0x01;
+			write_byte(addr, SET_FLAG_NZ(C ? (b1>>=1)|0x80 : b1>>=1));
+			C = b2;
+			break;
+		case ROR_ABS_X:
+			b1 = read_byte(addr = READ_ADDR_ABS_X());
+			b2 = b1 & 0x01;
+			write_byte(addr, SET_FLAG_NZ(C ? (b1>>=1)|0x80 : b1>>=1));
+			C = b2;
+			break;
 
 
-			// Branches
-			case BCC:
-				if (!C)
-					PC = READ_JUMP_ADDR();
-				else
-					++PC;
-				break;
-			case BCS:
-				if (C)
-					PC = READ_JUMP_ADDR();
-				else
-					++PC;
-				break;
-			case BEQ:
-				if (Z)
-					PC = READ_JUMP_ADDR();
-				else
-					++PC;
-				break;
-			case BNE:
-				if (!Z)
-					PC = READ_JUMP_ADDR();
-				else
-					++PC;
-				break;
+		// Branches
+		case BCC:
+			if (!C)
+				PC = READ_JUMP_ADDR();
+			else
+				++PC;
+			break;
+		case BCS:
+			if (C)
+				PC = READ_JUMP_ADDR();
+			else
+				++PC;
+			break;
+		case BEQ:
+			if (Z)
+				PC = READ_JUMP_ADDR();
+			else
+				++PC;
+			break;
+		case BNE:
+			if (!Z)
+				PC = READ_JUMP_ADDR();
+			else
+				++PC;
+			break;
 
-			case BMI:
-				if (N)
-					PC = READ_JUMP_ADDR();
-				else
-					++PC;
-				break;
+		case BMI:
+			if (N)
+				PC = READ_JUMP_ADDR();
+			else
+				++PC;
+			break;
 
-			case BPL:
-				if (!N)
-					PC = READ_JUMP_ADDR();
-				else
-					++PC;
-				break;
+		case BPL:
+			if (!N)
+				PC = READ_JUMP_ADDR();
+			else
+				++PC;
+			break;
 
-			case BVC:
-				if (!V)
-					PC = READ_JUMP_ADDR();
-				else
-					++PC;
-				break;
+		case BVC:
+			if (!V)
+				PC = READ_JUMP_ADDR();
+			else
+				++PC;
+			break;
 
-			case BVS:
-				if (V)
-					PC = READ_JUMP_ADDR();
-				else
-					++PC;
-				break;
+		case BVS:
+			if (V)
+				PC = READ_JUMP_ADDR();
+			else
+				++PC;
+			break;
 
-			case BIT_ZP:
-				b1 = READ_BYTE_ZP();
-				N_INTERN = Z_INTERN = A & b1;
-				V = b1 & FLAG_V;  // bit 6 -> V
-				break;
+		case BIT_ZP:
+			b1 = READ_BYTE_ZP();
+			N_INTERN = Z_INTERN = A & b1;
+			V = b1 & FLAG_V;  // bit 6 -> V
+			break;
 
-			case BIT_ABS:
-				b1 = READ_BYTE_ABS();
-				N_INTERN = Z_INTERN = A & b1;
-				V = b1 & FLAG_V;  // bit 6 -> V
-				break;
+		case BIT_ABS:
+			b1 = READ_BYTE_ABS();
+			N_INTERN = Z_INTERN = A & b1;
+			V = b1 & FLAG_V;  // bit 6 -> V
+			break;
 
-			case SEC: // Set carry flag
-				C = true;
-				break;
-			case SED: // Set decimal flag
-				D = true;
-				break;
-			case SEI: // Set interrupt flag
-				I = true;
-				break;
+		case SEC: // Set carry flag
+			C = true;
+			break;
+		case SED: // Set decimal flag
+			D = true;
+			break;
+		case SEI: // Set interrupt flag
+			I = true;
+			break;
 
-			case CLC: // Clear carry flag
-				C = false;
-				break;
-			case CLD: // Clear decimal flag
-				D = false;
-				break;
-			case CLI: // Clear interrupt flag
-				I = false;
-				break;
-			case CLV: // Clear overflow flag
-				V = false;
-				break;
+		case CLC: // Clear carry flag
+			C = false;
+			break;
+		case CLD: // Clear decimal flag
+			D = false;
+			break;
+		case CLI: // Clear interrupt flag
+			I = false;
+			break;
+		case CLV: // Clear overflow flag
+			V = false;
+			break;
 
-			case CMP_IMM:
-				i = A - READ_BYTE_IMM();
-				C = i >= 0;
-				SET_FLAG_NZ((byte)i);
-				break;
-			case CMP_ZP:
-				i = A - READ_BYTE_ZP();
-				C = i >= 0;
-				SET_FLAG_NZ((byte)i);
-				break;
-			case CMP_ZP_X:
-				i = A - READ_BYTE_ZP_X();
-				C = i >= 0;
-				SET_FLAG_NZ((byte)i);
-				break;
-			case CMP_ABS:
-				i = A - READ_BYTE_ABS();
-				C = i >= 0;
-				SET_FLAG_NZ((byte)i);
-				break;
-			case CMP_ABS_X:
-				i = A - READ_BYTE_ABS_X();
-				C = i >= 0;
-				SET_FLAG_NZ((byte)i);
-				break;
-			case CMP_ABS_Y:
-				i = A - READ_BYTE_ABS_Y();
-				C = i >= 0;
-				SET_FLAG_NZ((byte)i);
-				break;
-			case CMP_IND_X:
-				i = A - READ_BYTE_IND_X();
-				C = i >= 0;
-				SET_FLAG_NZ((byte)i);
-				break;
-			case CMP_IND_Y:
-				i = A - READ_BYTE_IND_Y();
-				C = i >= 0;
-				SET_FLAG_NZ((byte)i);
-				break;
+		case CMP_IMM:
+			i = A - READ_BYTE_IMM();
+			C = i >= 0;
+			SET_FLAG_NZ((byte)i);
+			break;
+		case CMP_ZP:
+			i = A - READ_BYTE_ZP();
+			C = i >= 0;
+			SET_FLAG_NZ((byte)i);
+			break;
+		case CMP_ZP_X:
+			i = A - READ_BYTE_ZP_X();
+			C = i >= 0;
+			SET_FLAG_NZ((byte)i);
+			break;
+		case CMP_ABS:
+			i = A - READ_BYTE_ABS();
+			C = i >= 0;
+			SET_FLAG_NZ((byte)i);
+			break;
+		case CMP_ABS_X:
+			i = A - READ_BYTE_ABS_X();
+			C = i >= 0;
+			SET_FLAG_NZ((byte)i);
+			break;
+		case CMP_ABS_Y:
+			i = A - READ_BYTE_ABS_Y();
+			C = i >= 0;
+			SET_FLAG_NZ((byte)i);
+			break;
+		case CMP_IND_X:
+			i = A - READ_BYTE_IND_X();
+			C = i >= 0;
+			SET_FLAG_NZ((byte)i);
+			break;
+		case CMP_IND_Y:
+			i = A - READ_BYTE_IND_Y();
+			C = i >= 0;
+			SET_FLAG_NZ((byte)i);
+			break;
 
-			case CPX_IMM:
-				i = X - READ_BYTE_IMM();
-				C = i >= 0;
-				SET_FLAG_NZ((byte)i);
-				break;
-			case CPX_ZP:
-				i = X - READ_BYTE_ZP();
-				C = i >= 0;
-				SET_FLAG_NZ((byte)i);
-				break;
-			case CPX_ABS:
-				i = X - READ_BYTE_ABS();
-				C = i >= 0;
-				SET_FLAG_NZ((byte)i);
-				break;
+		case CPX_IMM:
+			i = X - READ_BYTE_IMM();
+			C = i >= 0;
+			SET_FLAG_NZ((byte)i);
+			break;
+		case CPX_ZP:
+			i = X - READ_BYTE_ZP();
+			C = i >= 0;
+			SET_FLAG_NZ((byte)i);
+			break;
+		case CPX_ABS:
+			i = X - READ_BYTE_ABS();
+			C = i >= 0;
+			SET_FLAG_NZ((byte)i);
+			break;
 
-			case CPY_IMM:
-				i = Y - READ_BYTE_IMM();
-				C = i >= 0;
-				SET_FLAG_NZ((byte)i);
-				break;
-			case CPY_ZP:
-				i = Y - READ_BYTE_ZP();
-				C = i >= 0;
-				SET_FLAG_NZ((byte)i);
-				break;
-			case CPY_ABS:
-				i = Y - READ_BYTE_ABS();
-				C = i >= 0;
-				SET_FLAG_NZ((byte)i);
-				break;
+		case CPY_IMM:
+			i = Y - READ_BYTE_IMM();
+			C = i >= 0;
+			SET_FLAG_NZ((byte)i);
+			break;
+		case CPY_ZP:
+			i = Y - READ_BYTE_ZP();
+			C = i >= 0;
+			SET_FLAG_NZ((byte)i);
+			break;
+		case CPY_ABS:
+			i = Y - READ_BYTE_ABS();
+			C = i >= 0;
+			SET_FLAG_NZ((byte)i);
+			break;
 
-			case JMP_ABS:
-				PC = READ_ADDR_ABS();
-				break;
-			case JMP_IND:
-				PC = read_word(READ_ADDR_ABS());
-				break;
+		case JMP_ABS:
+			PC = READ_ADDR_ABS();
+			break;
+		case JMP_IND:
+			PC = read_word(READ_ADDR_ABS());
+			break;
 
-			case JSR:
-				PUSH_BYTE_STACK((PC+1) >> 8); // Store 1 before next instruction
-				PUSH_BYTE_STACK((PC+1) & 0xff);
-				PC = READ_ADDR_ABS();
-				break;
+		case JSR:
+			PUSH_BYTE_STACK((PC+1) >> 8); // Store 1 before next instruction
+			PUSH_BYTE_STACK((PC+1) & 0xff);
+			PC = READ_ADDR_ABS();
+			break;
 
-			case RTS:
-				PC = (POP_BYTE_STACK | (POP_BYTE_STACK << 8)) + 1;
-				break;
+		case RTS:
+			PC = (POP_BYTE_STACK | (POP_BYTE_STACK << 8)) + 1;
+			break;
 
-			case BRK:
-				PUSH_BYTE_STACK((PC+1) >> 8); // Byte after BRK will not be executed on return!
-				PUSH_BYTE_STACK(PC+1);
-				PUSH_BYTE_STACK(getP() | FLAG_B);
-				PC = read_word(IRQ_VECTOR_L);
-				I = true;
-				return false;
+		case BRK:
+			PUSH_BYTE_STACK((PC+1) >> 8); // Byte after BRK will not be executed on return!
+			PUSH_BYTE_STACK(PC+1);
+			PUSH_BYTE_STACK(getP() | FLAG_B);
+			PC = read_word(IRQ_VECTOR_L);
+			I = true;
+			brk = true;
+			break;
 
-			case RTI:  // Return from interrupt
-				setP(POP_BYTE_STACK); //  & 0xdb);
-				PC = POP_BYTE_STACK | (POP_BYTE_STACK << 8);
-				break;
+		case RTI:  // Return from interrupt
+			setP(POP_BYTE_STACK); //  & 0xdb);
+			PC = POP_BYTE_STACK | (POP_BYTE_STACK << 8);
+			break;
 
-			case NOP:
-				break;
+		case NOP:
+			break;
 
-			case PHA:  // Push accumulator to stack
-				PUSH_BYTE_STACK(A);
-				break;
-			case PLA:  // Pull accumulator from stack
-				A = POP_BYTE_STACK;
-				break;
-			case PHP:  // Push status to stack
-				PUSH_BYTE_STACK(getP());
-				break;
-			case PLP:  // Pull status from stack
-				setP(POP_BYTE_STACK);
-				break;
+		case PHA:  // Push accumulator to stack
+			PUSH_BYTE_STACK(A);
+			break;
+		case PLA:  // Pull accumulator from stack
+			A = POP_BYTE_STACK;
+			break;
+		case PHP:  // Push status to stack
+			PUSH_BYTE_STACK(getP());
+			break;
+		case PLP:  // Pull status from stack
+			setP(POP_BYTE_STACK);
+			break;
 
-			case TAX:  // Transfer A to X
-				SET_FLAG_NZ(X = A);
-				break;
-			case TXA:  // Transfer A to A
-				SET_FLAG_NZ(A = X);
-				break;
-			case TAY:  // Transfer A to Y
-				SET_FLAG_NZ(Y = A);
-				break;
-			case TYA:  // Transfer Y to A
-				SET_FLAG_NZ(A = Y);
-				break;
-			case TXS:  // Transfer X to SP
-				SET_FLAG_NZ(SP = X);
-				break;
-			case TSX:  // Transfer SP to X
-				SET_FLAG_NZ(X = SP);
-				break;
+		case TAX:  // Transfer A to X
+			SET_FLAG_NZ(X = A);
+			break;
+		case TXA:  // Transfer A to A
+			SET_FLAG_NZ(A = X);
+			break;
+		case TAY:  // Transfer A to Y
+			SET_FLAG_NZ(Y = A);
+			break;
+		case TYA:  // Transfer Y to A
+			SET_FLAG_NZ(A = Y);
+			break;
+		case TXS:  // Transfer X to SP
+			SET_FLAG_NZ(SP = X);
+			break;
+		case TSX:  // Transfer SP to X
+			SET_FLAG_NZ(X = SP);
+			break;
 
-			default:
-				cout << "ILLEGAL OPCODE!" << endl;
-				break;
-		};
+		default:
+			cout << "ILLEGAL OPCODE!" << endl;
+			break;
+	};
 
-		if (!quiet)
-			printStat(pc_initial);
-	}
+	if (!quiet)
+		printStat(pc_initial);
 
-	return true;
+	return opcode_cycles[instruction].cycles;
 }

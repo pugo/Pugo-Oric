@@ -52,7 +52,8 @@ public:
 
 	void reset();
 	void printStat(word address);
-	bool execInstructions(unsigned int cycles);
+	bool execInstructionCycles(int cycles);
+	short execInstruction(bool& brk);
 
 	// Registers
 	byte A;

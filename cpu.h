@@ -23,7 +23,7 @@
 #include "memory.h"
 
 /**
-	@author Anders Karlsson <pugo@pugo.org>
+	@author Anders Piniesjö <pugo@pugo.org>
 */
 class CPU
 {
@@ -35,7 +35,8 @@ public:
 	word getPC() { return PC; }
 	void setQuiet(bool val) { quiet = val; }
 
-	virtual bool execInstructions(unsigned int cycles) = 0;
+	virtual bool execInstructionCycles(int cycles) = 0;
+	virtual short execInstruction(bool& brk) = 0;
 
 	Memory* memory;
 

@@ -49,6 +49,8 @@ Oric::Oric() :
 {
 	memory = new Memory(65536);
 	cpu = new MOS6502(memory);
+	mos_6522 = new MOS6522(memory);
+	
 	cpu->memory_read_handler = memoryReadHandler;
 	cpu->memory_write_handler = memoryWriteHandler;
 }
@@ -69,25 +71,18 @@ void Oric::reset()
 
 void Oric::run(long steps)
 {
-	short cycles;
+	long cycles = 0;
+	long steps_count = 0;
 	brk = false;
 
-	if (steps > 0)
+	while(!brk)
 	{
-		for (long i = 0; i < steps; i++)
-		{
-			if (brk) return;
-			if (!cpu->execInstructions(1))
-				return;
-		}
-	}
-	else
-	{
-		while(!brk)
-		{
-			if (!cpu->execInstructions(4000))
-				return;
-		}
+		cycles += cpu->execInstruction(brk);
+		mos_6522->exec();
+
+		++steps_count;
+		if (steps > 0 && steps_count == steps)
+			return;
 	}
 }
 
@@ -174,7 +169,11 @@ bool Oric::handleCommand(string line)
 		if (parts.size() == 2)
 			run(std::stol(parts[1]));
 		else
-			cpu->execInstructions(1);
+		{
+			bool brk = false;
+			cpu->execInstruction(brk);
+			if (brk) cout << "Instruction BRK executed." << endl;
+		}
 	}
 
 	else if (cmd == "i")	// info
