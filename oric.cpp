@@ -48,11 +48,15 @@ Oric::Oric() :
 	last_command("")
 {
 	memory = new Memory(65536);
-	cpu = new MOS6502(memory);
-	mos_6522 = new MOS6522(memory);
+	cpu = new MOS6502(this, memory);
+	mos_6522 = new MOS6522(this, memory);
 	
-	cpu->memory_read_handler = memoryReadHandler;
-	cpu->memory_write_handler = memoryWriteHandler;
+	cpu->memory_read_byte_handler = read_byte;
+	cpu->memory_read_byte_zp_handler = read_byte_zp;
+	cpu->memory_read_word_handler = read_word;
+	cpu->memory_read_word_zp_handler = read_word_zp;
+	cpu->memory_write_byte_handler = write_byte;
+	cpu->memory_write_byte_zp_handler = write_byte_zp;
 }
 
 
@@ -67,6 +71,8 @@ void Oric::reset()
 {
 	cpu->reset();
 }
+
+
 
 
 void Oric::run(long steps)
@@ -152,7 +158,7 @@ bool Oric::handleCommand(string line)
 		run(steps);
 	}
 
-	else if (cmd == "pc")	// step
+	else if (cmd == "pc")	// set pc
 	{
 		if (parts.size() < 2)
 		{
@@ -178,6 +184,7 @@ bool Oric::handleCommand(string line)
 
 	else if (cmd == "i")	// info
 	{
+		cout << "PC: " << cpu->getPC() << endl;
 		cpu->printStat(cpu->getPC());
 	}
 
@@ -206,16 +213,60 @@ bool Oric::handleCommand(string line)
 }
 
 
-byte Oric::memoryReadHandler(word address)
+// --- Memory functions
+
+byte inline Oric::read_byte(Oric &oric, uint16_t address)
 {
-	cout << "memoryReadHandler( " << hex << address << " )" << endl;
-	return 0;
+	if (address >= 0x300 && address < 0x400)
+	{
+		cout << "read: " << hex << address << endl;
+		return oric.getVIA().readByte(address);
+	}
+
+	return oric.getMemory().mem[address];
 }
 
-void Oric::memoryWriteHandler(word address, byte data)
+byte inline Oric::read_byte_zp(Oric &oric, byte address)
 {
-	cout << "memoryWriteHandler( " << hex << address << ", " << hex << (unsigned int)data << " )" << endl;
+	return oric.getMemory().mem[address];
 }
+
+uint16_t inline Oric::read_word(Oric &oric, uint16_t address)
+{
+	if (address >= 0x300 && address < 0x400)
+	{
+		cout << "read word: " << hex << address << endl;
+	}
+
+	return oric.getMemory().mem[address] | oric.getMemory().mem[address+1]<<8;
+}
+
+uint16_t inline Oric::read_word_zp(Oric &oric, byte address)
+{
+	return oric.getMemory().mem[address] | oric.getMemory().mem[address+1 & 0xff]<<8;
+}
+
+void inline Oric::write_byte(Oric &oric, uint16_t address, byte val)
+{
+	if (address >= 0xc000)
+		return;
+	if (address >= 0x300 && address < 0x400)
+	{
+		oric.getVIA().writeByte(address, val);
+	}
+
+	oric.getMemory().mem[address] = val;
+}
+
+void inline Oric::write_byte_zp(Oric &oric, byte address, byte val)
+{
+	if (address >= 0x00ff)
+		return;
+
+	oric.getMemory().mem[address] = val;
+}
+
+
 
 
 // -------------------------------------------------------
@@ -258,8 +309,8 @@ int main(int argc, char *argv[])
 	// 	oric.getMemory()->load("/home/pugo/projekt/oric/ROMS/dayofweek.rom", 0xc000);
 	//oric.getMemory()->load("/home/pugo/projekt/oric/ROMS/AllSuiteA.rom", 0x4000);
 
-	oric.getMemory()->load("ROMS/basic11b.rom", 0xc000);
-	oric.getMemory()->load("ROMS/font.rom", 0xb400);
+	oric.getMemory().load("ROMS/basic11b.rom", 0xc000);
+	oric.getMemory().load("ROMS/font.rom", 0xb400);
 
 	oric.reset();
 	cout << endl;

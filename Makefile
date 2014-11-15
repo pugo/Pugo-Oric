@@ -18,7 +18,7 @@ libdir = ${exec_prefix}/lib
 mandir = ${prefix}/man
 
 CXX = c++
-CXXFLAGS = -g -O3 -std=c++0x
+CXXFLAGS = -g -O3 -std=c++11 -MD -MP
 
 CXXTESTDIR = /home/pugo/src/cxxtest
 CXXTESTGEN = $(CXXTESTDIR)/cxxtestgen.py
@@ -42,14 +42,13 @@ LFLAGS       = $(LIBPATHS) $(LIBS)
 
 ## Objects ################################################
 
-COMMON_OBJECTS  = cpu.o \
-				  mos6502.o \
-				  mos6502_disasm.o \
-				  mos6522.o \
-				  memory.o
+COMMON_OBJECTS  = mos6502.o \
+		  mos6502_disasm.o \
+		  mos6522.o \
+		  memory.o
 
 EMU_OBJECTS = $(COMMON_OBJECTS) \
-			  oric.o
+		  oric.o
 
 
 ## Implicit rules #########################################
@@ -99,10 +98,6 @@ count:
 	@echo -n "        Header files (lines): "; cat *.h*  | wc -l;
 	@echo -n "Implementation files (lines): "; cat *.c*  | wc -l
 
-.depend:
-	touch .depend
 
-depend:
-	makedepend -f- -- $(CFLAGS) -- *.cpp  > .depend
 
-include .depend
+-include $(OBJECTS:%.o=%.d)

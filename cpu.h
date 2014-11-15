@@ -31,9 +31,6 @@ public:
 	CPU();
 	~CPU();
 
-	void setPC(word pc) { PC = pc; }
-	word getPC() { return PC; }
-	void setQuiet(bool val) { quiet = val; }
 
 	virtual bool execInstructionCycles(int cycles) = 0;
 	virtual short execInstruction(bool& brk) = 0;
@@ -41,9 +38,6 @@ public:
 	Memory* memory;
 
 protected:
-	word PC;
-	byte SP;
-	bool quiet;
 };
 
 #endif

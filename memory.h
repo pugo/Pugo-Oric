@@ -35,24 +35,10 @@ public:
 	Memory(unsigned int size);
 	~Memory();
 
-	void load(std::string path, word address);
+	void load(std::string path, uint16_t address);
 	unsigned int getSize() { return size; }
 
 	void show(unsigned int pos, unsigned int length);
-
-// 	friend Memory& operator>>(Memory& is, Memory& obj)
-// 	{
-// 		std::cout << ">>" << std::endl;
-// 		//obj.mem[obj.mempos++] = is;
-// 		return is;
-// 	}
-// 
-// 
-// 	friend Memory& operator<<(Memory& os, unsigned int i)
-// 	{
-// 		os.mem[os.mempos++] = i & 0xff;
-// 		return os;
-// 	}
 
 	byte* mem;
 

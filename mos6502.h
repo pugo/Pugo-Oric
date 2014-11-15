@@ -20,9 +20,8 @@
 #ifndef MOS6502_H
 #define MOS6502_H
 
+#include "memory.h"
 #include "datatypes.h"
-#include "cpu.h"
-
 #include "mos6502_opcodes.h"
 
 #define STACK_BOTTOM 0x0100
@@ -36,24 +35,38 @@
 #define IRQ_VECTOR_L 0xFFFE
 #define IRQ_VECTOR_H 0xFFFF
 
+class Oric;
+class MOS6502;
 
-typedef byte (*f_memory_read_handler)(word address);
-typedef void (*f_memory_write_handler)(word address, byte data);
+typedef byte (*f_memory_read_byte_handler)(Oric &oric, uint16_t address);
+typedef byte (*f_memory_read_byte_zp_handler)(Oric &oric, byte address);
+
+typedef uint16_t (*f_memory_read_word_handler)(Oric &oric, uint16_t address);
+typedef uint16_t (*f_memory_read_word_zp_handler)(Oric &oric, byte address);
+
+typedef void (*f_memory_write_byte_handler)(Oric &oric, uint16_t address, byte val);
+typedef void (*f_memory_write_byte_zp_handler)(Oric &oric, byte address, byte val);
 
 
 /**
 	@author Anders Karlsson <pugo@pugo.org>
 */
-class MOS6502 : public CPU
+class MOS6502
 {
 public:
-	MOS6502(Memory* memory);
+	MOS6502(Oric* oric, Memory* memory);
 	~MOS6502();
 
+	void setPC(uint16_t pc) { PC = pc; }
+	uint16_t getPC() { return PC; }
+	void setQuiet(bool val) { quiet = val; }
+
 	void reset();
-	void printStat(word address);
+	void printStat(uint16_t address);
 	bool execInstructionCycles(int cycles);
 	short execInstruction(bool& brk);
+
+	Memory& getMemory() { return *memory; }
 
 	// Registers
 	byte A;
@@ -81,26 +94,28 @@ public:
 
 	int inline signedByteToInt(byte b);
 
-	byte inline read_byte(word address);
-	byte inline read_byte_zp(byte address);
-
-	word inline read_word(word address);
-	word inline read_word_zp(byte address);
-
-	void inline write_byte(word address, byte val);
-	void inline write_byte_zp(byte address, byte val);
-
 	// Add and sub are complex
 	void adc(byte val);
 	void sbc(byte val);
 
-	f_memory_read_handler memory_read_handler;
-	f_memory_write_handler memory_write_handler;
+	f_memory_read_byte_handler memory_read_byte_handler;
+	f_memory_read_byte_zp_handler memory_read_byte_zp_handler;
 
-	std::string disassemble(word address);
+	f_memory_read_word_handler memory_read_word_handler;
+	f_memory_read_word_zp_handler memory_read_word_zp_handler;
+
+	f_memory_write_byte_handler memory_write_byte_handler;
+	f_memory_write_byte_zp_handler memory_write_byte_zp_handler;
+
+	std::string disassemble(uint16_t address);
 
 protected:
+	Oric* oric;
+	Memory* memory;
 
+	uint16_t PC;
+	byte SP;
+	bool quiet;
 };
 
 #endif // MOS6502_H
