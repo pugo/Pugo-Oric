@@ -52,6 +52,7 @@ EMU_OBJECTS = $(COMMON_OBJECTS) \
 		  oric.o
 
 TEST_FILES = tests/6502_tests.h \
+	     tests/6522_tests.h \
 	     tests/memory_tests.h
 
 

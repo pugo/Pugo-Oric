@@ -7,3 +7,6 @@ oric.kdevses
 *.o
 oric
 *.d
+tests/run_tests.cpp
+run_tests
+.directory

@@ -20,6 +20,32 @@ void MOS6522::reset()
 {
 	t1_run = false;
 	t2_run = false;
+
+	orb = 0;
+	ora = 0;
+
+	ddrb = 0;
+	ddra = 0;
+
+	t1_latch_low = 0;
+	t1_latch_high = 0;
+	t1_counter = 0;
+	t1_run = false;
+
+	t2_latch_low = 0;
+	t2_latch_high = 0;
+	t2_counter = 0;
+	t2_run = false;
+
+	sr = 0;
+	acr = 0;
+	pcr = 0;
+	ifr = 0;
+	ier = 0;
+	ira = 0;
+	iral = 0;
+	irb = 0;
+	irbl = 0;
 }
 
 short MOS6522::exec()
@@ -117,7 +143,7 @@ void MOS6522::writeByte(word offset, byte value)
 	case VIA_T1C_H:
 		cout << "Write VIA_T1C_H";
 		t1_latch_high = value;
-		t1_counter = (t1_latch_high << 8)  < t1_latch_low;
+		t1_counter = (t1_latch_high << 8) | t1_latch_low;
 		t1_run = true;
 		// reload? Interrupt stuff
 		// om översta biten i acr: släck översta i orb.
