@@ -184,7 +184,7 @@ void error_exit( string description )
 
 
 
-void Memory::load(std::string path, uint16_t address)
+void Memory::load(std::string path, word address)
 {
 	cout << "Memory: loading " << path << " -> $" << hex << address << endl;
 	// stat to check existance and size

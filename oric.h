@@ -24,9 +24,7 @@
 #include <iostream>
 
 #include "datatypes.h"
-#include "mos6502.h"
-#include "mos6522.h"
-#include "memory.h"
+#include "machine.h"
 
 class Oric
 {
@@ -34,38 +32,17 @@ public:
 	Oric();
 	~Oric();
 
-	Memory& getMemory() { return *memory; }
-	MOS6502& getCPU() { return *cpu; }
-	MOS6522& getVIA() { return *mos_6522; }
-
-	void reset();
-	void run(long steps);
-	void run(uint16_t address, long steps) { cpu->setPC(address); run(steps); }
-	void stop() { brk = true; }
+	Machine& getMachine() { return *machine; }
 
 	void monitor();
 
 
-	static inline byte read_byte(Oric &oric, uint16_t address);
-	static inline byte read_byte_zp(Oric &oric, byte address);
-
-	static inline uint16_t read_word(Oric &oric, uint16_t address);
-	static inline uint16_t read_word_zp(Oric &oric, byte address);
-
-	static inline void write_byte(Oric &oric, uint16_t address, byte val);
-	static inline void write_byte_zp(Oric &oric, byte address, byte val);
-
-	bool brk;
-
 protected:
 	bool handleCommand(std::string cmd);
-	uint16_t stringToWord(std::string addr);
+	word stringToWord(std::string addr);
 
-	MOS6502* cpu;
-	MOS6522* mos_6522;
-	Memory* memory;
+	Machine* machine;
 
-	bool running;
 	std::string last_command;
 };
 

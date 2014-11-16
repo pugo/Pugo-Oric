@@ -35,17 +35,17 @@
 #define IRQ_VECTOR_L 0xFFFE
 #define IRQ_VECTOR_H 0xFFFF
 
-class Oric;
+class Machine;
 class MOS6502;
 
-typedef byte (*f_memory_read_byte_handler)(Oric &oric, uint16_t address);
-typedef byte (*f_memory_read_byte_zp_handler)(Oric &oric, byte address);
+typedef byte (*f_memory_read_byte_handler)(Machine &oric, word address);
+typedef byte (*f_memory_read_byte_zp_handler)(Machine &oric, byte address);
 
-typedef uint16_t (*f_memory_read_word_handler)(Oric &oric, uint16_t address);
-typedef uint16_t (*f_memory_read_word_zp_handler)(Oric &oric, byte address);
+typedef word (*f_memory_read_word_handler)(Machine &oric, word address);
+typedef word (*f_memory_read_word_zp_handler)(Machine &oric, byte address);
 
-typedef void (*f_memory_write_byte_handler)(Oric &oric, uint16_t address, byte val);
-typedef void (*f_memory_write_byte_zp_handler)(Oric &oric, byte address, byte val);
+typedef void (*f_memory_write_byte_handler)(Machine &oric, word address, byte val);
+typedef void (*f_memory_write_byte_zp_handler)(Machine &oric, byte address, byte val);
 
 
 /**
@@ -54,15 +54,17 @@ typedef void (*f_memory_write_byte_zp_handler)(Oric &oric, byte address, byte va
 class MOS6502
 {
 public:
-	MOS6502(Oric* oric, Memory* memory);
+	MOS6502(Machine* machine, Memory* memory);
 	~MOS6502();
 
-	void setPC(uint16_t pc) { PC = pc; }
-	uint16_t getPC() { return PC; }
+	void setPC(word pc) { PC = pc; }
+	word getPC() { return PC; }
 	void setQuiet(bool val) { quiet = val; }
 
 	void reset();
-	void printStat(uint16_t address);
+	void printStat();
+	void printStat(word address);
+
 	bool execInstructionCycles(int cycles);
 	short execInstruction(bool& brk);
 
@@ -107,13 +109,13 @@ public:
 	f_memory_write_byte_handler memory_write_byte_handler;
 	f_memory_write_byte_zp_handler memory_write_byte_zp_handler;
 
-	std::string disassemble(uint16_t address);
+	std::string disassemble(word address);
 
 protected:
-	Oric* oric;
+	Machine* machine;
 	Memory* memory;
 
-	uint16_t PC;
+	word PC;
 	byte SP;
 	bool quiet;
 };

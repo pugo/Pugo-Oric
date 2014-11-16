@@ -20,8 +20,8 @@ mandir = ${prefix}/man
 CXX = c++
 CXXFLAGS = -g -O3 -std=c++11 -MD -MP
 
-CXXTESTDIR = /home/pugo/src/cxxtest
-CXXTESTGEN = $(CXXTESTDIR)/cxxtestgen.py
+CXXTESTDIR = /usr/share/cxxtest
+CXXTESTGEN = /usr/bin/cxxtestgen
 
 LDFLAGS = 
 LIBS = 
@@ -45,7 +45,8 @@ LFLAGS       = $(LIBPATHS) $(LIBS)
 COMMON_OBJECTS  = mos6502.o \
 		  mos6502_disasm.o \
 		  mos6522.o \
-		  memory.o
+		  memory.o \
+		  machine.o
 
 EMU_OBJECTS = $(COMMON_OBJECTS) \
 		  oric.o
@@ -68,7 +69,7 @@ EMU_OBJECTS = $(COMMON_OBJECTS) \
 all: oric
 
 
-oric: $(EMU_OBJECTS) $(CONFIG)
+oric: $(EMU_OBJECTS)
 	$(CXX) $(EMU_OBJECTS) -o oric $(LFLAGS)
 
 
@@ -76,7 +77,6 @@ clean:
 	rm -f *.o *.bak *BAK *~ *% *pyc 
 	rm -f oric
 	rm -f core*
-	rm -f config.cache config.log
 	rm -f -r doxygen/html doxygen/latex
 	rm -f tests/tests.cpp
 
@@ -90,8 +90,8 @@ doc:
 tests/tests.cpp: tests/test1.h
 	$(CXXTESTGEN) --error-printer -o tests/tests.cpp tests/test1.h
 
-selftest: tests/tests.cpp $(COMMON_OBJECTS)
-	$(CXX) -I$(CXXTESTDIR) -I. tests/tests.cpp cpu.o mos6502.o memory.o -o selftest
+test: tests/tests.cpp $(COMMON_OBJECTS) 
+	$(CXX) -I$(CXXTESTDIR) -I. tests/tests.cpp $(COMMON_OBJECTS) -o selftest
 
 
 count:

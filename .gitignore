@@ -6,3 +6,4 @@ oric.kdevses
 .depend
 *.o
 oric
+*.d

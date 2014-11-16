@@ -17,35 +17,49 @@
 *   Free Software Foundation, Inc.,                                       *
 *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
 ***************************************************************************/
-#ifndef MEMORY_H
-#define MEMORY_H
 
-#include "datatypes.h"
+#ifndef MACHINE_H
+#define MACHINE_H
 
 #include <iostream>
-#include <ostream>
 
+#include "datatypes.h"
+#include "mos6502.h"
+#include "mos6522.h"
+#include "memory.h"
 
-/**
-	@author Anders Karlsson <pugo@pugo.org>
-*/
-class Memory
+class Machine
 {
 public:
-	Memory(unsigned int size);
-	~Memory();
+	Machine();
+	~Machine();
 
-	void load(std::string path, word address);
-	unsigned int getSize() { return size; }
+	Memory& getMemory() { return *memory; }
+	MOS6502& getCPU() { return *cpu; }
+	MOS6522& getVIA() { return *mos_6522; }
 
-	void show(unsigned int pos, unsigned int length);
+	void reset();
+	void run(long steps);
+	void run(word address, long steps) { cpu->setPC(address); run(steps); }
+	void stop() { brk = true; }
 
-	byte* mem;
+	static inline byte read_byte(Machine &machine, word address);
+	static inline byte read_byte_zp(Machine &machine, byte address);
+
+	static inline word read_word(Machine &machine, word address);
+	static inline word read_word_zp(Machine &machine, byte address);
+
+	static inline void write_byte(Machine &machine, word address, byte val);
+	static inline void write_byte_zp(Machine &machine, byte address, byte val);
+
+	bool brk;
 
 protected:
-	unsigned int size;
+	MOS6502* cpu;
+	MOS6522* mos_6522;
+	Memory* memory;
+
+	bool running;
 };
 
-
-
-#endif // MEMORY_H
+#endif // MACHINE_H
