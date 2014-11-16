@@ -107,7 +107,7 @@ const char * opcodenames[256] = {
 using namespace std;
 
 MOS6502::MOS6502(Machine* machine, Memory* memory) :
-	A(0), X(0), Y(0), N_INTERN(0), Z_INTERN(0), V(false), B(false), D(false), I(false), C(false), quiet(false)
+	A(0), X(0), Y(0), N_INTERN(0), Z_INTERN(0), V(false), B(false), D(false), I(false), C(false), PC(0), SP(0), quiet(false)
 {
 	this->machine = machine;
 	this->memory = memory;

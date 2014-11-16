@@ -37,13 +37,31 @@ public:
 
 	void load(std::string path, word address);
 	unsigned int getSize() { return size; }
+	
+	void setMemPos(word address) { mempos = address; }
+
+// 	friend Memory& operator>>(Memory& is, Memory& obj)                            
+// 	{                                                                   
+// 		obj.mem[obj.mempos++] = is;
+// 		return is;
+// 	}
+
+	friend Memory& operator<<(Memory& os, unsigned int i)
+	{
+		os.mem[os.mempos++] = static_cast<byte>(i & 0xff);
+		return os;
+	}
 
 	void show(unsigned int pos, unsigned int length);
 
 	byte* mem;
 
+	
+	
+	
 protected:
 	unsigned int size;
+	unsigned int mempos;
 };
 
 

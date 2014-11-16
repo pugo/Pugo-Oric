@@ -32,7 +32,7 @@ class Machine
 {
 public:
 	Machine();
-	~Machine();
+	virtual ~Machine();
 
 	Memory& getMemory() { return *memory; }
 	MOS6502& getCPU() { return *cpu; }

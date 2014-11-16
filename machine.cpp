@@ -63,6 +63,10 @@ void Machine::reset()
 }
 
 
+/**
+ * Run machine.
+ * \param steps number of steps to run. If 0: run infinite (or to BRK).
+ */
 void Machine::run(long steps)
 {
 	long cycles = 0;

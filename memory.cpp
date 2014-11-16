@@ -37,7 +37,7 @@
 using namespace std;
 
 Memory::Memory(unsigned int size) :
-	mem(NULL), size(size)
+	mem(NULL), size(size), mempos(0)
 {
 	//cout << "Memory::Memory( " << size << " )" << endl;
 

@@ -59,6 +59,10 @@ public:
 
 	void setPC(word pc) { PC = pc; }
 	word getPC() { return PC; }
+	byte getSP() { return SP; }
+	byte getP();
+	void setP(byte new_p);
+
 	void setQuiet(bool val) { quiet = val; }
 
 	void reset();
@@ -87,9 +91,6 @@ public:
 	bool D; // decimal
 	bool I; // interrupt
 	bool C; // carry
-
-	byte getP();
-	void setP(byte new_p);
 
 	void NMI();
 	void IRQ();

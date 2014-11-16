@@ -18,7 +18,7 @@ libdir = ${exec_prefix}/lib
 mandir = ${prefix}/man
 
 CXX = c++
-CXXFLAGS = -g -O3 -std=c++11 -MD -MP
+CXXFLAGS = -g -O2 -std=c++11 -MD -MP
 
 CXXTESTDIR = /usr/share/cxxtest
 CXXTESTGEN = /usr/bin/cxxtestgen
@@ -51,6 +51,9 @@ COMMON_OBJECTS  = mos6502.o \
 EMU_OBJECTS = $(COMMON_OBJECTS) \
 		  oric.o
 
+TEST_FILES = tests/6502_tests.h \
+	     tests/memory_tests.h
+
 
 ## Implicit rules #########################################
 
@@ -78,7 +81,7 @@ clean:
 	rm -f oric
 	rm -f core*
 	rm -f -r doxygen/html doxygen/latex
-	rm -f tests/tests.cpp
+	rm -f tests/run_tests.cpp run_tests
 
 install:
 	install -m 755 -s $(TARGET) $(BUILDROOT)/$(bindir)
@@ -87,11 +90,11 @@ doc:
 	doxygen doxygen/doxygen.cfg
 
 
-tests/tests.cpp: tests/test1.h
-	$(CXXTESTGEN) --error-printer -o tests/tests.cpp tests/test1.h
+tests/run_tests.cpp: $(TEST_FILES)
+	$(CXXTESTGEN) --error-printer -o tests/run_tests.cpp $(TEST_FILES)
 
-test: tests/tests.cpp $(COMMON_OBJECTS) 
-	$(CXX) -I$(CXXTESTDIR) -I. tests/tests.cpp $(COMMON_OBJECTS) -o selftest
+test: tests/run_tests.cpp $(COMMON_OBJECTS) 
+	$(CXX) $(CXXFLAGS) -I$(CXXTESTDIR) -I. tests/run_tests.cpp $(COMMON_OBJECTS) -o run_tests
 
 
 count:
