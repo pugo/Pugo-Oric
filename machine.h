@@ -25,6 +25,7 @@
 #include "mos6522.h"
 #include "memory.h"
 
+
 class Machine
 {
 public:

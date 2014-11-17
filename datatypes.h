@@ -15,29 +15,11 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
-
 #ifndef DATATYPES_H
 #define DATATYPES_H
 
 typedef unsigned char byte;
 typedef unsigned short word;
-
-/* typedef union */
-/* { */
-
-/*   unsigned short w;        /\* Word access *\/ */
-
-/*   struct          /\* Byte access... *\/ */
-/*   { */
-/* #if __BYTE_ORDER == __LITTLE_ENDIAN */
-/*     byte l,h;     /\* ...in low-endian architecture *\/ */
-/* #else */
-/*     byte h,l;     /\* ...in high-endian architecture *\/ */
-/* #endif */
-/*   } b; */
-
-/* } word; */
-
 
 
 #endif // DATATYPES_H

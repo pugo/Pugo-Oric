@@ -18,6 +18,7 @@
 #include "cpu.h"
 #include <iostream>
 
+
 CPU::CPU()
 	: quiet(false)
 {

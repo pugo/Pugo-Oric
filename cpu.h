@@ -20,9 +20,7 @@
 
 #include "memory.h"
 
-/**
-	@author Anders Piniesjö <pugo@pugo.org>
-*/
+
 class CPU
 {
 public:

@@ -15,7 +15,6 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
-
 #ifndef ORIC_H
 #define ORIC_H
 
@@ -23,6 +22,7 @@
 
 #include "datatypes.h"
 #include "machine.h"
+
 
 class Oric
 {

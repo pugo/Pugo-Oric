@@ -15,11 +15,11 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
-
 #ifndef MOS6522_H
 #define MOS6522_H
 
 #include "datatypes.h"
+
 
 class Machine;
 class Memory;
@@ -45,6 +45,15 @@ class Memory;
 
 #define VIA_IER_WRITE 0x80	// Bit 7=1: enable IER bits according to data, bit 7=0 disables.
 
+#define VIA_IRQ_CA2  0x01
+#define VIA_IRQ_CA1  0x02
+#define VIA_IRQ_SR   0x04
+#define VIA_IRQ_CB2  0x08
+#define VIA_IRQ_CB1  0x10
+#define VIA_IRQ_T2   0x20
+#define VIA_IRQ_T1   0x40
+#define VIA_IRQ_CTRL 0x80
+
 
 /**
 	@author Anders Piniesjö <pugo@pugo.org>
@@ -63,6 +72,9 @@ public:
 
 
 private:
+	void IRQSet(byte bits);
+	void IRQClear(byte bits);
+
 	byte orb;		// Output Register B
 	byte ora;		// Output Register A
 

@@ -75,7 +75,7 @@ byte MOS6522::readByte(word offset)
 	{
 	case VIA_ORB:
 		cout << "Read VIA_ORB" << endl;
-		// TODO: clear interrupt
+		// TODO: clear interrupt CA1
 		return orb;
 	case VIA_ORA:
 		cout << "Read VIA_ORA" << endl;
@@ -89,7 +89,7 @@ byte MOS6522::readByte(word offset)
 		return ddra;
 	case VIA_T1C_L:
 		cout << "Read VIA_T1C_L" << endl;
-		// TODO: reset interrupt;
+		IRQClear(VIA_IRQ_T1);
 		return t1_counter & 0x00ff;
 	case VIA_T1C_H:
 		cout << "Read VIA_T1C_H" << endl;
@@ -102,14 +102,14 @@ byte MOS6522::readByte(word offset)
 		return t1_latch_high;
 	case VIA_T2C_L:
 		cout << "Read VIA_T2C_L" << endl;
-		// TODO: reset interrupt;
+		IRQClear(VIA_IRQ_T2);
 		return t2_counter & 0x00ff;
 	case VIA_T2C_H:
 		cout << "Read VIA_T2C_H" << endl;
 		return t2_counter >> 8;
 	case VIA_SR:
 		cout << "Read VIA_SR" << endl;
-		// TODO: clear interrupt
+		IRQClear(VIA_IRQ_SR);
 		return sr;
 	case VIA_ACR:
 		cout << "Read VIA_ACR" << endl;
@@ -137,12 +137,16 @@ void MOS6522::writeByte(word offset, byte value)
 	case VIA_ORB:
 		cout << "Write VIA_ORB";
 		orb = value;
-		// TODO: clear IRQ things.
+		IRQClear(VIA_IRQ_CB1);
+		if ((pcr & 0xe0) == 0x00 || (pcr & 0xe0) == 0x40)
+			IRQClear(VIA_IRQ_CB2);
 		break;
 	case VIA_ORA:
 		cout << "Write VIA_ORA";
 		ora = value;
-		// TODO: clear IRQ things.
+		IRQClear(VIA_IRQ_CA1);
+		if ((pcr & 0x0e) == 0x00 || (pcr & 0x0e) == 0x04)
+			IRQClear(VIA_IRQ_CB2);
 		break;
 	case VIA_DDRB:
 		cout << "Write VIA_DDRB";
@@ -161,6 +165,7 @@ void MOS6522::writeByte(word offset, byte value)
 		t1_latch_high = value;
 		t1_counter = (t1_latch_high << 8) | t1_latch_low;
 		t1_run = true;
+		IRQClear(VIA_IRQ_T1);
 		// reload? Interrupt stuff
 		// om översta biten i acr: släck översta i orb.
 		break;
@@ -169,9 +174,9 @@ void MOS6522::writeByte(word offset, byte value)
 		t1_latch_low = value;
 		break;
 	case VIA_T1L_H:
-		// TODO: reset interrupt flag;
 		cout << "Write VIA_T1L_H";
 		t1_latch_high = value;
+		IRQClear(VIA_IRQ_T1);
 		break;
 	case VIA_T2C_L:
 		cout << "Write VIA_T2C_L";
@@ -186,6 +191,7 @@ void MOS6522::writeByte(word offset, byte value)
 		break;
 	case VIA_SR:
 		cout << "Write VIA_SR";
+		IRQClear(VIA_IRQ_SR);
 		sr = value;
 		break;
 	case VIA_ACR:
@@ -199,7 +205,9 @@ void MOS6522::writeByte(word offset, byte value)
 		break;
 	case VIA_IFR:
 		cout << "Write VIA_IFR";
-		ifr = value;
+		ifr &= (~value) & 0x7f;
+		if (ifr & ier)
+			ifr |= 0x80;
 		break;
 	case VIA_IER:
 		cout << "Write VIA_IER";
@@ -216,4 +224,24 @@ void MOS6522::writeByte(word offset, byte value)
 	}
 	
 	cout << ": " << hex << (int) value << endl;
+}
+
+
+void MOS6522::IRQSet(byte bits)
+{
+	ifr |= bits;
+	if ((ifr & ifr) & 0x7f)
+		ifr |= 0x80;
+
+	if (bits & ier)
+		cout << "TODO: send IRQ to CPU here!" << endl;
+}
+
+void MOS6522::IRQClear(byte bits)
+{
+	ifr &= ~bits;
+
+	// Clear bit 7 if no (enabled) interrupts exist.
+	if (!((ifr & ier) & 0x7f))
+		ifr &= 0x7f;
 }

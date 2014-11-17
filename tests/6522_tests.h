@@ -119,14 +119,26 @@ public:
 
 	void testWriteIFR( void )
 	{
+		TS_ASSERT_EQUALS(mos6522->readByte(VIA_IFR), 0x00);		// Initial IFR empty.
 		mos6522->writeByte(VIA_IFR, 0xff);
 		TS_ASSERT_EQUALS(mos6522->readByte(VIA_IFR), 0xff);
 	}
 
 	void testWriteIER( void )
 	{
-		mos6522->writeByte(VIA_IER, 0xff);
-		TS_ASSERT_EQUALS(mos6522->readByte(VIA_IER), 0xff);
+		TS_ASSERT_EQUALS(mos6522->readByte(VIA_IER), 0x80);		// Initial IER em
+		for (int i = 0; i < 7; i++)
+		{
+			mos6522->writeByte(VIA_IER, 0x7f);
+			TS_ASSERT_EQUALS(mos6522->readByte(VIA_IER), 0x80);
+
+			byte b = 1 << i;
+			mos6522->writeByte(VIA_IER, 0x80 | b);
+			TS_ASSERT_EQUALS(mos6522->readByte(VIA_IER), 0x80 | b);
+			mos6522->writeByte(VIA_IER, b);
+			TS_ASSERT_EQUALS(mos6522->readByte(VIA_IER), 0x80);
+			
+		}
 	}
 
 	void testWriteIORA2( void )
