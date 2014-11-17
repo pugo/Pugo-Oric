@@ -1,8 +1,24 @@
+// =========================================================================
+//   Copyright (C) 2009-2014 by Anders Piniesjö <pugo@pugo.org>
+//
+//   This program is free software: you can redistribute it and/or modify
+//   it under the terms of the GNU General Public License as published by
+//   the Free Software Foundation, either version 3 of the License, or
+//   (at your option) any later version.
+//
+//   This program is distributed in the hope that it will be useful,
+//   but WITHOUT ANY WARRANTY; without even the implied warranty of
+//   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//   GNU General Public License for more details.
+//
+//   You should have received a copy of the GNU General Public License
+//   along with this program.  If not, see <http://www.gnu.org/licenses/>
+// =========================================================================
+
 
 #ifndef MOS6522_H
 #define MOS6522_H
 
-#include "stdio.h"
 #include "datatypes.h"
 
 class Machine;
@@ -26,7 +42,6 @@ class Memory;
 #define VIA_IFR   0x0d		// Interrupt Flag Register
 #define VIA_IER   0x0e		// Interrupt Enable Register
 #define VIA_IORA2 0x0f
-
 
 #define VIA_IER_WRITE 0x80	// Bit 7=1: enable IER bits according to data, bit 7=0 disables.
 
