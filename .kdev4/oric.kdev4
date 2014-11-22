@@ -1,6 +1,11 @@
 [Buildset]
 BuildItems=@Variant(\x00\x00\x00\t\x00\x00\x00\x00\x01\x00\x00\x00\x0b\x00\x00\x00\x00\x01\x00\x00\x00\x08\x00o\x00r\x00i\x00c)
 
+[Defines And Includes][Compiler]
+Name=GCC
+Path=gcc
+Type=GCC
+
 [Launch]
 Launch Configurations=Launch Configuration 0
 
@@ -12,14 +17,22 @@ Type=Native Application
 
 [Launch][Launch Configuration 0][Data]
 Arguments=
+Debugger Shell=
 Dependencies=@Variant(\x00\x00\x00\t\x00\x00\x00\x00\x00)
 Dependency Action=Nothing
+Display Demangle Names=true
+Display Static Members=false
 EnvironmentGroup=default
-Executable=file:///home/pugo/projekt/oric/oric
+Executable=file:///home/apiniesjoe/privat/projekt/oric/oric
 External Terminal=konsole --noclose --workdir %workdir -e %exe
+GDB Path=file:///home/apiniesjoe/privat/projekt/oric/run_tests
 Project Target=
+Remote GDB Config Script=
+Remote GDB Run Script=
+Remote GDB Shell Script=
+Start With=ApplicationOutput
 Use External Terminal=false
-Working Directory=file:///home/pugo/projekt/oric
+Working Directory=file:///home/apiniesjoe/privat/projekt/oric
 isExecutable=true
 
 [Project]

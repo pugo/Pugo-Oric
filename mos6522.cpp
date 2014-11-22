@@ -37,6 +37,11 @@ void MOS6522::reset()
 	t1_run = false;
 	t2_run = false;
 
+	ca1 = false;
+	ca2 = false;
+	cb1 = false;
+	cb2 = false;
+
 	orb = 0;
 	ora = 0;
 
@@ -75,11 +80,15 @@ byte MOS6522::readByte(word offset)
 	{
 	case VIA_ORB:
 		cout << "Read VIA_ORB" << endl;
-		// TODO: clear interrupt CA1
+		IRQClear(VIA_IRQ_CB1);
+		if ((pcr & 0xe0) == 0x00 || (pcr & 0xe0) == 0x40)
+			IRQClear(VIA_IRQ_CB2);
 		return orb;
 	case VIA_ORA:
 		cout << "Read VIA_ORA" << endl;
-		// TODO: clear interrupt
+		IRQClear(VIA_IRQ_CA1);
+		if ((pcr & 0x0e) == 0x00 || (pcr & 0x0e) == 0x04)
+			IRQClear(VIA_IRQ_CA2);
 		return ora;
 	case VIA_DDRB:
 		cout << "Read VIA_DDRB" << endl;
@@ -146,7 +155,7 @@ void MOS6522::writeByte(word offset, byte value)
 		ora = value;
 		IRQClear(VIA_IRQ_CA1);
 		if ((pcr & 0x0e) == 0x00 || (pcr & 0x0e) == 0x04)
-			IRQClear(VIA_IRQ_CB2);
+			IRQClear(VIA_IRQ_CA2);
 		break;
 	case VIA_DDRB:
 		cout << "Write VIA_DDRB";
@@ -187,19 +196,20 @@ void MOS6522::writeByte(word offset, byte value)
 		t2_latch_high = value;
 		t2_counter = (t2_latch_high << 8) | t2_latch_low;
 		t2_run = true;
+		IRQClear(VIA_IRQ_T2);
 		// reload? 
 		break;
 	case VIA_SR:
 		cout << "Write VIA_SR";
-		IRQClear(VIA_IRQ_SR);
 		sr = value;
+		IRQClear(VIA_IRQ_SR);
 		break;
 	case VIA_ACR:
 		cout << "Write VIA_ACR";
 		acr = value;
 		break;
 	case VIA_PCR:
-		cout << "Write VIA_PCR";
+		cout << "Write VIA_PCR, ";
 		pcr = value;
 		// TODO: ca and cb pulsing stuff.
 		break;
@@ -230,7 +240,7 @@ void MOS6522::writeByte(word offset, byte value)
 void MOS6522::IRQSet(byte bits)
 {
 	ifr |= bits;
-	if ((ifr & ifr) & 0x7f)
+	if ((ifr & ier) & 0x7f)
 		ifr |= 0x80;
 
 	if (bits & ier)
@@ -244,4 +254,80 @@ void MOS6522::IRQClear(byte bits)
 	// Clear bit 7 if no (enabled) interrupts exist.
 	if (!((ifr & ier) & 0x7f))
 		ifr &= 0x7f;
+}
+
+
+void MOS6522::writeCA1(bool value)
+{
+	if (!ca1 && value)
+	{
+		// Positive transition only of enabled in PCR.
+		if (pcr & VIA_PCR_CONTROL_CA1)
+			IRQSet(VIA_IRQ_CA1);
+	}
+	else if (ca1 && ! value)
+	{
+		// Negative transition only of enabled in PCR.
+		if (!(pcr & VIA_PCR_CONTROL_CA1))
+			IRQSet(VIA_IRQ_CA1);
+	}
+
+	ca1 = value;
+}
+
+
+void MOS6522::writeCA2(bool value)
+{
+	if (!ca2 && value)
+	{
+		// Positive transition only of enabled in PCR.
+		if ((pcr & VIA_PCR_CONTROL_CA2) == 0x04 || (pcr & VIA_PCR_CONTROL_CA2) == 0x06)
+			IRQSet(VIA_IRQ_CA2);
+		ca2 = value;
+	}
+	else if (ca2 && ! value)
+	{
+		// Negative transition only of enabled in PCR.
+		if ((pcr & VIA_PCR_CONTROL_CA2) == 0x00 || (pcr & VIA_PCR_CONTROL_CA2) == 0x02)
+			IRQSet(VIA_IRQ_CA2);
+		ca2 = value;
+	}
+}
+
+
+void MOS6522::writeCB1(bool value)
+{
+	if (!cb1 && value)
+	{
+		// Positive transition only of enabled in PCR.
+		if (pcr & VIA_PCR_CONTROL_CB1)
+			IRQSet(VIA_IRQ_CB1);
+	}
+	else if (cb1 && ! value)
+	{
+		// Negative transition only of enabled in PCR.
+		if (!(pcr & VIA_PCR_CONTROL_CB1))
+			IRQSet(VIA_IRQ_CB1);
+	}
+
+	cb1 = value;
+}
+
+
+void MOS6522::writeCB2(bool value)
+{
+	if (!cb2 && value)
+	{
+		// Positive transition only of enabled in PCR.
+		if ((pcr & VIA_PCR_CONTROL_CB2) == 0x40 || (pcr & VIA_PCR_CONTROL_CB2) == 0x60)
+			IRQSet(VIA_IRQ_CB2);
+		cb2 = value;
+	}
+	else if (cb2 && ! value)
+	{
+		// Negative transition only of enabled in PCR.
+		if ((pcr & VIA_PCR_CONTROL_CB2) == 0x00 || (pcr & VIA_PCR_CONTROL_CB2) == 0x20)
+			IRQSet(VIA_IRQ_CB2);
+		cb2 = value;
+	}
 }

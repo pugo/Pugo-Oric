@@ -117,11 +117,56 @@ public:
 		TS_ASSERT_EQUALS(mos6522->readByte(VIA_PCR), 0xff);
 	}
 
-	void testWriteIFR( void )
+	void testWriteIFR_CA1( void )
 	{
-		TS_ASSERT_EQUALS(mos6522->readByte(VIA_IFR), 0x00);		// Initial IFR empty.
-		mos6522->writeByte(VIA_IFR, 0xff);
-		TS_ASSERT_EQUALS(mos6522->readByte(VIA_IFR), 0xff);
+		mos6522->writeByte(VIA_IER, 0xff);						// Enable interrupts for bit 0-6.
+		mos6522->writeByte(VIA_PCR, 0x01);						// Set CA1 to positive transition.
+		mos6522->writeCA1(true);
+		TS_ASSERT_EQUALS(mos6522->readByte(VIA_IFR), VIA_IRQ_CA1 | 0x80);		// Should have CA1 + IRQ (0x80).
+		mos6522->writeByte(VIA_IFR, 0x00);						// Reset IFR again.
+		
+		mos6522->writeByte(VIA_PCR, 0x00);						// Set CA1 to negative transition.
+		mos6522->writeCA1(false);
+		TS_ASSERT_EQUALS(mos6522->readByte(VIA_IFR), VIA_IRQ_CA1 | 0x80);		// Should have CA1 + IRQ (0x80).
+	}
+
+	void testWriteIFR_CA2( void )
+	{
+		mos6522->writeByte(VIA_IER, 0xff);						// Enable interrupts for bit 0-6.
+		mos6522->writeByte(VIA_PCR, 0x04);						// Set CA2 to positive transition.
+		mos6522->writeCA2(true);
+		TS_ASSERT_EQUALS(mos6522->readByte(VIA_IFR), VIA_IRQ_CA2 | 0x80);		// Should have CA1 + IRQ (0x80).
+		mos6522->writeByte(VIA_IFR, 0x00);						// Reset IFR again.
+		
+		mos6522->writeByte(VIA_PCR, 0x00);						// Set CA2 to negative transition.
+		mos6522->writeCA2(false);
+		TS_ASSERT_EQUALS(mos6522->readByte(VIA_IFR), VIA_IRQ_CA2 | 0x80);		// Should have CA1 + IRQ (0x80).
+	}
+
+	void testWriteIFR_CB1( void )
+	{
+		mos6522->writeByte(VIA_IER, 0xff);						// Enable interrupts for bit 0-6.
+		mos6522->writeByte(VIA_PCR, 0x10);						// Set CB1 to positive transition.
+		mos6522->writeCB1(true);
+		TS_ASSERT_EQUALS(mos6522->readByte(VIA_IFR), VIA_IRQ_CB1 | 0x80);		// Should have CB1 + IRQ (0x80).
+		mos6522->writeByte(VIA_IFR, 0x00);						// Reset IFR again.
+		
+		mos6522->writeByte(VIA_PCR, 0x00);						// Set CB1 to negative transition.
+		mos6522->writeCB1(false);
+		TS_ASSERT_EQUALS(mos6522->readByte(VIA_IFR), VIA_IRQ_CB1 | 0x80);		// Should have CB1 + IRQ (0x80).
+	}
+
+	void testWriteIFR_CB2( void )
+	{
+		mos6522->writeByte(VIA_IER, 0xff);						// Enable interrupts for bit 0-6.
+		mos6522->writeByte(VIA_PCR, 0x40);						// Set CB2 to positive transition.
+		mos6522->writeCB2(true);
+		TS_ASSERT_EQUALS(mos6522->readByte(VIA_IFR), VIA_IRQ_CB2 | 0x80);		// Should have CB1 + IRQ (0x80).
+		mos6522->writeByte(VIA_IFR, 0x00);						// Reset IFR again.
+		
+		mos6522->writeByte(VIA_PCR, 0x00);						// Set CB2 to negative transition.
+		mos6522->writeCB2(false);
+		TS_ASSERT_EQUALS(mos6522->readByte(VIA_IFR), VIA_IRQ_CB2 | 0x80);		// Should have CB1 + IRQ (0x80).
 	}
 
 	void testWriteIER( void )

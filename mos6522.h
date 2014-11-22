@@ -45,6 +45,7 @@ class Memory;
 
 #define VIA_IER_WRITE 0x80	// Bit 7=1: enable IER bits according to data, bit 7=0 disables.
 
+// IRQ enable and flag bits.
 #define VIA_IRQ_CA2  0x01
 #define VIA_IRQ_CA1  0x02
 #define VIA_IRQ_SR   0x04
@@ -53,6 +54,12 @@ class Memory;
 #define VIA_IRQ_T2   0x20
 #define VIA_IRQ_T1   0x40
 #define VIA_IRQ_CTRL 0x80
+
+// PCR controlling bits.
+#define VIA_PCR_CONTROL_CA1  0x01
+#define VIA_PCR_CONTROL_CA2  0x0e
+#define VIA_PCR_CONTROL_CB1  0x10
+#define VIA_PCR_CONTROL_CB2  0xe0
 
 
 /**
@@ -69,12 +76,23 @@ public:
 	
 	byte readByte(word offset);
 	void writeByte(word offset, byte value);
+	
+	void writeCA1(bool value);
+	void writeCA2(bool value);
+
+	void writeCB1(bool value);
+	void writeCB2(bool value);
 
 
 private:
 	void IRQSet(byte bits);
 	void IRQClear(byte bits);
 
+	bool ca1;
+	bool ca2;
+	bool cb1;
+	bool cb2;
+	
 	byte orb;		// Output Register B
 	byte ora;		// Output Register A
 
