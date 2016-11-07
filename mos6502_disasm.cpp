@@ -25,17 +25,17 @@
 #define LSB_FIRST
 
 typedef struct OPcode {
-unsigned char number; /* Number of the opcode */
-unsigned char name; /* Index in the name table */
-unsigned char addressing; /* Addressing mode */
-unsigned char cycles; /* Number of cycles */
-unsigned char cross_page; /* 1 if cross-page boundaries affect cycles */
+uint8_t number; /* Number of the opcode */
+uint8_t name; /* Index in the name table */
+uint8_t addressing; /* Addressing mode */
+uint8_t cycles; /* Number of cycles */
+uint8_t cross_page; /* 1 if cross-page boundaries affect cycles */
 } OPcode;
 
 typedef union
 {
 #ifdef LSB_FIRST
-	struct { unsigned char l,h; } B;
+	struct { uint8_t l,h; } B;
 #else
 	struct { byte h,l; } B;
 #endif
@@ -272,7 +272,7 @@ char line[512];
 
 
 /* This function appends cycle counting to the comment block */
-void append_cycle(char *input, unsigned char entry, unsigned short arg, unsigned short cur_PC)
+void append_cycle(char *input, uint8_t entry, unsigned short arg, unsigned short cur_PC)
 {
 	char tmpstr[256];
 	int cycles = 0; 
@@ -292,210 +292,201 @@ void add_nes_str(char *instr, char *instr2)
 
 
 /* This function disassembles the opcode at the PC and outputs it in *output */
-std::string MOS6502::disassemble(word address)
+std::string MOS6502::Disassemble(uint16_t a_Address)
 {
-	unsigned char tmp_byte1, tmp_byte2, opcode; 
+	uint8_t tmp_byte1, tmp_byte2, opcode; 
 	char argument_signed;
 	d_word tmp_word;
-
 	char tmpstr[256], tmpstr2[256], tmpstr3[256];
-
 	int i,j,entry,found = 0;
 
-	opcode = memory->mem[address];
-
-	for (i = 0; i < NUMBER_OPCODES; i++)
-	{
-		if (opcode == opcode_table[i].number)
-		{
+	opcode = m_Memory->m_Mem[a_Address];
+	for (i = 0; i < NUMBER_OPCODES; i++) {
+		if (opcode == opcode_table[i].number) {
 			found = 1; /* Found the opcode */
 			entry = i; /* Note the entry number in the table */
 		}
 	}
 
-	if (!found)
-	{
-		if (hex_output)
-		{
-			sprintf(tmpstr,"$%04X> %02X:\t.byte $%02x\t\t; INVALID OPCODE !!!\n",org + address,opcode,opcode); 
+	if (!found) {
+		if (hex_output) {
+			sprintf(tmpstr, "$%04X> %02X:\t.byte $%02x\t\t; INVALID OPCODE !!!\n", org + a_Address, opcode, opcode); 
 		}
-		else
-		{
-			sprintf(tmpstr,"$%04X\t.byte $%02x\t; INVALID OPCODE !!!\n",org+address,opcode);
+		else {
+			sprintf(tmpstr, "$%04X\t.byte $%02x\t; INVALID OPCODE !!!\n", org + a_Address, opcode);
 		}
 	}
-	else
-	{
+	else {
 		switch (opcode_table[entry].addressing)
 		{
 		case IMMED:
-			address++;
-			tmp_byte1 = memory->mem[address]; /* Get immediate value */
+			a_Address++;
+			tmp_byte1 = m_Memory->m_Mem[a_Address]; /* Get immediate value */
 			if (hex_output)
-				sprintf(tmpstr,"$%04X> %02X %02X:\t%s #$%02x\t;",org+address-1,opcode,tmp_byte1,name_table[opcode_table[entry].name],tmp_byte1);
+				sprintf(tmpstr,"$%04X> %02X %02X:\t%s #$%02x\t;",org+a_Address-1,opcode,tmp_byte1,name_table[opcode_table[entry].name],tmp_byte1);
 			else
-				sprintf(tmpstr,"$%04X\t%s #$%02x\t;",org+address-1,name_table[opcode_table[entry].name],tmp_byte1);
+				sprintf(tmpstr,"$%04X\t%s #$%02x\t;",org+a_Address-1,name_table[opcode_table[entry].name],tmp_byte1);
 
 			/* Add cycle count if necessary */
-			if (cycle_counting) append_cycle(tmpstr,entry,org+address-1,org+address-1);
+			if (cycle_counting) append_cycle(tmpstr,entry,org+a_Address-1,org+a_Address-1);
 			break;
 
 		case ABSOL:
-			address++;
-			tmp_word.B.l = memory->mem[address]; /* Get low byte of address */
-			address++;
-			tmp_word.B.h = memory->mem[address]; /* Get high byte of address */
+			a_Address++;
+			tmp_word.B.l = m_Memory->m_Mem[a_Address]; /* Get low byte of a_Address */
+			a_Address++;
+			tmp_word.B.h = m_Memory->m_Mem[a_Address]; /* Get high byte of a_Address */
 
 			if (hex_output)
-				sprintf(tmpstr,"$%04X> %02X %02X%02X:\t%s $%02X%02X\t;",org+address-2,opcode,tmp_word.B.l,tmp_word.B.h,name_table[opcode_table[entry].name],tmp_word.B.h,tmp_word.B.l);
+				sprintf(tmpstr,"$%04X> %02X %02X%02X:\t%s $%02X%02X\t;",org+a_Address-2,opcode,tmp_word.B.l,tmp_word.B.h,name_table[opcode_table[entry].name],tmp_word.B.h,tmp_word.B.l);
 			else
-				sprintf(tmpstr,"$%04X\t%s $%02X%02X\t;",org+address-2,name_table[opcode_table[entry].name],tmp_word.B.h,tmp_word.B.l);
+				sprintf(tmpstr,"$%04X\t%s $%02X%02X\t;",org+a_Address-2,name_table[opcode_table[entry].name],tmp_word.B.h,tmp_word.B.l);
 
 			/* Add cycle count if necessary */
-			if (cycle_counting) append_cycle(tmpstr,entry,tmp_word.W,org+address-2);
+			if (cycle_counting) append_cycle(tmpstr,entry,tmp_word.W,org+a_Address-2);
 			break;
 
 		case ZEROP:
-			address++;
-			tmp_byte1 = memory->mem[address]; /* Get low byte of address */
+			a_Address++;
+			tmp_byte1 = m_Memory->m_Mem[a_Address]; /* Get low byte of a_Address */
 
 			if (hex_output)
-				sprintf(tmpstr,"$%04X> %02X %02X:\t%s $%02X\t\t;",org+address-1,opcode,tmp_byte1,name_table[opcode_table[entry].name],tmp_byte1);
+				sprintf(tmpstr,"$%04X> %02X %02X:\t%s $%02X\t\t;",org+a_Address-1,opcode,tmp_byte1,name_table[opcode_table[entry].name],tmp_byte1);
 			else
-				sprintf(tmpstr,"$%04X\t%s $%02X\t\t;",org+address-1,name_table[opcode_table[entry].name],tmp_byte1);
+				sprintf(tmpstr,"$%04X\t%s $%02X\t\t;",org+a_Address-1,name_table[opcode_table[entry].name],tmp_byte1);
 
 			/* Add cycle count if necessary */
-			if (cycle_counting) append_cycle(tmpstr,entry,org+address-1,org+address-1);
+			if (cycle_counting) append_cycle(tmpstr,entry,org+a_Address-1,org+a_Address-1);
 			break;
 
 		case IMPLI:
 			if (hex_output)
-				sprintf(tmpstr,"$%04X> %02X:\t%s\t\t;",org+address,opcode,name_table[opcode_table[entry].name]);
+				sprintf(tmpstr,"$%04X> %02X:\t%s\t\t;",org+a_Address,opcode,name_table[opcode_table[entry].name]);
 			else
-				sprintf(tmpstr,"$%04X\t%s\t\t;",org+address,name_table[opcode_table[entry].name]);
+				sprintf(tmpstr,"$%04X\t%s\t\t;",org+a_Address,name_table[opcode_table[entry].name]);
 
 			/* Add cycle count if necessary */
-			if (cycle_counting) append_cycle(tmpstr,entry,org+address,org+address);
+			if (cycle_counting) append_cycle(tmpstr,entry,org+a_Address,org+a_Address);
 			break;
 
 		case INDIA:
-			address++;
-			tmp_word.B.l = memory->mem[address]; /* Get low byte of address */
-			address++;
-			tmp_word.B.h = memory->mem[address]; /* Get high byte of address */
+			a_Address++;
+			tmp_word.B.l = m_Memory->m_Mem[a_Address]; /* Get low byte of a_Address */
+			a_Address++;
+			tmp_word.B.h = m_Memory->m_Mem[a_Address]; /* Get high byte of a_Address */
 
 			if (hex_output)
-				sprintf(tmpstr,"$%04X> %02X %02X%02X:\t%s ($%02X%02X)\t;",org+address-2,opcode,tmp_word.B.l,tmp_word.B.h,name_table[opcode_table[entry].name],tmp_word.B.h,tmp_word.B.l);
+				sprintf(tmpstr,"$%04X> %02X %02X%02X:\t%s ($%02X%02X)\t;",org+a_Address-2,opcode,tmp_word.B.l,tmp_word.B.h,name_table[opcode_table[entry].name],tmp_word.B.h,tmp_word.B.l);
 			else
-				sprintf(tmpstr,"$%04X\t%s ($%02X%02X)\t;",org+address-2,name_table[opcode_table[entry].name],tmp_word.B.h,tmp_word.B.l);
+				sprintf(tmpstr,"$%04X\t%s ($%02X%02X)\t;",org+a_Address-2,name_table[opcode_table[entry].name],tmp_word.B.h,tmp_word.B.l);
 
 			/* Add cycle count if necessary */
-			if (cycle_counting) append_cycle(tmpstr,entry,tmp_word.W,org+address-2);
+			if (cycle_counting) append_cycle(tmpstr,entry,tmp_word.W,org+a_Address-2);
 			break;
 
 		case ABSIX:
-			address++;
-			tmp_word.B.l = memory->mem[address]; /* Get low byte of address */
-			address++;
-			tmp_word.B.h = memory->mem[address]; /* Get high byte of address */
+			a_Address++;
+			tmp_word.B.l = m_Memory->m_Mem[a_Address]; /* Get low byte of a_Address */
+			a_Address++;
+			tmp_word.B.h = m_Memory->m_Mem[a_Address]; /* Get high byte of a_Address */
 
 			if (hex_output)
-				sprintf(tmpstr,"$%04X> %02X %02X%02X:\t%s $%02X%02X,X\t;",org+address-2,opcode,tmp_word.B.l,tmp_word.B.h,name_table[opcode_table[entry].name],tmp_word.B.h,tmp_word.B.l);
+				sprintf(tmpstr,"$%04X> %02X %02X%02X:\t%s $%02X%02X,X\t;",org+a_Address-2,opcode,tmp_word.B.l,tmp_word.B.h,name_table[opcode_table[entry].name],tmp_word.B.h,tmp_word.B.l);
 			else
-				sprintf(tmpstr,"$%04X\t%s $%02X%02X,X\t;",org+address-2,name_table[opcode_table[entry].name],tmp_word.B.h,tmp_word.B.l);
+				sprintf(tmpstr,"$%04X\t%s $%02X%02X,X\t;",org+a_Address-2,name_table[opcode_table[entry].name],tmp_word.B.h,tmp_word.B.l);
 
 			/* Add cycle count if necessary */
-			if (cycle_counting) append_cycle(tmpstr,entry,tmp_word.W,org+address-2);
+			if (cycle_counting) append_cycle(tmpstr,entry,tmp_word.W,org+a_Address-2);
 			break;
 
 		case ABSIY:
-			address++;
-			tmp_word.B.l = memory->mem[address]; /* Get low byte of address */
-			address++;
-			tmp_word.B.h = memory->mem[address]; /* Get high byte of address */
+			a_Address++;
+			tmp_word.B.l = m_Memory->m_Mem[a_Address]; /* Get low byte of a_Address */
+			a_Address++;
+			tmp_word.B.h = m_Memory->m_Mem[a_Address]; /* Get high byte of a_Address */
 
 			if (hex_output)
-				sprintf(tmpstr,"$%04X> %02X %02X%02X:\t%s $%02X%02X,Y\t;",org+address-2,opcode,tmp_word.B.l,tmp_word.B.h,name_table[opcode_table[entry].name],tmp_word.B.h,tmp_word.B.l);
+				sprintf(tmpstr,"$%04X> %02X %02X%02X:\t%s $%02X%02X,Y\t;",org+a_Address-2,opcode,tmp_word.B.l,tmp_word.B.h,name_table[opcode_table[entry].name],tmp_word.B.h,tmp_word.B.l);
 			else
-				sprintf(tmpstr,"$%04X\t%s $%02X%02X,Y\t;",org+address-2,name_table[opcode_table[entry].name],tmp_word.B.h,tmp_word.B.l);
+				sprintf(tmpstr,"$%04X\t%s $%02X%02X,Y\t;",org+a_Address-2,name_table[opcode_table[entry].name],tmp_word.B.h,tmp_word.B.l);
 
 			/* Add cycle count if necessary */
-			if (cycle_counting) append_cycle(tmpstr,entry,tmp_word.W,org+address-2);
+			if (cycle_counting) append_cycle(tmpstr,entry,tmp_word.W,org+a_Address-2);
 			break;
 
 		case ZEPIX:
-			address++;
-			tmp_byte1 = memory->mem[address]; /* Get low byte of address */
+			a_Address++;
+			tmp_byte1 = m_Memory->m_Mem[a_Address]; /* Get low byte of a_Address */
 
 			if (hex_output)
-				sprintf(tmpstr,"$%04X> %02X %02X:\t%s $%02X,X\t\t;",org+address-1,opcode,tmp_byte1,name_table[opcode_table[entry].name],tmp_byte1);
+				sprintf(tmpstr,"$%04X> %02X %02X:\t%s $%02X,X\t\t;",org+a_Address-1,opcode,tmp_byte1,name_table[opcode_table[entry].name],tmp_byte1);
 			else
-				sprintf(tmpstr,"$%04X\t%s $%02X,X\t;",org+address-1,name_table[opcode_table[entry].name],tmp_byte1);
+				sprintf(tmpstr,"$%04X\t%s $%02X,X\t;",org+a_Address-1,name_table[opcode_table[entry].name],tmp_byte1);
 
 			/* Add cycle count if necessary */
-			if (cycle_counting) append_cycle(tmpstr,entry,org+address-1,org+address-1);
+			if (cycle_counting) append_cycle(tmpstr,entry,org+a_Address-1,org+a_Address-1);
 			break;
 
 		case ZEPIY:
-			address++;
-			tmp_byte1 = memory->mem[address]; /* Get low byte of address */
+			a_Address++;
+			tmp_byte1 = m_Memory->m_Mem[a_Address]; /* Get low byte of a_Address */
 
 			if (hex_output)
-				sprintf(tmpstr,"$%04X> %02X %02X:\t%s $%02X,Y\t\t;",org+address-1,opcode,tmp_byte1,name_table[opcode_table[entry].name],tmp_byte1);
+				sprintf(tmpstr,"$%04X> %02X %02X:\t%s $%02X,Y\t\t;",org+a_Address-1,opcode,tmp_byte1,name_table[opcode_table[entry].name],tmp_byte1);
 			else
-				sprintf(tmpstr,"$%04X\t%s $%02X,Y\t;",org+address-1,name_table[opcode_table[entry].name],tmp_byte1);
+				sprintf(tmpstr,"$%04X\t%s $%02X,Y\t;",org+a_Address-1,name_table[opcode_table[entry].name],tmp_byte1);
 
 			/* Add cycle count if necessary */
-			if (cycle_counting) append_cycle(tmpstr,entry,org+address-1,org+address-1);
+			if (cycle_counting) append_cycle(tmpstr,entry,org+a_Address-1,org+a_Address-1);
 			break;
 
 		case INDIN:
-			address++;
-			tmp_byte1 = memory->mem[address]; /* Get low byte of address */
+			a_Address++;
+			tmp_byte1 = m_Memory->m_Mem[a_Address]; /* Get low byte of a_Address */
 
 			if (hex_output)
-				sprintf(tmpstr,"$%04X> %02X %02X:\t%s ($%02X,X)\t\t;",org+address-1,opcode,tmp_byte1,name_table[opcode_table[entry].name],tmp_byte1);
+				sprintf(tmpstr,"$%04X> %02X %02X:\t%s ($%02X,X)\t\t;",org+a_Address-1,opcode,tmp_byte1,name_table[opcode_table[entry].name],tmp_byte1);
 			else
-				sprintf(tmpstr,"$%04X\t%s ($%02X,X)\t;",org+address-1,name_table[opcode_table[entry].name],tmp_byte1);
+				sprintf(tmpstr,"$%04X\t%s ($%02X,X)\t;",org+a_Address-1,name_table[opcode_table[entry].name],tmp_byte1);
 
 			/* Add cycle count if necessary */
-			if (cycle_counting) append_cycle(tmpstr,entry,org+address-1,org+address-1);
+			if (cycle_counting) append_cycle(tmpstr,entry,org+a_Address-1,org+a_Address-1);
 			break;
 
 		case ININD:
-			address++;
-			tmp_byte1 = memory->mem[address]; /* Get low byte of address */
+			a_Address++;
+			tmp_byte1 = m_Memory->m_Mem[a_Address]; /* Get low byte of a_Address */
 
 			if (hex_output)
-				sprintf(tmpstr,"$%04X> %02X %02X:\t%s ($%02X),Y\t\t;",org+address-1,opcode,tmp_byte1,name_table[opcode_table[entry].name],tmp_byte1);
+				sprintf(tmpstr,"$%04X> %02X %02X:\t%s ($%02X),Y\t\t;",org+a_Address-1,opcode,tmp_byte1,name_table[opcode_table[entry].name],tmp_byte1);
 			else
-				sprintf(tmpstr,"$%04X\t%s ($%02X),Y\t;",org+address-1,name_table[opcode_table[entry].name],tmp_byte1);
+				sprintf(tmpstr,"$%04X\t%s ($%02X),Y\t;",org+a_Address-1,name_table[opcode_table[entry].name],tmp_byte1);
 
 			/* Add cycle count if necessary */
-			if (cycle_counting) append_cycle(tmpstr,entry,org+address-1,org+address-1);
+			if (cycle_counting) append_cycle(tmpstr,entry,org+a_Address-1,org+a_Address-1);
 			break;
 
 		case RELAT:
-			address++;
-			tmp_byte1 = memory->mem[address]; /* Get relative modifier */
+			a_Address++;
+			tmp_byte1 = m_Memory->m_Mem[a_Address]; /* Get relative modifier */
 
 			if (hex_output) 
-				sprintf(tmpstr,"$%04X> %02X %02X:\t%s $%04X\t\t;",org+address-1,opcode,tmp_byte1,name_table[opcode_table[entry].name],(org+address)+(signed char)(tmp_byte1)+1);
+				sprintf(tmpstr,"$%04X> %02X %02X:\t%s $%04X\t\t;",org+a_Address-1,opcode,tmp_byte1,name_table[opcode_table[entry].name],(org+a_Address)+(signed char)(tmp_byte1)+1);
 			else
-				sprintf(tmpstr,"$%04X\t%s $%04X\t;",org+address-1,name_table[opcode_table[entry].name],(org+address)+(signed char)(tmp_byte1)+1);
+				sprintf(tmpstr,"$%04X\t%s $%04X\t;",org+a_Address-1,name_table[opcode_table[entry].name],(org+a_Address)+(signed char)(tmp_byte1)+1);
 
 			/* Add cycle count if necessary */
-			if (cycle_counting) append_cycle(tmpstr,entry,org+address,org+address);
+			if (cycle_counting) append_cycle(tmpstr,entry,org+a_Address,org+a_Address);
 			break;
 
 		case ACCUM:
 			if (hex_output)
-				sprintf(tmpstr,"$%04X> %02X:\t%s A\t\t;",org+address,opcode,name_table[opcode_table[entry].name]);
+				sprintf(tmpstr,"$%04X> %02X:\t%s A\t\t;",org+a_Address,opcode,name_table[opcode_table[entry].name]);
 			else
-				sprintf(tmpstr,"$%04X\t%s A\t\t;",org+address,name_table[opcode_table[entry].name]);
+				sprintf(tmpstr,"$%04X\t%s A\t\t;",org+a_Address,name_table[opcode_table[entry].name]);
 
 			/* Add cycle count if necessary */
-			if (cycle_counting) append_cycle(tmpstr,entry,org+address,org+address);
+			if (cycle_counting) append_cycle(tmpstr,entry,org+a_Address,org+a_Address);
 			break;
 
 		default:

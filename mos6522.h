@@ -18,12 +18,8 @@
 #ifndef MOS6522_H
 #define MOS6522_H
 
-#include "datatypes.h"
-
-
 class Machine;
 class Memory;
-
 
 // RS3, RS2, RS1, RS0 values (from address bus), addressing VIA registers.
 #define VIA_ORB   0x00		// Output register B
@@ -68,70 +64,68 @@ class Memory;
 class MOS6522
 {
 public:
-	MOS6522(Machine* machine, Memory* memory);
+	MOS6522(Machine* a_Machine, Memory* a_Memory);
 	~MOS6522();
 
-	void reset();
-	short exec();
+	void Reset();
+	short Exec();
 	
-	byte readByte(word offset);
-	void writeByte(word offset, byte value);
+	uint8_t ReadByte(uint16_t a_Offset);
+	void WriteByte(uint16_t a_Offset, uint8_t a_Value);
 	
-	void writeCA1(bool value);
-	void writeCA2(bool value);
+	void WriteCA1(bool a_Value);
+	void WriteCA2(bool a_Value);
 
-	void writeCB1(bool value);
-	void writeCB2(bool value);
+	void WriteCB1(bool a_Value);
+	void WriteCB2(bool a_Value);
 
 
 private:
-	void IRQSet(byte bits);
-	void IRQClear(byte bits);
+	void IRQSet(uint8_t a_Bits);
+	void IRQClear(uint8_t a_Bits);
 
 	bool ca1;
 	bool ca2;
 	bool cb1;
 	bool cb2;
 	
-	byte orb;		// Output Register B
-	byte ora;		// Output Register A
+	uint8_t orb;		// Output Register B
+	uint8_t ora;		// Output Register A
 
-	byte ddrb;		// Data Direction Register B (input = 0, output = 1)
-	byte ddra;		// Data Direction Register A (input = 0, output = 1)
+	uint8_t ddrb;		// Data Direction Register B (input = 0, output = 1)
+	uint8_t ddra;		// Data Direction Register A (input = 0, output = 1)
 
-	byte t1_latch_low;
-	byte t1_latch_high;
-	word t1_counter;
+	uint8_t t1_latch_low;
+	uint8_t t1_latch_high;
+	uint16_t t1_counter;
 	bool t1_run;
 
-	byte t2_latch_low;
-	byte t2_latch_high;
-	word t2_counter;
+	uint8_t t2_latch_low;
+	uint8_t t2_latch_high;
+	uint16_t t2_counter;
 	bool t2_run;
 
-	byte sr;		// Shift register
+	uint8_t sr;		// Shift register
 
-	byte acr;		// Auxilliary control register (shift mode, etc)
+	uint8_t acr;		// Auxilliary control register (shift mode, etc)
 					// |  7  |  6  |  5  |     4    |  3  |  2  |  1  |     0    | 
 					// |    CB2 ctrl     | CB1 ctrl |     CA2 ctrl    | CA1 ctrl | 
 
-	byte pcr;		// Peripheral control register
+	uint8_t pcr;		// Peripheral control register
 					// |  7  |  6  |    5    |  4  |  3  |  2  |      1       |      0       | 
 					// |  T1 ctrl  | T2 ctrl |     SR  ctrl    | PB latch en. | PA latch en. |
 
+	uint8_t ifr;		// Interrupt Flag Register:   | IRQ  | T1 | T2 | CB1 | CB2 | SR | CA1 | CA2 |
+	uint8_t ier;		// Interrupt Enable Register: | ctrl | T1 | T2 | CB1 | CB2 | SR | CA1 | CA2 |
 
-	byte ifr;		// Interrupt Flag Register:   | IRQ  | T1 | T2 | CB1 | CB2 | SR | CA1 | CA2 |
-	byte ier;		// Interrupt Enable Register: | ctrl | T1 | T2 | CB1 | CB2 | SR | CA1 | CA2 |
+	uint8_t ira;		// Input Register A
+	uint8_t iral;
 
-	byte ira;		// Input Register A
-	byte iral;
-
-	byte irb;		// Input Register B
-	byte irbl;
+	uint8_t irb;		// Input Register B
+	uint8_t irbl;
 	
-	
-	Machine* machine;
-	Memory* memory;
+	Machine* m_Machine;
+	Memory* m_Memory;
 };
 
 #endif // MOS6502_H

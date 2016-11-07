@@ -27,160 +27,133 @@
 #include "oric.h"
 
 
-using namespace std;
-
-
 Oric::Oric() : 
-	last_command("")
+	m_LastCommand("")
 {
-	machine = new Machine();
+	m_Machine = new Machine();
 }
-
 
 Oric::~Oric()
 {
-	delete machine;
+	delete m_Machine;
 }
 
-
-
-void Oric::monitor()
+void Oric::Monitor()
 {
-	string cmd;
+	std::string cmd;
 
-	while (true)
-	{
-		cout << ">> " << flush;
-		cin.clear();
-		getline(cin, cmd);
+	while (true) {
+		std::cout << ">> " << std::flush;
+		std::cin.clear();
+		getline(std::cin, cmd);
 
-		if (! handleCommand(cmd))
+		if (! HandleCommand(cmd)) {
 			break;
+		}
 	}
 }
 
-
-word Oric::stringToWord(string addr)
+uint16_t Oric::StringToWord(std::string& a_Addr)
 {
-	word x;
-	stringstream ss;
-	ss << std::hex << addr;
+	uint16_t x;
+	std::stringstream ss;
+	ss << std::hex << a_Addr;
 	ss >> x;
 	return x;
 }
 
-
-
-bool Oric::handleCommand(string line)
+bool Oric::HandleCommand(std::string& a_Line)
 {
-	if (line.length() == 0)
-	{
-		if (last_command.length() == 0)
+	if (a_Line.length() == 0) {
+		if (m_LastCommand.length() == 0) {
 			return true;
-
-		line = last_command;
+		}
+		a_Line = m_LastCommand;
 	}
-	else
-		last_command = line;
+	else {
+		m_LastCommand = a_Line;
+	}
 
 	std::vector<std::string> parts;
-	boost::split(parts, line, boost::is_any_of("\t "));
-	string cmd = parts[0];
+	boost::split(parts, a_Line, boost::is_any_of("\t "));
+	std::string cmd = parts[0];
 
-	if (cmd == "h")
-	{
-		cout << "Available monitor commands:" << endl << endl;
-		cout << "h              : help (showing this text)" << endl;
-		cout << "g <address>    : go to address and run" << endl;
-		cout << "pc <address>   : set program counter to address" << endl;
-		cout << "s [n]          : step one or possible n steps" << endl;
-		cout << "i              : print machine info" << endl;
-		cout << "m <address> <n>: dump memory from address and n bytes ahead" << endl;
-		cout << "" << endl;
+	if (cmd == "h") {
+		std::cout << "Available monitor commands:" << std::endl << std::endl;
+		std::cout << "h              : help (showing this text)" << std::endl;
+		std::cout << "g <address>    : go to address and run" << std::endl;
+		std::cout << "pc <address>   : set program counter to address" << std::endl;
+		std::cout << "s [n]          : step one or possible n steps" << std::endl;
+		std::cout << "i              : print machine info" << std::endl;
+		std::cout << "m <address> <n>: dump memory from address and n bytes ahead" << std::endl;
+		std::cout << "" << std::endl;
 		return true;
 	}
-
-	if (cmd == "g")			// go <address>>> >> 
-	{
+	if (cmd == "g") { // go <address>
 		long steps = 0;
-		if (parts.size() == 2)
+		if (parts.size() == 2) {
 			steps = std::stol(parts[1]);
-
-		machine->run(steps);
+		}
+		m_Machine->Run(steps);
 	}
-
-	else if (cmd == "pc")	// set pc
-	{
-		if (parts.size() < 2)
-		{
-			cout << "Error: missing address" << endl;
+	else if (cmd == "pc") { // set pc
+		if (parts.size() < 2) {
+			std::cout << "Error: missing address" << std::endl;
 			return true;
 		}
-		word addr = stringToWord(parts[1]);
-		machine->getCPU().setPC(addr);
-		machine->getCPU().printStat();
+		uint16_t addr = StringToWord(parts[1]);
+		m_Machine->GetCPU().SetPC(addr);
+		m_Machine->GetCPU().PrintStat();
 	}
-
-	else if (cmd == "s")	// step
-	{
-		if (parts.size() == 2)
-			machine->run(std::stol(parts[1]));
-		else
-		{
+	else if (cmd == "s") { // step
+		if (parts.size() == 2) {
+			m_Machine->Run(std::stol(parts[1]));
+		}
+		else {
 			bool brk = false;
-			machine->getCPU().execInstruction(brk);
-			if (brk) cout << "Instruction BRK executed." << endl;
+			m_Machine->GetCPU().ExecInstruction(brk);
+			if (brk) {
+				std::cout << "Instruction BRK executed." << std::endl;
+			}
 		}
 	}
-
-	else if (cmd == "i")	// info
-	{
-		cout << "PC: " << machine->getCPU().getPC() << endl;
-		machine->getCPU().printStat();
+	else if (cmd == "i") { // info
+		std::cout << "PC: " << m_Machine->GetCPU().GetPC() << std::endl;
+		m_Machine->GetCPU().PrintStat();
 	}
-
-	else if (cmd == "m")	// info
-	{
-		if (parts.size() < 3)
-		{
-			cout << "Use: m <start address> <length>" << endl;
+	else if (cmd == "m") { // info
+		if (parts.size() < 3) {
+			std::cout << "Use: m <start address> <length>" << std::endl;
 			return true;
 		}
-		machine->getMemory().show(stringToWord(parts[1]), stringToWord(parts[2]));
+		m_Machine->GetMemory().Show(StringToWord(parts[1]), StringToWord(parts[2]));
+	}
+	else if (cmd == "quiet") {
+		m_Machine->GetCPU().SetQuiet(true);
 	}
 
-	else if (cmd == "quiet")
-	{
-		machine->getCPU().setQuiet(true);
-	}
-
-	else if (cmd == "q")	// quit
-	{
-		cout << "quit" << endl;
+	else if (cmd == "q") { // quit
+		std::cout << "quit" << std::endl;
 		return false;
 	}
 
 	return true;
 }
 
-
 static void signal_handler(int);
 void init_signals(void);
 
 struct sigaction sigact;
+Oric g_Oric;
 
-Oric oric;
-
-
-static void signal_handler(int sig)
+static void signal_handler(int a_Sig)
 {
-	cout << "Signal: " << sig << endl;
-	if (sig == SIGINT)
-		oric.getMachine().stop();
+	std::cout << "Signal: " << a_Sig << std::endl;
+	if (a_Sig == SIGINT)
+		g_Oric.GetMachine().Stop();
 }
 
-
-void init_signals(void)
+void init_signals()
 {
 	sigact.sa_handler = signal_handler;
 	sigemptyset(&sigact.sa_mask);
@@ -188,26 +161,24 @@ void init_signals(void)
 	sigaction(SIGINT, &sigact, (struct sigaction *)NULL);
 }
 
-
-
 int main(int argc, char *argv[])
 {
 	char pwd[1024];
 	getcwd(pwd, 1024);
-	cout << "pwd: " << pwd << endl;
+	std::cout << "pwd: " << pwd << std::endl;
 
 	init_signals();
 	
-	//oric.getMemory()->load("basic10.rom", 0xc000);
-	//oric.getMemory()->load("ROMS/dayofweek.rom", 0xc000);
-	//oric.getMemory()->load("ROMS/AllSuiteA.rom", 0x4000);
+	//g_Oric.GetMemory()->Load("basic10.rom", 0xc000);
+	//g_Oric.GetMemory()->Load("ROMS/dayofweek.rom", 0xc000);
+	//g_Oric.GetMemory()->Load("ROMS/AllSuiteA.rom", 0x4000);
 
-	oric.getMachine().getMemory().load("ROMS/basic11b.rom", 0xc000);
-	oric.getMachine().getMemory().load("ROMS/font.rom", 0xb400);
+	g_Oric.GetMachine().GetMemory().Load("ROMS/basic11b.rom", 0xc000);
+	g_Oric.GetMachine().GetMemory().Load("ROMS/font.rom", 0xb400);
 
-	oric.getMachine().reset();
-	cout << endl;
-	oric.monitor();
+	g_Oric.GetMachine().Reset();
+	std::cout << std::endl;
+	g_Oric.Monitor();
 
 	return 0;
 }

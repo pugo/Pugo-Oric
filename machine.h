@@ -20,7 +20,6 @@
 
 #include <iostream>
 
-#include "datatypes.h"
 #include "mos6502.h"
 #include "mos6522.h"
 #include "memory.h"
@@ -32,32 +31,32 @@ public:
 	Machine();
 	virtual ~Machine();
 
-	Memory& getMemory() { return *memory; }
-	MOS6502& getCPU() { return *cpu; }
-	MOS6522& getVIA() { return *mos_6522; }
+	Memory& GetMemory() { return *m_Memory; }
+	MOS6502& GetCPU() { return *m_Cpu; }
+	MOS6522& GetVIA() { return *m_Mos_6522; }
 
-	void reset();
-	void run(long steps);
-	void run(word address, long steps) { cpu->setPC(address); run(steps); }
-	void stop() { brk = true; }
+	void Reset();
+	void Run(long a_Steps);
+	void Run(uint16_t a_Address, long a_Steps) { m_Cpu->SetPC(a_Address); Run(a_Steps); }
+	void Stop() { m_Brk = true; }
 
-	static inline byte read_byte(Machine &machine, word address);
-	static inline byte read_byte_zp(Machine &machine, byte address);
+	static inline uint8_t read_byte(Machine& a_machine, uint16_t a_Address);
+	static inline uint8_t read_byte_zp(Machine& a_Machine, uint8_t a_Address);
 
-	static inline word read_word(Machine &machine, word address);
-	static inline word read_word_zp(Machine &machine, byte address);
+	static inline uint16_t read_word(Machine& a_Machine, uint16_t a_Address);
+	static inline uint16_t read_word_zp(Machine& a_Machine, uint8_t a_Address);
 
-	static inline void write_byte(Machine &machine, word address, byte val);
-	static inline void write_byte_zp(Machine &machine, byte address, byte val);
+	static inline void write_byte(Machine& a_Machine, uint16_t a_Address, uint8_t a_Val);
+	static inline void write_byte_zp(Machine& a_Machine, uint8_t a_Address, uint8_t a_Val);
 
-	bool brk;
+	bool m_Brk;
 
 protected:
-	MOS6502* cpu;
-	MOS6522* mos_6522;
-	Memory* memory;
+	MOS6502* m_Cpu;
+	MOS6522* m_Mos_6522;
+	Memory* m_Memory;
 
-	bool running;
+	bool m_Running;
 };
 
 #endif // MACHINE_H

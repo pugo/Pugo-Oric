@@ -1,23 +1,6 @@
-// =========================================================================
-//   Copyright (C) 2009-2014 by Anders Piniesjö <pugo@pugo.org>
-//
-//   This program is free software: you can redistribute it and/or modify
-//   it under the terms of the GNU General Public License as published by
-//   the Free Software Foundation, either version 3 of the License, or
-//   (at your option) any later version.
-//
-//   This program is distributed in the hope that it will be useful,
-//   but WITHOUT ANY WARRANTY; without even the implied warranty of
-//   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-//   GNU General Public License for more details.
-//
-//   You should have received a copy of the GNU General Public License
-//   along with this program.  If not, see <http://www.gnu.org/licenses/>
-// =========================================================================
-
+// Copyright (C) 2009-2016 by Anders Piniesjö <pugo@pugo.org>
 
 #include <unistd.h>
-
 #include <iostream>
 #include <sstream>
 #include <cstdlib>
@@ -26,113 +9,105 @@
 
 #include "machine.h"
 
-
-using namespace std;
-
-
 Machine::Machine() : 
-	running(false),
-	brk(false)
+	m_Running(false),
+	m_Brk(false)
 {
-	memory = new Memory(65536);
-	cpu = new MOS6502(this, memory);
-	mos_6522 = new MOS6522(this, memory);
+	m_Memory = new Memory(65536);
+	m_Cpu = new MOS6502(this, m_Memory);
+	m_Mos_6522 = new MOS6522(this, m_Memory);
 	
-	cpu->memory_read_byte_handler = read_byte;
-	cpu->memory_read_byte_zp_handler = read_byte_zp;
-	cpu->memory_read_word_handler = read_word;
-	cpu->memory_read_word_zp_handler = read_word_zp;
-	cpu->memory_write_byte_handler = write_byte;
-	cpu->memory_write_byte_zp_handler = write_byte_zp;
+	m_Cpu->memory_read_byte_handler = read_byte;
+	m_Cpu->memory_read_byte_zp_handler = read_byte_zp;
+	m_Cpu->memory_read_word_handler = read_word;
+	m_Cpu->memory_read_word_zp_handler = read_word_zp;
+	m_Cpu->memory_write_byte_handler = write_byte;
+	m_Cpu->memory_write_byte_zp_handler = write_byte_zp;
 }
 
 
 Machine::~Machine()
 {
-	delete cpu;
-	delete memory;
+	delete m_Cpu;
+	delete m_Memory;
 }
 
-
-void Machine::reset()
+void Machine::Reset()
 {
-	cpu->reset();
+	m_Cpu->Reset();
 }
-
 
 /**
  * Run machine.
  * \param steps number of steps to run. If 0: run infinite (or to BRK).
  */
-void Machine::run(long steps)
+void Machine::Run(long a_Steps)
 {
 	long cycles = 0;
 	long steps_count = 0;
-	brk = false;
+	m_Brk = false;
 
-	while(!brk)
-	{
-		cycles += cpu->execInstruction(brk);
-		mos_6522->exec();
+	while (! m_Brk) {
+		cycles += m_Cpu->ExecInstruction(m_Brk);
+		m_Mos_6522->Exec();
 
 		++steps_count;
-		if (steps > 0 && steps_count == steps)
+		if (a_Steps > 0 && steps_count == a_Steps) {
 			return;
+		}
 	}
 }
-
 
 // --- Memory functions
 
-
-byte inline Machine::read_byte(Machine &machine, word address)
+uint8_t inline Machine::read_byte(Machine& a_Machine, uint16_t a_Address)
 {
-	if (address >= 0x300 && address < 0x400)
-	{
-		cout << "read: " << hex << address << endl;
-		return machine.getVIA().readByte(address);
+	if (a_Address >= 0x300 && a_Address < 0x400) {
+		std::cout << "read: " << std::hex << a_Address << std::endl;
+		return a_Machine.GetVIA().ReadByte(a_Address);
 	}
 
-	return machine.getMemory().mem[address];
+	return a_Machine.GetMemory().m_Mem[a_Address];
 }
 
-byte inline Machine::read_byte_zp(Machine &machine, byte address)
+uint8_t inline Machine::read_byte_zp(Machine &a_Machine, uint8_t a_Address)
 {
-	return machine.getMemory().mem[address];
+	return a_Machine.GetMemory().m_Mem[a_Address];
 }
 
-word inline Machine::read_word(Machine &machine, word address)
+uint16_t inline Machine::read_word(Machine &a_Machine, uint16_t a_Address)
 {
-	if (address >= 0x300 && address < 0x400)
-	{
-		cout << "read word: " << hex << address << endl;
+	if (a_Address >= 0x300 && a_Address < 0x400) {
+		std::cout << "read word: " << std::hex << a_Address << std::endl;
 	}
 
-	return machine.getMemory().mem[address] | machine.getMemory().mem[address+1]<<8;
+	return a_Machine.GetMemory().m_Mem[a_Address] | a_Machine.GetMemory().m_Mem[a_Address + 1] << 8;
 }
 
-word inline Machine::read_word_zp(Machine &machine, byte address)
+uint16_t inline Machine::read_word_zp(Machine &a_Machine, uint8_t a_Address)
 {
-	return machine.getMemory().mem[address] | machine.getMemory().mem[address+1 & 0xff]<<8;
+	return a_Machine.GetMemory().m_Mem[a_Address] | a_Machine.GetMemory().m_Mem[a_Address+1 & 0xff] << 8;
 }
 
-void inline Machine::write_byte(Machine &machine, word address, byte val)
+void inline Machine::write_byte(Machine &a_Machine, uint16_t a_Address, uint8_t a_Val)
 {
-	if (address >= 0xc000)
+	if (a_Address >= 0xc000) {
 		return;
-	if (address >= 0x300 && address < 0x400)
-	{
-		machine.getVIA().writeByte(address, val);
+	}
+	
+	if (a_Address >= 0x300 && a_Address < 0x400) {
+		a_Machine.GetVIA().WriteByte(a_Address, a_Val);
 	}
 
-	machine.getMemory().mem[address] = val;
+	a_Machine.GetMemory().m_Mem[a_Address] = a_Val;
 }
 
-void inline Machine::write_byte_zp(Machine &machine, byte address, byte val)
+void inline Machine::write_byte_zp(Machine &a_Machine, uint8_t a_Address, uint8_t a_Val)
 {
-	if (address >= 0x00ff)
+	if (a_Address >= 0x00ff) {
 		return;
+	}
 
-	machine.getMemory().mem[address] = val;
+	a_Machine.GetMemory().m_Mem[a_Address] = a_Val;
 }
 

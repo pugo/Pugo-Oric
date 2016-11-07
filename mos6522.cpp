@@ -23,16 +23,18 @@
 using namespace std;
 
 
-MOS6522::MOS6522(Machine* machine, Memory* memory) : machine(machine), memory(memory)
+MOS6522::MOS6522(Machine* a_Machine, Memory* a_Memory) :
+	m_Machine(a_Machine),
+	m_Memory(a_Memory)
 {
-	reset();
+	Reset();
 }
 
 MOS6522::~MOS6522()
 {
 }
 
-void MOS6522::reset()
+void MOS6522::Reset()
 {
 	t1_run = false;
 	t2_run = false;
@@ -69,14 +71,13 @@ void MOS6522::reset()
 	irbl = 0;
 }
 
-short MOS6522::exec()
+short MOS6522::Exec()
 {
 }
 
-
-byte MOS6522::readByte(word offset)
+uint8_t MOS6522::ReadByte(uint16_t a_Offset)
 {
-	switch(offset & 0x000f)
+	switch(a_Offset & 0x000f)
 	{
 	case VIA_ORB:
 		cout << "Read VIA_ORB" << endl;
@@ -139,39 +140,39 @@ byte MOS6522::readByte(word offset)
 	return 0;
 }
 
-void MOS6522::writeByte(word offset, byte value)
+void MOS6522::WriteByte(uint16_t a_Offset, uint8_t a_Value)
 {
-	switch(offset & 0x000f)
+	switch(a_Offset & 0x000f)
 	{
 	case VIA_ORB:
 		cout << "Write VIA_ORB";
-		orb = value;
+		orb = a_Value;
 		IRQClear(VIA_IRQ_CB1);
 		if ((pcr & 0xe0) == 0x00 || (pcr & 0xe0) == 0x40)
 			IRQClear(VIA_IRQ_CB2);
 		break;
 	case VIA_ORA:
 		cout << "Write VIA_ORA";
-		ora = value;
+		ora = a_Value;
 		IRQClear(VIA_IRQ_CA1);
 		if ((pcr & 0x0e) == 0x00 || (pcr & 0x0e) == 0x04)
 			IRQClear(VIA_IRQ_CA2);
 		break;
 	case VIA_DDRB:
 		cout << "Write VIA_DDRB";
-		ddrb = value;
+		ddrb = a_Value;
 		break;
 	case VIA_DDRA:
 		cout << "Write VIA_DDRA";
-		ddra = value;
+		ddra = a_Value;
 		break;
 	case VIA_T1C_L:
 		cout << "Write VIA_T1C_L";
-		t1_latch_low = value;
+		t1_latch_low = a_Value;
 		break;
 	case VIA_T1C_H:
 		cout << "Write VIA_T1C_H";
-		t1_latch_high = value;
+		t1_latch_high = a_Value;
 		t1_counter = (t1_latch_high << 8) | t1_latch_low;
 		t1_run = true;
 		IRQClear(VIA_IRQ_T1);
@@ -180,20 +181,20 @@ void MOS6522::writeByte(word offset, byte value)
 		break;
 	case VIA_T1L_L:
 		cout << "Write VIA_T1L_L";
-		t1_latch_low = value;
+		t1_latch_low = a_Value;
 		break;
 	case VIA_T1L_H:
 		cout << "Write VIA_T1L_H";
-		t1_latch_high = value;
+		t1_latch_high = a_Value;
 		IRQClear(VIA_IRQ_T1);
 		break;
 	case VIA_T2C_L:
 		cout << "Write VIA_T2C_L";
-		t2_latch_low = value;
+		t2_latch_low = a_Value;
 		break;
 	case VIA_T2C_H:
 		cout << "Write VIA_T2C_H";
-		t2_latch_high = value;
+		t2_latch_high = a_Value;
 		t2_counter = (t2_latch_high << 8) | t2_latch_low;
 		t2_run = true;
 		IRQClear(VIA_IRQ_T2);
@@ -201,43 +202,43 @@ void MOS6522::writeByte(word offset, byte value)
 		break;
 	case VIA_SR:
 		cout << "Write VIA_SR";
-		sr = value;
+		sr = a_Value;
 		IRQClear(VIA_IRQ_SR);
 		break;
 	case VIA_ACR:
 		cout << "Write VIA_ACR";
-		acr = value;
+		acr = a_Value;
 		break;
 	case VIA_PCR:
 		cout << "Write VIA_PCR, ";
-		pcr = value;
+		pcr = a_Value;
 		// TODO: ca and cb pulsing stuff.
 		break;
 	case VIA_IFR:
 		cout << "Write VIA_IFR";
-		ifr &= (~value) & 0x7f;
+		ifr &= (~a_Value) & 0x7f;
 		if (ifr & ier)
 			ifr |= 0x80;
 		break;
 	case VIA_IER:
 		cout << "Write VIA_IER";
-		if( value & VIA_IER_WRITE )
-			ier |= (value & 0x7f);	// if bit 7: turn on given bits.
+		if( a_Value & VIA_IER_WRITE )
+			ier |= (a_Value & 0x7f);	// if bit 7: turn on given bits.
 		else
-			ier &= ~(value & 0x7f);	// if !bit 7: turn off given bits.
+			ier &= ~(a_Value & 0x7f);	// if !bit 7: turn off given bits.
 		// TODO: check interrupt? 
 		break;
 	case VIA_IORA2:
 		cout << "Write VIA_IORA2";
-		ora = value;
+		ora = a_Value;
 		break;
 	}
 	
-	cout << ": " << hex << (int) value << endl;
+	cout << ": " << hex << (int) a_Value << endl;
 }
 
 
-void MOS6522::IRQSet(byte bits)
+void MOS6522::IRQSet(uint8_t bits)
 {
 	ifr |= bits;
 	if ((ifr & ier) & 0x7f)
@@ -247,7 +248,7 @@ void MOS6522::IRQSet(byte bits)
 		cout << "TODO: send IRQ to CPU here!" << endl;
 }
 
-void MOS6522::IRQClear(byte bits)
+void MOS6522::IRQClear(uint8_t bits)
 {
 	ifr &= ~bits;
 
@@ -257,77 +258,72 @@ void MOS6522::IRQClear(byte bits)
 }
 
 
-void MOS6522::writeCA1(bool value)
+void MOS6522::WriteCA1(bool a_Value)
 {
-	if (!ca1 && value)
-	{
+	if (!ca1 && a_Value) {
 		// Positive transition only of enabled in PCR.
 		if (pcr & VIA_PCR_CONTROL_CA1)
 			IRQSet(VIA_IRQ_CA1);
 	}
-	else if (ca1 && ! value)
-	{
+	else if (ca1 && ! a_Value) {
 		// Negative transition only of enabled in PCR.
 		if (!(pcr & VIA_PCR_CONTROL_CA1))
 			IRQSet(VIA_IRQ_CA1);
 	}
 
-	ca1 = value;
+	ca1 = a_Value;
 }
 
-
-void MOS6522::writeCA2(bool value)
+void MOS6522::WriteCA2(bool a_Value)
 {
-	if (!ca2 && value)
-	{
+	if (!ca2 && a_Value) {
 		// Positive transition only of enabled in PCR.
-		if ((pcr & VIA_PCR_CONTROL_CA2) == 0x04 || (pcr & VIA_PCR_CONTROL_CA2) == 0x06)
+		if ((pcr & VIA_PCR_CONTROL_CA2) == 0x04 || (pcr & VIA_PCR_CONTROL_CA2) == 0x06) {
 			IRQSet(VIA_IRQ_CA2);
-		ca2 = value;
+		}
+		ca2 = a_Value;
 	}
-	else if (ca2 && ! value)
-	{
+	else if (ca2 && ! a_Value) {
 		// Negative transition only of enabled in PCR.
 		if ((pcr & VIA_PCR_CONTROL_CA2) == 0x00 || (pcr & VIA_PCR_CONTROL_CA2) == 0x02)
 			IRQSet(VIA_IRQ_CA2);
-		ca2 = value;
+		ca2 = a_Value;
 	}
 }
 
 
-void MOS6522::writeCB1(bool value)
+void MOS6522::WriteCB1(bool a_Value)
 {
-	if (!cb1 && value)
-	{
+	if (!cb1 && a_Value) {
 		// Positive transition only of enabled in PCR.
-		if (pcr & VIA_PCR_CONTROL_CB1)
+		if (pcr & VIA_PCR_CONTROL_CB1) {
 			IRQSet(VIA_IRQ_CB1);
+		}
 	}
-	else if (cb1 && ! value)
-	{
+	else if (cb1 && ! a_Value) {
 		// Negative transition only of enabled in PCR.
-		if (!(pcr & VIA_PCR_CONTROL_CB1))
+		if (!(pcr & VIA_PCR_CONTROL_CB1)) {
 			IRQSet(VIA_IRQ_CB1);
+		}
 	}
 
-	cb1 = value;
+	cb1 = a_Value;
 }
 
-
-void MOS6522::writeCB2(bool value)
+void MOS6522::WriteCB2(bool a_Value)
 {
-	if (!cb2 && value)
-	{
+	if (!cb2 && a_Value) {
 		// Positive transition only of enabled in PCR.
-		if ((pcr & VIA_PCR_CONTROL_CB2) == 0x40 || (pcr & VIA_PCR_CONTROL_CB2) == 0x60)
+		if ((pcr & VIA_PCR_CONTROL_CB2) == 0x40 || (pcr & VIA_PCR_CONTROL_CB2) == 0x60) {
 			IRQSet(VIA_IRQ_CB2);
-		cb2 = value;
+		}
+		cb2 = a_Value;
 	}
-	else if (cb2 && ! value)
-	{
+	else if (cb2 && ! a_Value) {
 		// Negative transition only of enabled in PCR.
-		if ((pcr & VIA_PCR_CONTROL_CB2) == 0x00 || (pcr & VIA_PCR_CONTROL_CB2) == 0x20)
+		if ((pcr & VIA_PCR_CONTROL_CB2) == 0x00 || (pcr & VIA_PCR_CONTROL_CB2) == 0x20) {
 			IRQSet(VIA_IRQ_CB2);
-		cb2 = value;
+		}
+		cb2 = a_Value;
 	}
 }
