@@ -21,6 +21,9 @@
 #include "memory.h"
 #include "mos6502_opcodes.h"
 
+#include <memory>
+
+
 #define STACK_BOTTOM 0x0100
 
 #define NMI_VECTOR_L 0xFFFA
@@ -48,7 +51,7 @@ typedef void (*f_memory_write_byte_zp_handler)(Machine &oric, uint8_t address, u
 class MOS6502
 {
 public:
-	MOS6502(Machine* a_Machine, Memory* a_Memory);
+	MOS6502(std::shared_ptr<Machine> a_Machine, std::shared_ptr<Memory> a_Memory);
 	~MOS6502();
 
 	void SetPC(uint16_t a_PC) { PC = a_PC; }
@@ -63,7 +66,7 @@ public:
 	void PrintStat();
 	void PrintStat(uint16_t a_Address);
 
-	bool ExecInstructionCycles(int a_Cycles);
+	bool ExecInstructionCycles(int16_t a_Cycles);
 	short ExecInstruction(bool& a_Brk);
 
 	Memory& GetMemory() { return *m_Memory; }
@@ -107,8 +110,8 @@ public:
 	std::string Disassemble(uint16_t a_Address);
 
 protected:
-	Machine* m_Machine;
-	Memory* m_Memory;
+	std::shared_ptr<Machine> m_Machine;
+	std::shared_ptr<Memory> m_Memory;
 
 	uint16_t PC;
 	uint8_t SP;

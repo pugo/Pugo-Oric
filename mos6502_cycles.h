@@ -18,6 +18,11 @@
 #ifndef OPCODE_CYCLES_H
 #define OPCODE_CYCLES_H
 
+typedef struct cycle_info {
+	uint8_t cycles;
+	uint8_t cross_page;
+} cycle_info;
+
 
 cycle_info opcode_cycles[] = {
 	{7, 0}, {6, 0}, {0, 0}, {0, 0}, {0, 0}, {3, 0}, {5, 0}, {0, 0},  // 00

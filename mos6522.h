@@ -18,6 +18,8 @@
 #ifndef MOS6522_H
 #define MOS6522_H
 
+#include <memory>
+
 class Machine;
 class Memory;
 
@@ -64,7 +66,7 @@ class Memory;
 class MOS6522
 {
 public:
-	MOS6522(Machine* a_Machine, Memory* a_Memory);
+	MOS6522(std::shared_ptr<Machine> a_Machine, std::shared_ptr<Memory> a_Memory);
 	~MOS6522();
 
 	void Reset();
@@ -124,8 +126,8 @@ private:
 	uint8_t irb;		// Input Register B
 	uint8_t irbl;
 	
-	Machine* m_Machine;
-	Memory* m_Memory;
+	std::shared_ptr<Machine> m_Machine;
+	std::shared_ptr<Memory> m_Memory;
 };
 
 #endif // MOS6502_H

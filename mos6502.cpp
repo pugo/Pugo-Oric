@@ -1,20 +1,4 @@
-// =========================================================================
-//   Copyright (C) 2009-2014 by Anders Piniesjö <pugo@pugo.org>
-//
-//   This program is free software: you can redistribute it and/or modify
-//   it under the terms of the GNU General Public License as published by
-//   the Free Software Foundation, either version 3 of the License, or
-//   (at your option) any later version.
-//
-//   This program is distributed in the hope that it will be useful,
-//   but WITHOUT ANY WARRANTY; without even the implied warranty of
-//   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-//   GNU General Public License for more details.
-//
-//   You should have received a copy of the GNU General Public License
-//   along with this program.  If not, see <http://www.gnu.org/licenses/>
-// =========================================================================
-
+// Copyright (C) 2009-2016 by Anders Piniesjö <pugo@pugo.org>
 
 #include "mos6502.h"
 #include "mos6502_opcodes.h"
@@ -25,7 +9,6 @@
 
 // Macros for addressing modes
 #define READ_BYTE_IMM()     memory_read_byte_handler(*m_Machine, PC++)
-
 
 // Read addresses
 #define READ_ADDR_ZP()      (READ_BYTE_IMM())
@@ -41,7 +24,6 @@
 
 #define READ_JUMP_ADDR()    (b1 = READ_BYTE_IMM(), b1 & 0x80 ? (PC - ((b1 ^ 0xff)+1)) : (PC + b1))
 
-
 // Read data
 #define READ_BYTE_ZP()      memory_read_byte_zp_handler(*m_Machine, READ_ADDR_ZP())
 #define READ_BYTE_ZP_X()    memory_read_byte_zp_handler(*m_Machine, READ_ADDR_ZP_X())
@@ -56,7 +38,6 @@
 
 #define PUSH_BYTE_STACK(b)  (m_Memory->m_Mem[ (SP--) | STACK_BOTTOM ] = (b))
 #define POP_BYTE_STACK      (m_Memory->m_Mem[ (++SP) | STACK_BOTTOM ])
-
 
 // Macros for flag handling
 #define SET_FLAG_NZ(B)     (N_INTERN = Z_INTERN = B)
@@ -100,11 +81,7 @@ const char * opcodenames[256] = {
     "SED",     "SBC_ABS_Y", "(none)",  "(none)", "(none)",    "SBC_ABS_X", "INC_ABS_X", "(none)",
 };
 
-
-
-using namespace std;
-
-MOS6502::MOS6502(Machine* a_Machine, Memory* a_Memory) :
+MOS6502::MOS6502(std::shared_ptr<Machine> a_Machine, std::shared_ptr<Memory> a_Memory) :
 	A(0),
 	X(0),
 	Y(0),
@@ -155,7 +132,6 @@ void MOS6502::PrintStat(uint16_t a_Address)
 	printf("SP: %02X  |  A: %02X, X: %02X, Y: %02X  |  N: %d, Z: %d, C: %d, V: %d --- (%02X)\n", SP, A, X, Y, N, Z, C, V, a_Address);
 }
 
-
 //   7                           0
 // +---+---+---+---+---+---+---+---+
 // | N | V |   | B | D | I | Z | C |
@@ -174,10 +150,8 @@ uint8_t MOS6502::GetP()
 	return result;
 }
 
-
 void MOS6502::SetP(uint8_t a_P)
 {
-	//printf("setP: incoming byte: %X\n", a_P);
 	N_INTERN = (a_P & FLAG_N) ? FLAG_N : 0;
 	V = !! (a_P & FLAG_V);
 	B = !! (a_P & FLAG_B);
@@ -187,7 +161,6 @@ void MOS6502::SetP(uint8_t a_P)
 	C = !! (a_P & FLAG_C);
 	//printf("setP: results: N=%d, V=%d, B=%d, D=%d, I=%d, Z=%d, C=%d\n", IS_NEGATIVE, V, B, D, I, IN_ZERO, C);
 }
-
 
 void MOS6502::NMI()
 {
@@ -245,7 +218,6 @@ void MOS6502::ADC(uint8_t a_Val)
 	}
 }
 
-
 void MOS6502::SBC(uint8_t a_Val)
 {
 	if (D) {
@@ -275,13 +247,13 @@ void MOS6502::SBC(uint8_t a_Val)
 	//std::cout << "A now: " << hex << A << std::std::endl;
 }
 
-
-bool MOS6502::ExecInstructionCycles(int a_Cycles)
+bool MOS6502::ExecInstructionCycles(int16_t a_Cycles)
 {
 	bool brk = false;
-	while (!brk && a_Cycles >= 0)
+	while (!brk && a_Cycles >= 0) {
 		a_Cycles -= ExecInstruction(brk);
-	return ! brk;
+	}
+	return !brk;
 }
 
 short MOS6502::ExecInstruction(bool& a_Brk)

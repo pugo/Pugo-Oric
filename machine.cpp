@@ -13,23 +13,23 @@ Machine::Machine() :
 	m_Running(false),
 	m_Brk(false)
 {
-	m_Memory = new Memory(65536);
-	m_Cpu = new MOS6502(this, m_Memory);
-	m_Mos_6522 = new MOS6522(this, m_Memory);
-	
+}
+
+Machine::~Machine()
+{}
+
+void Machine::Init()
+{
+	m_Memory = std::make_shared<Memory>(65536);
+	m_Cpu = std::make_shared<MOS6502>(shared_from_this(), m_Memory);
+	m_Mos_6522 = std::make_shared<MOS6522>(shared_from_this(), m_Memory);
+
 	m_Cpu->memory_read_byte_handler = read_byte;
 	m_Cpu->memory_read_byte_zp_handler = read_byte_zp;
 	m_Cpu->memory_read_word_handler = read_word;
 	m_Cpu->memory_read_word_zp_handler = read_word_zp;
 	m_Cpu->memory_write_byte_handler = write_byte;
 	m_Cpu->memory_write_byte_zp_handler = write_byte_zp;
-}
-
-
-Machine::~Machine()
-{
-	delete m_Cpu;
-	delete m_Memory;
 }
 
 void Machine::Reset()
@@ -64,15 +64,15 @@ uint8_t inline Machine::read_byte(Machine& a_Machine, uint16_t a_Address)
 {
 	if (a_Address >= 0x300 && a_Address < 0x400) {
 		std::cout << "read: " << std::hex << a_Address << std::endl;
-		return a_Machine.GetVIA().ReadByte(a_Address);
+		return a_Machine.GetVIA()->ReadByte(a_Address);
 	}
 
-	return a_Machine.GetMemory().m_Mem[a_Address];
+	return a_Machine.GetMemory()->m_Mem[a_Address];
 }
 
 uint8_t inline Machine::read_byte_zp(Machine &a_Machine, uint8_t a_Address)
 {
-	return a_Machine.GetMemory().m_Mem[a_Address];
+	return a_Machine.GetMemory()->m_Mem[a_Address];
 }
 
 uint16_t inline Machine::read_word(Machine &a_Machine, uint16_t a_Address)
@@ -81,12 +81,12 @@ uint16_t inline Machine::read_word(Machine &a_Machine, uint16_t a_Address)
 		std::cout << "read word: " << std::hex << a_Address << std::endl;
 	}
 
-	return a_Machine.GetMemory().m_Mem[a_Address] | a_Machine.GetMemory().m_Mem[a_Address + 1] << 8;
+	return a_Machine.GetMemory()->m_Mem[a_Address] | a_Machine.GetMemory()->m_Mem[a_Address + 1] << 8;
 }
 
 uint16_t inline Machine::read_word_zp(Machine &a_Machine, uint8_t a_Address)
 {
-	return a_Machine.GetMemory().m_Mem[a_Address] | a_Machine.GetMemory().m_Mem[a_Address+1 & 0xff] << 8;
+	return a_Machine.GetMemory()->m_Mem[a_Address] | a_Machine.GetMemory()->m_Mem[a_Address+1 & 0xff] << 8;
 }
 
 void inline Machine::write_byte(Machine &a_Machine, uint16_t a_Address, uint8_t a_Val)
@@ -96,10 +96,10 @@ void inline Machine::write_byte(Machine &a_Machine, uint16_t a_Address, uint8_t 
 	}
 	
 	if (a_Address >= 0x300 && a_Address < 0x400) {
-		a_Machine.GetVIA().WriteByte(a_Address, a_Val);
+		a_Machine.GetVIA()->WriteByte(a_Address, a_Val);
 	}
 
-	a_Machine.GetMemory().m_Mem[a_Address] = a_Val;
+	a_Machine.GetMemory()->m_Mem[a_Address] = a_Val;
 }
 
 void inline Machine::write_byte_zp(Machine &a_Machine, uint8_t a_Address, uint8_t a_Val)
@@ -108,6 +108,6 @@ void inline Machine::write_byte_zp(Machine &a_Machine, uint8_t a_Address, uint8_
 		return;
 	}
 
-	a_Machine.GetMemory().m_Mem[a_Address] = a_Val;
+	a_Machine.GetMemory()->m_Mem[a_Address] = a_Val;
 }
 

@@ -46,9 +46,9 @@ Memory::~Memory()
 	delete[] m_Mem;
 }
 
-void error_exit(std::string description)
+void error_exit(std::string a_Description)
 {
-	std::cout << std::endl << "!!! Error: " << description << std::endl << std::endl;
+	std::cout << std::endl << "!!! Error: " << a_Description << std::endl << std::endl;
 	exit(1);
 }
 
@@ -58,7 +58,7 @@ void Memory::Load(const std::string& a_Path, uint32_t a_Address)
 	// stat to check existance and size
 	struct stat file_info;
 	if (stat(a_Path.c_str(), &file_info)) {
-// 		error_exit("no such file: " + a_Path);
+		error_exit("no such file: " + a_Path);
 	}
 
 	int file_size = file_info.st_size;
@@ -71,7 +71,7 @@ void Memory::Load(const std::string& a_Path, uint32_t a_Address)
 	ssize_t count = 0;
 	int pos = a_Address;
 	uint8_t* buff = (uint8_t*)malloc(1);
-	while (file_size-count > 0) {
+	while (file_size - count > 0) {
 		ssize_t result = read(fd, buff, 1);
 
 		if (result == 0) {
@@ -89,7 +89,6 @@ void Memory::Load(const std::string& a_Path, uint32_t a_Address)
 	free(buff);
 	return;
 }
-
 
 void Memory::Show(uint32_t a_Pos, uint32_t a_Length)
 {

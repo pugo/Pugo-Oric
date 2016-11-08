@@ -17,10 +17,9 @@ public:
 	
 	void SetMemPos(uint16_t a_Address) { m_Mempos = a_Address; }
 
-	friend Memory& operator<<(Memory& os, unsigned int i)
-	{
-		os.m_Mem[os.m_Mempos++] = static_cast<uint8_t>(i & 0xff);
-		return os;
+	friend Memory& operator<<(Memory& a_Os, unsigned int a_In) {
+		a_Os.m_Mem[a_Os.m_Mempos++] = static_cast<uint8_t>(a_In & 0xff);
+		return a_Os;
 	}
 
 	void Show(uint32_t a_Pos, uint32_t a_Length);

@@ -23,7 +23,7 @@
 using namespace std;
 
 
-MOS6522::MOS6522(Machine* a_Machine, Memory* a_Memory) :
+MOS6522::MOS6522(std::shared_ptr<Machine> a_Machine, std::shared_ptr<Memory> a_Memory) :
 	m_Machine(a_Machine),
 	m_Memory(a_Memory)
 {

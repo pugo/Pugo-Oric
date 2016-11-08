@@ -39,7 +39,6 @@ LIBPATHS     = #-L/lib -L/usr/local/lib -L/usr/lib
 CFLAGS       = $(O) $(DEFINES) $(INCPATHS) $(INCLUDES)
 LFLAGS       = $(LIBPATHS) $(LIBS)
 
-
 ## Objects ################################################
 
 COMMON_OBJECTS  = mos6502.o \
@@ -55,23 +54,18 @@ TEST_FILES = tests/6502_tests.h \
 	     tests/6522_tests.h \
 	     tests/memory_tests.h
 
-
 ## Implicit rules #########################################
 
 .SUFFIXES: .cpp .c
 
 .cpp.o:
 	$(CXX) -c $(CXXFLAGS) $(INCPATHS) $(DEFINES) -o $@ $<
-
 .c.o:
 	$(CXX) -c $(CXXFLAGS) $(INCPATHS) $(DEFINES) -o $@ $<
 
-
 ## Build rules ############################################
 
-
 all: oric
-
 
 oric: $(EMU_OBJECTS)
 	$(CXX) $(EMU_OBJECTS) -o oric $(LFLAGS)
@@ -90,18 +84,14 @@ install:
 doc:
 	doxygen doxygen/doxygen.cfg
 
-
 tests/run_tests.cpp: $(TEST_FILES)
 	$(CXXTESTGEN) --error-printer -o tests/run_tests.cpp $(TEST_FILES)
 
 test: tests/run_tests.cpp $(COMMON_OBJECTS) 
 	$(CXX) $(CXXFLAGS) -I$(CXXTESTDIR) -I. tests/run_tests.cpp $(COMMON_OBJECTS) -o run_tests
 
-
 count:
 	@echo -n "        Header files (lines): "; cat *.h*  | wc -l;
 	@echo -n "Implementation files (lines): "; cat *.c*  | wc -l
-
-
 
 -include $(OBJECTS:%.o=%.d)

@@ -24,16 +24,19 @@
 #include "mos6522.h"
 #include "memory.h"
 
+#include <memory>
 
-class Machine
+class Machine : public std::enable_shared_from_this<Machine>
 {
 public:
 	Machine();
 	virtual ~Machine();
 
-	Memory& GetMemory() { return *m_Memory; }
-	MOS6502& GetCPU() { return *m_Cpu; }
-	MOS6522& GetVIA() { return *m_Mos_6522; }
+	void Init();
+	
+	std::shared_ptr<Memory> GetMemory() { return m_Memory; }
+	std::shared_ptr<MOS6502> GetCPU() { return m_Cpu; }
+	std::shared_ptr<MOS6522> GetVIA() { return m_Mos_6522; }
 
 	void Reset();
 	void Run(long a_Steps);
@@ -52,9 +55,9 @@ public:
 	bool m_Brk;
 
 protected:
-	MOS6502* m_Cpu;
-	MOS6522* m_Mos_6522;
-	Memory* m_Memory;
+	std::shared_ptr<MOS6502> m_Cpu;
+	std::shared_ptr<MOS6522> m_Mos_6522;
+	std::shared_ptr<Memory> m_Memory;
 
 	bool m_Running;
 };
