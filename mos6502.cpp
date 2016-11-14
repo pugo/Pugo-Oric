@@ -913,5 +913,5 @@ short MOS6502::ExecInstruction(bool& a_Brk)
 		PrintStat(pc_initial);
 	}
 
-	return opcode_cycles[instruction].cycles;
+	return opcode_cycles[instruction].cycles; // This should include page boundary addition.
 }

@@ -41,10 +41,10 @@ void Machine::Reset()
  * Run machine.
  * \param steps number of steps to run. If 0: run infinite (or to BRK).
  */
-void Machine::Run(long a_Steps)
+void Machine::Run(uint32_t a_Steps)
 {
-	long cycles = 0;
-	long steps_count = 0;
+	uint32_t cycles = 0;
+	uint32_t steps_count = 0;
 	m_Brk = false;
 
 	while (! m_Brk) {

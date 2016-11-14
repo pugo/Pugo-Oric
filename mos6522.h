@@ -1,64 +1,19 @@
-// =========================================================================
 //   Copyright (C) 2009-2014 by Anders Piniesjö <pugo@pugo.org>
-//
-//   This program is free software: you can redistribute it and/or modify
-//   it under the terms of the GNU General Public License as published by
-//   the Free Software Foundation, either version 3 of the License, or
-//   (at your option) any later version.
-//
-//   This program is distributed in the hope that it will be useful,
-//   but WITHOUT ANY WARRANTY; without even the implied warranty of
-//   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-//   GNU General Public License for more details.
-//
-//   You should have received a copy of the GNU General Public License
-//   along with this program.  If not, see <http://www.gnu.org/licenses/>
-// =========================================================================
 
 #ifndef MOS6522_H
 #define MOS6522_H
 
+#include <map>
 #include <memory>
+#include <string>
 
 class Machine;
 class Memory;
 
 // RS3, RS2, RS1, RS0 values (from address bus), addressing VIA registers.
-#define VIA_ORB   0x00		// Output register B
-#define VIA_ORA   0x01		// Output register A
-#define VIA_DDRB  0x02		// Data direction port B
-#define VIA_DDRA  0x03		// Data direction port A
-#define VIA_T1C_L 0x04		// Write: into T1 low latch.   Read: T1 low counter, reset interrupt flag.
-#define VIA_T1C_H 0x05		// Write: into T1 high latch+counter, transfer low.  Read: T1 high counter.
-#define VIA_T1L_L 0x06		// Write: into T1 low latch.   Read: T1 low latch.
-#define VIA_T1L_H 0x07		// Write: into T1 high latch.  Read: T2 high latch.
-#define VIA_T2C_L 0x08		// Write: into T2 low latch.   Read: T2 low counter, reset interrupt flag.
-#define VIA_T2C_H 0x09		// Write: into T2 high latch+counter, transfer low.  Read: T2 high counter.
-#define VIA_SR    0x0a		// Shift Register
-#define VIA_ACR   0x0b		// Auxilliary Control Register
-#define VIA_PCR   0x0c		// Peripheral Control Register
-#define VIA_IFR   0x0d		// Interrupt Flag Register
-#define VIA_IER   0x0e		// Interrupt Enable Register
-#define VIA_IORA2 0x0f
 
-#define VIA_IER_WRITE 0x80	// Bit 7=1: enable IER bits according to data, bit 7=0 disables.
 
 // IRQ enable and flag bits.
-#define VIA_IRQ_CA2  0x01
-#define VIA_IRQ_CA1  0x02
-#define VIA_IRQ_SR   0x04
-#define VIA_IRQ_CB2  0x08
-#define VIA_IRQ_CB1  0x10
-#define VIA_IRQ_T2   0x20
-#define VIA_IRQ_T1   0x40
-#define VIA_IRQ_CTRL 0x80
-
-// PCR controlling bits.
-#define VIA_PCR_CONTROL_CA1  0x01
-#define VIA_PCR_CONTROL_CA2  0x0e
-#define VIA_PCR_CONTROL_CB1  0x10
-#define VIA_PCR_CONTROL_CB2  0xe0
-
 
 /**
 	@author Anders Piniesjö <pugo@pugo.org>
@@ -66,6 +21,45 @@ class Memory;
 class MOS6522
 {
 public:
+	enum Register {
+		ORB   = 0x00,	// Output register B
+		ORA   = 0x01,	// Output register A
+		DDRB  = 0x02,	// Data direction port B
+		DDRA  = 0x03,	// Data direction port A
+		T1C_L = 0x04,	// Write: into T1 low latch.   Read: T1 low counter, reset interrupt flag.
+		T1C_H = 0x05,	// Write: into T1 high latch+counter, transfer low.  Read: T1 high counter.
+		T1L_L = 0x06,	// Write: into T1 low latch.   Read: T1 low latch.
+		T1L_H = 0x07,	// Write: into T1 high latch.  Read: T2 high latch.
+		T2C_L = 0x08,	// Write: into T2 low latch.   Read: T2 low counter, reset interrupt flag.
+		T2C_H = 0x09,	// Write: into T2 high latch+counter, transfer low.  Read: T2 high counter.
+		SR    = 0x0A,	// Shift Register
+		ACR   = 0x0B,	// Auxilliary Control Register
+		PCR   = 0x0C,	// Peripheral Control Register
+		IFR   = 0x0D,	// Interrupt Flag Register
+		IER   = 0x0E,	// Interrupt Enable Register
+		IORA2 = 0x0F,
+		IER_WRITE = 0x80	// Bit 7=1: enable IER bits according to data, bit 7=0 disables.
+	};
+
+	enum IRQ {
+		IRQ_CA2  = 0x01,
+		IRQ_CA1  = 0x02,
+		IRQ_SR   = 0x04,
+		IRQ_CB2  = 0x08,
+		IRQ_CB1  = 0x10,
+		IRQ_T2   = 0x20,
+		IRQ_T1   = 0x40,
+		IRQ_CTRL = 0x80
+	};
+
+	// PCR controlling bits.
+	enum PCR {
+		PCR_CONTROL_CA1 = 0x01,
+		PCR_CONTROL_CA2 = 0x0E,
+		PCR_CONTROL_CB1 = 0x10,
+		PCR_CONTROL_CB2 = 0xE0
+	};
+
 	MOS6522(std::shared_ptr<Machine> a_Machine, std::shared_ptr<Memory> a_Memory);
 	~MOS6522();
 
@@ -128,6 +122,9 @@ private:
 	
 	std::shared_ptr<Machine> m_Machine;
 	std::shared_ptr<Memory> m_Memory;
+	
+	std::map<Register, std::string> m_RegisterNames;
 };
+
 
 #endif // MOS6502_H

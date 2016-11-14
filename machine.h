@@ -39,7 +39,7 @@ public:
 	std::shared_ptr<MOS6522> GetVIA() { return m_Mos_6522; }
 
 	void Reset();
-	void Run(long a_Steps);
+	void Run(uint32_t a_Steps);
 	void Run(uint16_t a_Address, long a_Steps) { m_Cpu->SetPC(a_Address); Run(a_Steps); }
 	void Stop() { m_Brk = true; }
 

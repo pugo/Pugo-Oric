@@ -77,7 +77,7 @@ bool Oric::HandleCommand(std::string& a_Line)
 		return true;
 	}
 	if (cmd == "g") { // go <address>
-		long steps = 0;
+		long steps = 0; // 0 = infinite
 		if (parts.size() == 2) {
 			steps = std::stol(parts[1]);
 		}
@@ -117,6 +117,7 @@ bool Oric::HandleCommand(std::string& a_Line)
 	}
 	else if (cmd == "quiet") {
 		m_Machine->GetCPU()->SetQuiet(true);
+		std::cout << "Quiet mode enabled" << std::endl;
 	}
 
 	else if (cmd == "q") { // quit
@@ -131,7 +132,6 @@ static void signal_handler(int);
 void init_signals(void);
 
 struct sigaction sigact;
-
 
 static void signal_handler(int a_Sig)
 {
