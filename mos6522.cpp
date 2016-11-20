@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include "mos6522.h"
+#include "machine.h"
 
 #include <boost/assign.hpp>
 #include <boost/tuple/tuple.hpp>
@@ -71,6 +72,31 @@ void MOS6522::Reset()
 
 short MOS6522::Exec()
 {
+	// Timer 1
+	if (t1_counter > 0) {
+		--t1_counter;
+		if (t1_counter == 0) {
+			// Reached 0
+			std::cout << "T1 interrupt" << std::endl;
+			IRQSet(IRQ_T1);
+			if (acr & 0x40) {
+				// continuous, reload.
+				t1_counter = (t1_latch_high << 8) | t1_latch_low;
+				t1_run = true;
+				std::cout << "T1 continuous, reloading" << std::endl;
+			}
+		}
+	}
+
+	if (t2_counter > 0) {
+		--t2_counter;
+		if (t2_counter == 0) {
+			// Reached 0
+			std::cout << "T2 interrupt" << std::endl;
+			IRQSet(IRQ_T2);
+		}
+	}
+
 }
 
 uint8_t MOS6522::ReadByte(uint16_t a_Offset)
@@ -190,17 +216,18 @@ void MOS6522::WriteByte(uint16_t a_Offset, uint8_t a_Value)
 		// TODO: ca and cb pulsing stuff.
 		break;
 	case IFR:
+		// Interrupt flag bits are cleared by writing 1:s for corresponding bit.
 		ifr &= (~a_Value) & 0x7f;
 		if (ifr & ier) {
-			ifr |= 0x80;
+			ifr |= 0x80;	// bit 7=1 if any IRQ is set.
 		}
 		break;
 	case IER:
-		if( a_Value & IER_WRITE ) {
-			ier |= (a_Value & 0x7f);	// if bit 7: turn on given bits.
+		if (a_Value & 0x80) {
+			ier |= (a_Value & 0x7f);	// if bit 7=1: set given bits.
 		}
 		else {
-			ier &= ~(a_Value & 0x7f);	// if !bit 7: turn off given bits.
+			ier &= ~(a_Value & 0x7f);	// if bit 7=0: clear given bits.
 		}
 		// TODO: check interrupt? 
 		break;
@@ -218,6 +245,7 @@ void MOS6522::IRQSet(uint8_t bits)
 		ifr |= 0x80;
 	}
 	if (bits & ier) {
+		m_Machine->GetCPU()->IRQ();
 		cout << "TODO: send IRQ to CPU here!" << endl;
 	}
 }

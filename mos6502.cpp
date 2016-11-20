@@ -96,7 +96,8 @@ MOS6502::MOS6502(std::shared_ptr<Machine> a_Machine, std::shared_ptr<Memory> a_M
 	SP(0),
 	m_Quiet(false),
 	m_Machine(a_Machine),
-	m_Memory(a_Memory)
+	m_Memory(a_Memory),
+	m_IRQFlag(false)
 {
 }
 
@@ -119,6 +120,7 @@ void MOS6502::Reset()
 
 	PC = memory_read_byte_handler(*m_Machine, RESET_VECTOR_L) + (memory_read_byte_handler(*m_Machine, RESET_VECTOR_H) << 8);
 	SP = 0xff;
+	m_IRQFlag = false;
 }
 
 void MOS6502::PrintStat()
@@ -174,6 +176,12 @@ void MOS6502::NMI()
 
 void MOS6502::IRQ()
 {
+	m_IRQFlag = true;
+}
+
+void MOS6502::Handle_IRQ()
+{
+	m_IRQFlag = false;
 	if (I) { // Interrupt disabled ?
 		return;
 	}
@@ -258,6 +266,11 @@ bool MOS6502::ExecInstructionCycles(int16_t a_Cycles)
 
 short MOS6502::ExecInstruction(bool& a_Brk)
 {
+	if (m_IRQFlag) {
+		Handle_IRQ();
+		return 0;
+	}
+	
 	uint8_t b1, b2;
 	uint16_t addr, w;
 	int i;

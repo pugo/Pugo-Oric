@@ -110,12 +110,15 @@ public:
 	std::string Disassemble(uint16_t a_Address);
 
 protected:
+	void Handle_IRQ();
+	
 	std::shared_ptr<Machine> m_Machine;
 	std::shared_ptr<Memory> m_Memory;
 
 	uint16_t PC;
 	uint8_t SP;
 	bool m_Quiet;
+	bool m_IRQFlag;
 };
 
 #endif // MOS6502_H

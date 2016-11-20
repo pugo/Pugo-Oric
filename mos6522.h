@@ -38,7 +38,6 @@ public:
 		IFR   = 0x0D,	// Interrupt Flag Register
 		IER   = 0x0E,	// Interrupt Enable Register
 		IORA2 = 0x0F,
-		IER_WRITE = 0x80	// Bit 7=1: enable IER bits according to data, bit 7=0 disables.
 	};
 
 	enum IRQ {
