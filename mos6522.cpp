@@ -246,7 +246,6 @@ void MOS6522::IRQSet(uint8_t bits)
 	}
 	if (bits & ier) {
 		m_Machine->GetCPU()->IRQ();
-		cout << "TODO: send IRQ to CPU here!" << endl;
 	}
 }
 

@@ -26,6 +26,8 @@
 
 #include <memory>
 
+class Oric;
+
 class Machine : public std::enable_shared_from_this<Machine>
 {
 public:
@@ -39,8 +41,8 @@ public:
 	std::shared_ptr<MOS6522> GetVIA() { return m_Mos_6522; }
 
 	void Reset();
-	void Run(uint32_t a_Steps);
-	void Run(uint16_t a_Address, long a_Steps) { m_Cpu->SetPC(a_Address); Run(a_Steps); }
+	void Run(uint32_t a_Steps, Oric* a_Oric);
+	void Run(uint16_t a_Address, long a_Steps, Oric* a_Oric) { m_Cpu->SetPC(a_Address); Run(a_Steps, a_Oric); }
 	void Stop() { m_Brk = true; }
 
 	static inline uint8_t read_byte(Machine& a_machine, uint16_t a_Address);

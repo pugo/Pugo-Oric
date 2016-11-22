@@ -24,16 +24,13 @@ CXXTESTDIR = /usr/share/cxxtest
 CXXTESTGEN = /usr/bin/cxxtestgen
 
 LDFLAGS = 
-LIBS = 
+LIBS = -lSDL2 -lSDL2_image
 INSTALL = /usr/bin/install
-
-LIBS        := $(LIBS) 
 
 DEBUG        = -ggdb 
 DEFINES      = ${DEBUG}
 
-
-INCPATHS    := 
+INCPATHS    := -I/usr/include/SDL2
 LIBPATHS     = #-L/lib -L/usr/local/lib -L/usr/lib
 
 CFLAGS       = $(O) $(DEFINES) $(INCPATHS) $(INCLUDES)

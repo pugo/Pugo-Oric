@@ -8,6 +8,7 @@
 #include <string>
 
 #include "machine.h"
+#include "oric.h"
 
 Machine::Machine() : 
 	m_Running(false),
@@ -41,7 +42,7 @@ void Machine::Reset()
  * Run machine.
  * \param steps number of steps to run. If 0: run infinite (or to BRK).
  */
-void Machine::Run(uint32_t a_Steps)
+void Machine::Run(uint32_t a_Steps, Oric* a_Oric)
 {
 	uint32_t cycles = 0;
 	uint32_t steps_count = 0;
@@ -52,6 +53,10 @@ void Machine::Run(uint32_t a_Steps)
 		m_Mos_6522->Exec();
 
 		++steps_count;
+		if (steps_count % 1000 == 0) {
+			a_Oric->UpdateGraphics();
+		}
+		
 		if (a_Steps > 0 && steps_count == a_Steps) {
 			return;
 		}
@@ -63,7 +68,7 @@ void Machine::Run(uint32_t a_Steps)
 uint8_t inline Machine::read_byte(Machine& a_Machine, uint16_t a_Address)
 {
 	if (a_Address >= 0x300 && a_Address < 0x400) {
-		std::cout << "read: " << std::hex << a_Address << std::endl;
+// 		std::cout << "read: " << std::hex << a_Address << std::endl;
 		return a_Machine.GetVIA()->ReadByte(a_Address);
 	}
 

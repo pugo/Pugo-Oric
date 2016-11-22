@@ -5,6 +5,7 @@
 
 #include <iostream>
 #include <memory>
+#include <SDL.h>
 
 #include "machine.h"
 
@@ -18,9 +19,13 @@ public:
 	
 	Oric();
 	~Oric();
-	void Init();
 
-	Machine& GetMachine() { return *m_Machine; }
+	void Init();
+	void InitGraphics();
+	void CloseGraphics();
+	void UpdateGraphics();
+
+	std::shared_ptr<Machine> GetMachine() { return m_Machine; }
 	void Monitor();
 
 protected:
@@ -29,6 +34,11 @@ protected:
 
 	std::shared_ptr<Machine> m_Machine;
 	std::string m_LastCommand;
+	
+	SDL_Window* m_SdlWindow;
+	SDL_Surface* m_SdlSurface;
+	SDL_Renderer* m_SdlRenderer;
+	uint32_t m_Colors[8] {0x00000000, 0x00ff0000, 0x0000ff00, 0x00ffff00, 0x000000ff, 0x00ff00ff, 0x0000ffff, 0x00ffffff};
 };
 
 #endif // ORIC_H
