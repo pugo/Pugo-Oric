@@ -12,7 +12,8 @@
 
 Machine::Machine() : 
 	m_Running(false),
-	m_Brk(false)
+	m_Brk(false),
+	m_RasterCurrent(0)
 {
 }
 
@@ -40,27 +41,42 @@ void Machine::Reset()
 
 /**
  * Run machine.
- * \param steps number of steps to run. If 0: run infinite (or to BRK).
+ * \param a_Instructions number of instructions to run. If 0: run infinite (or to BRK).
  */
-void Machine::Run(uint32_t a_Steps, Oric* a_Oric)
+void Machine::Run(uint32_t a_Instructions, Oric* a_Oric)
 {
-	uint32_t cycles = 0;
-	uint32_t steps_count = 0;
+	uint32_t instructions = 0;
 	m_Brk = false;
 
 	while (! m_Brk) {
-		cycles += m_Cpu->ExecInstruction(m_Brk);
-		m_Mos_6522->Exec();
+		int32_t cycles = cycles_per_raster;
 
-		++steps_count;
-		if (steps_count % 1000 == 0) {
-			a_Oric->UpdateGraphics();
+		while (cycles > 0) {
+			cycles -= m_Cpu->ExecInstruction(m_Brk);
+			m_Mos_6522->Exec();
+
+			if (a_Instructions > 0 && ++instructions == a_Instructions) {
+				return;
+			}
 		}
-		
-		if (a_Steps > 0 && steps_count == a_Steps) {
-			return;
-		}
+
+		PaintRaster(a_Oric);
 	}
+}
+
+bool Machine::PaintRaster(Oric* a_Oric)
+{
+	if (m_RasterCurrent >= raster_visible_first && m_RasterCurrent < raster_visible_last) {
+		a_Oric->UpdateGraphics(m_RasterCurrent - raster_visible_first, m_Memory->m_Mem);
+	}
+	
+	if (++m_RasterCurrent == raster_max) {
+		m_RasterCurrent = 0;
+		a_Oric->RenderGraphics();
+		return true;
+	}
+
+	return false;
 }
 
 // --- Memory functions

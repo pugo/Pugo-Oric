@@ -23,7 +23,8 @@ public:
 	void Init();
 	void InitGraphics();
 	void CloseGraphics();
-	void UpdateGraphics();
+	void UpdateGraphics(uint8_t a_RasterLine, uint8_t* a_Mem);
+	void RenderGraphics();
 
 	std::shared_ptr<Machine> GetMachine() { return m_Machine; }
 	void Monitor();

@@ -71,53 +71,52 @@ void Oric::InitGraphics()
 	}
 }
 
-void Oric::UpdateGraphics()
+void Oric::UpdateGraphics(uint8_t a_RasterLine, uint8_t* a_Mem)
 {
-	uint8_t* mem = m_Machine->GetMemory()->m_Mem;
-	uint8_t* char_mem = mem + 0xb400;
+	uint8_t* char_mem = a_Mem + 0xb400;
 	
-	for (uint16_t y = 0; y < 224; y++) {
-		uint8_t dx = 0;
-		uint32_t bg_col = m_Colors[0];
-		uint32_t fg_col = m_Colors[7];
+	uint8_t dx = 0;
+	uint32_t bg_col = m_Colors[0];
+	uint32_t fg_col = m_Colors[7];
 
-		for (uint16_t x = 0; x < 40; x++) {
-			uint8_t ch = mem[0xbb80 + (y>>3)*40 + x];
-			uint8_t chr_dat = char_mem[((ch & 0x7f) << 3) + (y & 0x07)];
+	for (uint16_t x = 0; x < 40; x++) {
+		uint8_t ch = a_Mem[0xbb80 + (a_RasterLine >> 3)*40 + x];
+		uint8_t chr_dat = char_mem[((ch & 0x7f) << 3) + (a_RasterLine & 0x07)];
 
-			if (!(ch & 0x60)) {
-				chr_dat = 0;
-				switch(ch & 0x18)
-				{
-					case 0x00: fg_col = m_Colors[ch & 7]; break;
+		if (!(ch & 0x60)) {
+			chr_dat = 0;
+			switch(ch & 0x18)
+			{
+				case 0x00: fg_col = m_Colors[ch & 7]; break;
 // 					case 0x08: lattr = ch & 7; break;
-					case 0x10: bg_col = m_Colors[ch & 7]; break;
+				case 0x10: bg_col = m_Colors[ch & 7]; break;
 // 					case 0x18: pattr = ch & 7; break;
-				}
-			}
-			
-			if (ch & 0x80) {
-				// Inverse colors
-				fg_col = fg_col ^ 0xffffff;
-				bg_col = bg_col ^ 0xffffff;
-			}
-
-			for (uint8_t i = 0x20; i > 0; i >>= 1, dx++) {
-				if (chr_dat & i) {
-					SDL_SetRenderDrawColor(m_SdlRenderer, fg_col >> 16, (fg_col & 0x0000ff00) >> 8, fg_col & 0x000000ff, 0xff); 
-				}
-				else {
-					SDL_SetRenderDrawColor(m_SdlRenderer, bg_col >> 16, (bg_col & 0x0000ff00) >> 8, bg_col & 0x000000ff, 0xff); 
-				}
-
-				SDL_RenderDrawPoint(m_SdlRenderer, dx, y);
 			}
 		}
-	}
+		
+		if (ch & 0x80) {
+			// Inverse colors
+			fg_col = fg_col ^ 0xffffff;
+			bg_col = bg_col ^ 0xffffff;
+		}
 
-	SDL_RenderPresent(m_SdlRenderer);
+		for (uint8_t i = 0x20; i > 0; i >>= 1, dx++) {
+			if (chr_dat & i) {
+				SDL_SetRenderDrawColor(m_SdlRenderer, fg_col >> 16, (fg_col & 0x0000ff00) >> 8, fg_col & 0x000000ff, 0xff); 
+			}
+			else {
+				SDL_SetRenderDrawColor(m_SdlRenderer, bg_col >> 16, (bg_col & 0x0000ff00) >> 8, bg_col & 0x000000ff, 0xff); 
+			}
+
+			SDL_RenderDrawPoint(m_SdlRenderer, dx, a_RasterLine);
+		}
+	}
 }
 
+void Oric::RenderGraphics()
+{
+	SDL_RenderPresent(m_SdlRenderer);
+}
 
 void Oric::CloseGraphics()
 {
@@ -187,7 +186,6 @@ bool Oric::HandleCommand(std::string& a_Line)
 			steps = std::stol(parts[1]);
 		}
 		m_Machine->Run(steps, this);
-		UpdateGraphics();
 	}
 	else if (cmd == "pc") { // set pc
 		if (parts.size() < 2) {

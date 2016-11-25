@@ -56,7 +56,17 @@ public:
 
 	bool m_Brk;
 
+	static const uint8_t cycles_per_raster = 64;
+	static const uint16_t raster_max = 312;
+	static const uint16_t raster_visible_lines = 224;
+	static const uint16_t raster_visible_first = 65;
+	static const uint16_t raster_visible_last = raster_visible_first + raster_visible_lines;
+	
 protected:
+	bool PaintRaster(Oric* a_Oric);
+
+	uint16_t m_RasterCurrent;
+	
 	std::shared_ptr<MOS6502> m_Cpu;
 	std::shared_ptr<MOS6522> m_Mos_6522;
 	std::shared_ptr<Memory> m_Memory;
