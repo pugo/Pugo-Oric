@@ -10,10 +10,6 @@
 class Machine;
 class Memory;
 
-// RS3, RS2, RS1, RS0 values (from address bus), addressing VIA registers.
-
-
-// IRQ enable and flag bits.
 
 /**
 	@author Anders Piniesjö <pugo@pugo.org>
@@ -59,7 +55,7 @@ public:
 		PCR_CONTROL_CB2 = 0xE0
 	};
 
-	MOS6522(std::shared_ptr<Machine> a_Machine, std::shared_ptr<Memory> a_Memory);
+	MOS6522(std::shared_ptr<Machine> a_Machine);
 	~MOS6522();
 
 	void Reset();

@@ -42,7 +42,8 @@ COMMON_OBJECTS  = mos6502.o \
 		  mos6502_disasm.o \
 		  mos6522.o \
 		  memory.o \
-		  machine.o
+		  machine.o \
+		  frontend.o
 
 EMU_OBJECTS = $(COMMON_OBJECTS) \
 		  oric.o

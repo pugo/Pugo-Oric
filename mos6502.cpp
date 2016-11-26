@@ -1,8 +1,10 @@
 // Copyright (C) 2009-2016 by Anders Piniesjö <pugo@pugo.org>
 
-#include "mos6502.h"
-#include "mos6502_opcodes.h"
-#include "mos6502_cycles.h"
+#include "mos6502.hpp"
+#include "mos6502_opcodes.hpp"
+#include "mos6502_cycles.hpp"
+#include "machine.hpp"
+#include "memory.hpp"
 
 #include <iostream>
 #include "stdio.h"
@@ -81,7 +83,7 @@ const char * opcodenames[256] = {
     "SED",     "SBC_ABS_Y", "(none)",  "(none)", "(none)",    "SBC_ABS_X", "INC_ABS_X", "(none)",
 };
 
-MOS6502::MOS6502(std::shared_ptr<Machine> a_Machine, std::shared_ptr<Memory> a_Memory) :
+MOS6502::MOS6502(std::shared_ptr<Machine> a_Machine) :
 	A(0),
 	X(0),
 	Y(0),
@@ -96,9 +98,9 @@ MOS6502::MOS6502(std::shared_ptr<Machine> a_Machine, std::shared_ptr<Memory> a_M
 	SP(0),
 	m_Quiet(false),
 	m_Machine(a_Machine),
-	m_Memory(a_Memory),
 	m_IRQFlag(false)
 {
+	m_Memory = m_Machine->GetMemory();
 }
 
 MOS6502::~MOS6502()

@@ -18,8 +18,7 @@
 #ifndef MOS6502_H
 #define MOS6502_H
 
-#include "memory.h"
-#include "mos6502_opcodes.h"
+#include "mos6502_opcodes.hpp"
 
 #include <memory>
 
@@ -37,6 +36,7 @@
 
 class Machine;
 class MOS6502;
+class Memory;
 
 typedef uint8_t (*f_memory_read_byte_handler)(Machine &oric, uint16_t address);
 typedef uint8_t (*f_memory_read_byte_zp_handler)(Machine &oric, uint8_t address);
@@ -51,7 +51,7 @@ typedef void (*f_memory_write_byte_zp_handler)(Machine &oric, uint8_t address, u
 class MOS6502
 {
 public:
-	MOS6502(std::shared_ptr<Machine> a_Machine, std::shared_ptr<Memory> a_Memory);
+	MOS6502(std::shared_ptr<Machine> a_Machine);
 	~MOS6502();
 
 	void SetPC(uint16_t a_PC) { PC = a_PC; }

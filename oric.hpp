@@ -5,11 +5,12 @@
 
 #include <iostream>
 #include <memory>
-#include <SDL.h>
 
-#include "machine.h"
+#include "machine.hpp"
 
-class Oric
+class Frontend;
+
+class Oric : public std::enable_shared_from_this<Oric>
 {
 public:
 	static std::shared_ptr<Oric> GetInstance() {
@@ -21,25 +22,18 @@ public:
 	~Oric();
 
 	void Init();
-	void InitGraphics();
-	void CloseGraphics();
-	void UpdateGraphics(uint8_t a_RasterLine, uint8_t* a_Mem);
-	void RenderGraphics();
 
 	std::shared_ptr<Machine> GetMachine() { return m_Machine; }
+	std::shared_ptr<Frontend> GetFrontend() { return m_Frontend; }
 	void Monitor();
 
 protected:
 	bool HandleCommand(std::string& a_Cmd);
 	uint16_t StringToWord(std::string& a_Addr);
 
+	std::shared_ptr<Frontend> m_Frontend;
 	std::shared_ptr<Machine> m_Machine;
 	std::string m_LastCommand;
-	
-	SDL_Window* m_SdlWindow;
-	SDL_Surface* m_SdlSurface;
-	SDL_Renderer* m_SdlRenderer;
-	uint32_t m_Colors[8] {0x00000000, 0x00ff0000, 0x0000ff00, 0x00ffff00, 0x000000ff, 0x00ff00ff, 0x0000ffff, 0x00ffffff};
 };
 
 #endif // ORIC_H

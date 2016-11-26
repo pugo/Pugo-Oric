@@ -2,8 +2,9 @@
 
 #include <iostream>
 
-#include "mos6522.h"
-#include "machine.h"
+#include "mos6522.hpp"
+#include "machine.hpp"
+#include "memory.hpp"
 
 #include <boost/assign.hpp>
 #include <boost/tuple/tuple.hpp>
@@ -16,10 +17,10 @@
 using namespace std;
 
 
-MOS6522::MOS6522(std::shared_ptr<Machine> a_Machine, std::shared_ptr<Memory> a_Memory) :
-	m_Machine(a_Machine),
-	m_Memory(a_Memory)
+MOS6522::MOS6522(std::shared_ptr<Machine> a_Machine) :
+	m_Machine(a_Machine)
 {
+	m_Memory = m_Machine->GetMemory();
 	boost::assign::insert(m_RegisterNames)
 		(ORB, "ORB")(ORA, "ORA")(DDRB, "DDRB")(DDRA, "DDRA")
 		(T1C_L, "T1C_L")(T1C_H, "T1C_H")(T1L_L, "T1L_L")(T1L_H, "T1L_H")

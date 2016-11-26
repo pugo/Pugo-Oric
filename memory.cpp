@@ -26,10 +26,10 @@
 #include <iomanip>
 #include <string.h>
 
-#include "memory.h"
+#include "memory.hpp"
 
-#include "mos6502_opcodes.h"
-#include "mos6502.h"
+#include "mos6502_opcodes.hpp"
+#include "mos6502.hpp"
 
 
 Memory::Memory(uint32_t a_Size) :

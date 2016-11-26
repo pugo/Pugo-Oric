@@ -7,10 +7,14 @@
 #include <vector>
 #include <string>
 
-#include "machine.h"
-#include "oric.h"
+#include "machine.hpp"
+#include "oric.hpp"
+#include "memory.hpp"
+#include "frontend.hpp"
 
-Machine::Machine() : 
+
+Machine::Machine(std::shared_ptr<Oric> a_Oric) : 
+	m_Oric(a_Oric),
 	m_Running(false),
 	m_Brk(false),
 	m_RasterCurrent(0)
@@ -20,11 +24,12 @@ Machine::Machine() :
 Machine::~Machine()
 {}
 
-void Machine::Init()
+void Machine::Init(std::shared_ptr<Frontend> a_Frontend)
 {
+	m_Frontend = a_Frontend;
 	m_Memory = std::make_shared<Memory>(65536);
-	m_Cpu = std::make_shared<MOS6502>(shared_from_this(), m_Memory);
-	m_Mos_6522 = std::make_shared<MOS6522>(shared_from_this(), m_Memory);
+	m_Cpu = std::make_shared<MOS6502>(shared_from_this());
+	m_Mos_6522 = std::make_shared<MOS6522>(shared_from_this());
 
 	m_Cpu->memory_read_byte_handler = read_byte;
 	m_Cpu->memory_read_byte_zp_handler = read_byte_zp;
@@ -67,12 +72,12 @@ void Machine::Run(uint32_t a_Instructions, Oric* a_Oric)
 bool Machine::PaintRaster(Oric* a_Oric)
 {
 	if (m_RasterCurrent >= raster_visible_first && m_RasterCurrent < raster_visible_last) {
-		a_Oric->UpdateGraphics(m_RasterCurrent - raster_visible_first, m_Memory->m_Mem);
+		m_Frontend->UpdateGraphics(m_RasterCurrent - raster_visible_first, m_Memory->m_Mem);
 	}
 	
 	if (++m_RasterCurrent == raster_max) {
 		m_RasterCurrent = 0;
-		a_Oric->RenderGraphics();
+		m_Frontend->RenderGraphics();
 		return true;
 	}
 

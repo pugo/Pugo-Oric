@@ -3,7 +3,8 @@
 #include <string.h>
 #include <iostream>
 
-#include "oric.h"
+#include "oric.hpp"
+#include "memory.hpp"
 
 #define NUMBER_OPCODES 151
 

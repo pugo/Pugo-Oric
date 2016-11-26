@@ -19,22 +19,23 @@
 #define MACHINE_H
 
 #include <iostream>
-
-#include "mos6502.h"
-#include "mos6522.h"
-#include "memory.h"
-
 #include <memory>
 
+#include "mos6502.hpp"
+#include "mos6522.hpp"
+
+
 class Oric;
+class Memory;
+class Frontend;
 
 class Machine : public std::enable_shared_from_this<Machine>
 {
 public:
-	Machine();
+	Machine(std::shared_ptr<Oric> a_Oric);
 	virtual ~Machine();
 
-	void Init();
+	void Init(std::shared_ptr<Frontend> a_Frontend);
 	
 	std::shared_ptr<Memory> GetMemory() { return m_Memory; }
 	std::shared_ptr<MOS6502> GetCPU() { return m_Cpu; }
@@ -66,6 +67,9 @@ protected:
 	bool PaintRaster(Oric* a_Oric);
 
 	uint16_t m_RasterCurrent;
+	
+	std::shared_ptr<Oric> m_Oric;
+	std::shared_ptr<Frontend> m_Frontend;
 	
 	std::shared_ptr<MOS6502> m_Cpu;
 	std::shared_ptr<MOS6522> m_Mos_6522;
