@@ -10,6 +10,7 @@ Frontend::Frontend(std::shared_ptr<Oric> a_Oric) :
 	m_SdlSurface(NULL),
 	m_SdlRenderer(NULL)
 {
+	m_Pixels = std::vector<uint8_t>(m_TextureWidth * m_TextureHeight * m_TextureBpp, 0);
 }
 
 Frontend::~Frontend()
@@ -33,14 +34,13 @@ void Frontend::InitGraphics()
 			printf( "Warning: Linear texture filtering not enabled!" );
 		}
 
-		//Create window
-		m_SdlWindow = SDL_CreateWindow("SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 240, 224, SDL_WINDOW_SHOWN);
+		//Create window (240x224)
+		m_SdlWindow = SDL_CreateWindow("SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 600, 600, SDL_WINDOW_SHOWN);
 		if (m_SdlWindow == NULL) {
 			printf("Window could not be created! SDL_Error: %s\n", SDL_GetError());
 			success = false;
 		}
 		else {
-
 			//Create renderer for window
 			m_SdlRenderer = SDL_CreateRenderer(m_SdlWindow, -1, SDL_RENDERER_ACCELERATED);
 			if(m_SdlRenderer == NULL) {
@@ -48,8 +48,17 @@ void Frontend::InitGraphics()
 				success = false;
 			}
 			else {
+				SDL_RendererInfo info;
+				SDL_GetRendererInfo(m_SdlRenderer, &info);
+				for (uint32_t i = 0; i < info.num_texture_formats; i++) {
+					std::cout << SDL_GetPixelFormatName( info.texture_formats[i] ) << std::endl;
+				}
+
+				m_SdlTexture = SDL_CreateTexture(m_SdlRenderer, SDL_PIXELFORMAT_ARGB8888,
+															SDL_TEXTUREACCESS_STREAMING, m_TextureWidth, m_TextureHeight);
+
 				//Initialize renderer color
-				SDL_SetRenderDrawColor(m_SdlRenderer, 0xFF, 0xFF, 0xFF, 0xFF);
+				SDL_SetRenderDrawColor(m_SdlRenderer, 0xff, 0xff, 0xff, 0xff);
 				SDL_RenderClear(m_SdlRenderer);
 			}
 		}
@@ -63,7 +72,8 @@ void Frontend::UpdateGraphics(uint8_t a_RasterLine, uint8_t* a_Mem)
 	uint8_t dx = 0;
 	uint32_t bg_col = m_Colors[0];
 	uint32_t fg_col = m_Colors[7];
-
+	uint32_t* texture_line = (uint32_t*)&m_Pixels[a_RasterLine * m_TextureWidth * m_TextureBpp];
+	
 	for (uint16_t x = 0; x < 40; x++) {
 		uint8_t ch = a_Mem[0xbb80 + (a_RasterLine >> 3)*40 + x];
 		uint8_t chr_dat = char_mem[((ch & 0x7f) << 3) + (a_RasterLine & 0x07)];
@@ -86,20 +96,15 @@ void Frontend::UpdateGraphics(uint8_t a_RasterLine, uint8_t* a_Mem)
 		}
 
 		for (uint8_t i = 0x20; i > 0; i >>= 1, dx++) {
-			if (chr_dat & i) {
-				SDL_SetRenderDrawColor(m_SdlRenderer, fg_col >> 16, (fg_col & 0x0000ff00) >> 8, fg_col & 0x000000ff, 0xff); 
-			}
-			else {
-				SDL_SetRenderDrawColor(m_SdlRenderer, bg_col >> 16, (bg_col & 0x0000ff00) >> 8, bg_col & 0x000000ff, 0xff); 
-			}
-
-			SDL_RenderDrawPoint(m_SdlRenderer, dx, a_RasterLine);
+			*texture_line++ = (chr_dat & i) ? fg_col : bg_col;
 		}
 	}
 }
 
 void Frontend::RenderGraphics()
 {
+	SDL_UpdateTexture(m_SdlTexture, NULL, &m_Pixels[0], m_TextureWidth * m_TextureBpp);
+	SDL_RenderCopy(m_SdlRenderer, m_SdlTexture, NULL, NULL );
 	SDL_RenderPresent(m_SdlRenderer);
 }
 

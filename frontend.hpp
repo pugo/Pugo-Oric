@@ -6,6 +6,7 @@
 #include <memory>
 #include <iostream>
 #include <ostream>
+#include <vector>
 #include <SDL.h>
 
 class Oric;
@@ -25,11 +26,19 @@ public:
 protected:
 	std::shared_ptr<Oric> m_Oric;
 	std::shared_ptr<Memory> m_Memory;
+
+	const uint8_t m_TextureWidth = 240;
+	const uint8_t m_TextureHeight = 224;
+	const uint8_t m_TextureBpp = 4;
 	
 	SDL_Window* m_SdlWindow;
 	SDL_Surface* m_SdlSurface;
 	SDL_Renderer* m_SdlRenderer;
-	uint32_t m_Colors[8] {0x00000000, 0x00ff0000, 0x0000ff00, 0x00ffff00, 0x000000ff, 0x00ff00ff, 0x0000ffff, 0x00ffffff};
+	SDL_Texture* m_SdlTexture;
+
+	std::vector<uint8_t> m_Pixels;
+	
+	uint32_t m_Colors[8] {0xff000000, 0xffff0000, 0xff00ff00, 0xffffff00, 0xff0000ff, 0xffff00ff, 0xff00ffff, 0xffffffff};
 };
 
 
