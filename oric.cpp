@@ -115,6 +115,9 @@ bool Oric::HandleCommand(std::string& a_Line)
 		std::cout << "PC: " << m_Machine->GetCPU()->GetPC() << std::endl;
 		m_Machine->GetCPU()->PrintStat();
 	}
+	else if (cmd == "v") { // info
+		m_Machine->GetVIA()->PrintStat();
+	}
 	else if (cmd == "m") { // info
 		if (parts.size() < 3) {
 			std::cout << "Use: m <start address> <length>" << std::endl;

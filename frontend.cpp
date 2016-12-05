@@ -82,21 +82,34 @@ void Frontend::UpdateGraphics(uint8_t a_RasterLine, uint8_t* a_Mem)
 			chr_dat = 0;
 			switch(ch & 0x18)
 			{
-				case 0x00: fg_col = m_Colors[ch & 7]; break;
-// 					case 0x08: lattr = ch & 7; break;
-				case 0x10: bg_col = m_Colors[ch & 7]; break;
-// 					case 0x18: pattr = ch & 7; break;
+				case 0x00:
+					fg_col = m_Colors[ch & 7];
+					break;
+				case 0x08:
+// 					lattr = ch & 7;
+					std::cout << " ------- LATTR" << std::endl;
+					break;
+				case 0x10:
+					bg_col = m_Colors[ch & 7];
+					break;
+				case 0x18:
+// 					pattr = ch & 7;
+					std::cout << " ------- PATTR" << std::endl;
+					break;
 			}
 		}
 		
+		uint32_t _fg_col = fg_col;
+		uint32_t _bg_col = bg_col;
+		
 		if (ch & 0x80) {
 			// Inverse colors
-			fg_col = fg_col ^ 0xffffff;
-			bg_col = bg_col ^ 0xffffff;
+			_fg_col = _fg_col ^ 0x00ffffff;
+			_bg_col = _bg_col ^ 0x00ffffff;
 		}
 
 		for (uint8_t i = 0x20; i > 0; i >>= 1, dx++) {
-			*texture_line++ = (chr_dat & i) ? fg_col : bg_col;
+			*texture_line++ = (chr_dat & i) ? _fg_col : _bg_col;
 		}
 	}
 }

@@ -70,6 +70,7 @@ public:
 	void WriteCB1(bool a_Value);
 	void WriteCB2(bool a_Value);
 
+	void PrintStat();
 
 private:
 	void IRQSet(uint8_t a_Bits);

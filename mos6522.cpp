@@ -102,21 +102,22 @@ short MOS6522::Exec()
 
 uint8_t MOS6522::ReadByte(uint16_t a_Offset)
 {
-	cout << "Read " << m_RegisterNames[static_cast<Register>(a_Offset & 0x000f)] << endl;
 	switch(a_Offset & 0x000f)
 	{
 	case ORB:
+	cout << "Read " << m_RegisterNames[static_cast<Register>(a_Offset & 0x000f)] << endl;
 		IRQClear(IRQ_CB1);
 		if ((pcr & PCR_CONTROL_CB2) == 0x00 || (pcr & PCR_CONTROL_CB2) == 0x40) {
 			IRQClear(IRQ_CB2);
 		}
-		return orb;
+		return (orb & ddrb) | (irb & ~ddrb);
 	case ORA:
+	cout << "Read " << m_RegisterNames[static_cast<Register>(a_Offset & 0x000f)] << endl;
 		IRQClear(IRQ_CA1);
 		if ((pcr & PCR_CONTROL_CA2) == 0x00 || (pcr & PCR_CONTROL_CA2) == 0x04) {
 			IRQClear(IRQ_CA2);
 		}
-		return ora;
+		return (ora & ddra) | (ira & ~ddra);
 	case DDRB:
 		return ddrb;
 	case DDRA:
@@ -147,17 +148,17 @@ uint8_t MOS6522::ReadByte(uint16_t a_Offset)
 	case IER:
 		return ier | 0x80;
 	case IORA2:
-		return ora;  // some bit manipulation..
+		return (ora & ddra) | (ira & ~ddra);
 	}
 	return 0;
 }
 
 void MOS6522::WriteByte(uint16_t a_Offset, uint8_t a_Value)
 {
-	cout << "Write " << m_RegisterNames[static_cast<Register>(a_Offset & 0x000f)] << ": " << static_cast<unsigned int>(a_Value) << endl;
 	switch(a_Offset & 0x000f)
 	{
 	case ORB:
+	cout << "Write " << m_RegisterNames[static_cast<Register>(a_Offset & 0x000f)] << ": " << static_cast<unsigned int>(a_Value) << endl;
 		orb = a_Value;
 		IRQClear(IRQ_CB1);
 		if ((pcr & PCR_CONTROL_CB2) == 0x00 || (pcr & PCR_CONTROL_CB2) == 0x40) {
@@ -165,6 +166,7 @@ void MOS6522::WriteByte(uint16_t a_Offset, uint8_t a_Value)
 		}
 		break;
 	case ORA:
+	cout << "Read " << m_RegisterNames[static_cast<Register>(a_Offset & 0x000f)] << endl;
 		ora = a_Value;
 		IRQClear(IRQ_CA1);
 		if ((pcr & PCR_CONTROL_CA2) == 0x00 || (pcr & PCR_CONTROL_CA2) == 0x04) {
@@ -332,4 +334,25 @@ void MOS6522::WriteCB2(bool a_Value)
 		}
 		cb2 = a_Value;
 	}
+}
+
+void MOS6522::PrintStat()
+{
+	std::cout << "VIA stats:" << std::endl;
+	std::cout << "  -   ORB: " << (int)orb << std::endl;
+	std::cout << "  -   ORA: " << (int)ora << std::endl;
+	std::cout << "  -  DDRB: " << (int)ddrb << std::endl;
+	std::cout << "  -  DDRA: " << (int)ddra << std::endl;
+	std::cout << "  - T1C_L: " << (int)(t1_counter & 0x00ff) << std::endl;
+	std::cout << "  - T1C_H: " << (int)(t1_counter >> 8) << std::endl;
+	std::cout << "  - T1L_L: " << (int)t1_latch_low << std::endl;
+	std::cout << "  - T1L_H: " << (int)t1_latch_high << std::endl;
+	std::cout << "  - T2C_L: " << (int)(t2_counter & 0x00ff) << std::endl;
+	std::cout << "  - T2C_H: " << (int)(t2_counter >> 8) << std::endl;
+	std::cout << "  -    SR: " << (int)sr << std::endl;
+	std::cout << "  -   ACR: " << (int)acr << std::endl;
+	std::cout << "  -   PCR: " << (int)pcr << std::endl;
+	std::cout << "  -   IFR: " << (int)ifr << std::endl;
+	std::cout << "  -   IER: " << (int)(ier | 0x80) << std::endl;
+	std::cout << "  - IORA2: " << (int)ora << std::endl;
 }
