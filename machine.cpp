@@ -51,21 +51,38 @@ void Machine::Reset()
 void Machine::Run(uint32_t a_Instructions, Oric* a_Oric)
 {
 	uint32_t instructions = 0;
-	m_Brk = false;
 
+	uint32_t now = SDL_GetTicks();
+	uint64_t next_frame = static_cast<uint64_t>(now) * 1000;
+
+	m_Brk = false;
 	while (! m_Brk) {
 		int32_t cycles = cycles_per_raster;
 
 		while (cycles > 0) {
-			cycles -= m_Cpu->ExecInstruction(m_Brk);
-			m_Mos_6522->Exec();
+			uint8_t ran = m_Cpu->ExecInstruction(m_Brk);
+			cycles -= ran;
+			m_Mos_6522->Exec(ran);
 
 			if (a_Instructions > 0 && ++instructions == a_Instructions) {
 				return;
 			}
 		}
 
-		PaintRaster(a_Oric);
+		if (PaintRaster(a_Oric)) {
+			next_frame += 20000;
+			uint32_t future = static_cast<uint32_t>(next_frame/1000);
+			now = SDL_GetTicks();
+			
+			if (now > future) {
+				next_frame = static_cast<uint64_t>(now) * 1000;
+			}
+			else {
+				std::cout << "sleeping: " << std::dec << (future - now) << std::endl;
+				SDL_Delay(future - now);
+			}
+				
+		}
 	}
 }
 

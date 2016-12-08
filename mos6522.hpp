@@ -59,7 +59,7 @@ public:
 	~MOS6522();
 
 	void Reset();
-	short Exec();
+	short Exec(uint8_t a_Cycles);
 	
 	uint8_t ReadByte(uint16_t a_Offset);
 	void WriteByte(uint16_t a_Offset, uint8_t a_Value);
@@ -89,12 +89,12 @@ private:
 
 	uint8_t t1_latch_low;
 	uint8_t t1_latch_high;
-	uint16_t t1_counter;
+	int32_t t1_counter;
 	bool t1_run;
 
 	uint8_t t2_latch_low;
 	uint8_t t2_latch_high;
-	uint16_t t2_counter;
+	int32_t t2_counter;
 	bool t2_run;
 
 	uint8_t sr;		// Shift register

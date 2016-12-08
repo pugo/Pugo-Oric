@@ -87,14 +87,14 @@ void Frontend::UpdateGraphics(uint8_t a_RasterLine, uint8_t* a_Mem)
 					break;
 				case 0x08:
 // 					lattr = ch & 7;
-					std::cout << " ------- LATTR" << std::endl;
+// 					std::cout << " ------- LATTR" << std::endl;
 					break;
 				case 0x10:
 					bg_col = m_Colors[ch & 7];
 					break;
 				case 0x18:
 // 					pattr = ch & 7;
-					std::cout << " ------- PATTR" << std::endl;
+// 					std::cout << " ------- PATTR" << std::endl;
 					break;
 			}
 		}

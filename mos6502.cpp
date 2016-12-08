@@ -187,7 +187,7 @@ void MOS6502::Handle_IRQ()
 	if (I) { // Interrupt disabled ?
 		return;
 	}
-	std::cout << "IRQ" << std::endl;
+// 	std::cout << "IRQ" << std::endl;
 	PUSH_BYTE_STACK(PC >> 8);
 	PUSH_BYTE_STACK(PC);
 	PUSH_BYTE_STACK(GetP());
@@ -690,7 +690,6 @@ short MOS6502::ExecInstruction(bool& a_Brk)
 			C = b2;
 			break;
 
-
 		// Branches
 		case BCC:
 			if (!C)
@@ -927,6 +926,5 @@ short MOS6502::ExecInstruction(bool& a_Brk)
 	if (! m_Quiet) {
 		PrintStat(pc_initial);
 	}
-
 	return opcode_cycles[instruction].cycles; // This should include page boundary addition.
 }

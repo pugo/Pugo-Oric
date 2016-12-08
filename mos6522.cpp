@@ -71,31 +71,42 @@ void MOS6522::Reset()
 	irbl = 0;
 }
 
-short MOS6522::Exec()
+short MOS6522::Exec(uint8_t a_Cycles)
 {
-	// Timer 1
-	if (t1_counter > 0) {
-		--t1_counter;
-		if (t1_counter == 0) {
-			// Reached 0
-			std::cout << "T1 interrupt" << std::endl;
-			IRQSet(IRQ_T1);
-			if (acr & 0x40) {
-				// continuous, reload.
-				t1_counter = (t1_latch_high << 8) | t1_latch_low;
-				t1_run = true;
-				std::cout << "T1 continuous, reloading" << std::endl;
-			}
+	t1_counter -= a_Cycles;
+	
+	if (t1_counter < 0) {
+		switch (acr & 0xc0)
+		{
+			case 0x00:
+			case 0x80:
+				// One shot
+				if (t1_run) {
+					std::cout << "T1 interrupt one shot" << std::endl;
+					IRQSet(IRQ_T1);
+					t1_run = false;
+				}
+				t1_counter &= 0xffff;
+				break;
+			case 0x40:
+			case 0xC0:
+				// Continuous
+				if (t1_run) {
+					std::cout << "T1 interrupt cont" << std::endl;
+					IRQSet(IRQ_T1);
+				}
+				t1_counter += ((t1_latch_high << 8) | t1_latch_low) + 2; // +2: compensate for boundary time and load time.
+				break;
 		}
 	}
 
-	if (t2_counter > 0) {
-		--t2_counter;
-		if (t2_counter == 0) {
-			// Reached 0
+	t2_counter -= a_Cycles;
+	if (t2_counter < 0) {
+		if (t2_run) {
 			std::cout << "T2 interrupt" << std::endl;
 			IRQSet(IRQ_T2);
 		}
+		t2_counter &= 0xffff;
 	}
 
 }
@@ -105,14 +116,14 @@ uint8_t MOS6522::ReadByte(uint16_t a_Offset)
 	switch(a_Offset & 0x000f)
 	{
 	case ORB:
-	cout << "Read " << m_RegisterNames[static_cast<Register>(a_Offset & 0x000f)] << endl;
+// 	cout << "Read " << m_RegisterNames[static_cast<Register>(a_Offset & 0x000f)] << endl;
 		IRQClear(IRQ_CB1);
 		if ((pcr & PCR_CONTROL_CB2) == 0x00 || (pcr & PCR_CONTROL_CB2) == 0x40) {
 			IRQClear(IRQ_CB2);
 		}
 		return (orb & ddrb) | (irb & ~ddrb);
 	case ORA:
-	cout << "Read " << m_RegisterNames[static_cast<Register>(a_Offset & 0x000f)] << endl;
+// 	cout << "Read " << m_RegisterNames[static_cast<Register>(a_Offset & 0x000f)] << endl;
 		IRQClear(IRQ_CA1);
 		if ((pcr & PCR_CONTROL_CA2) == 0x00 || (pcr & PCR_CONTROL_CA2) == 0x04) {
 			IRQClear(IRQ_CA2);
@@ -158,7 +169,7 @@ void MOS6522::WriteByte(uint16_t a_Offset, uint8_t a_Value)
 	switch(a_Offset & 0x000f)
 	{
 	case ORB:
-	cout << "Write " << m_RegisterNames[static_cast<Register>(a_Offset & 0x000f)] << ": " << static_cast<unsigned int>(a_Value) << endl;
+// 	cout << "Write " << m_RegisterNames[static_cast<Register>(a_Offset & 0x000f)] << ": " << static_cast<unsigned int>(a_Value) << endl;
 		orb = a_Value;
 		IRQClear(IRQ_CB1);
 		if ((pcr & PCR_CONTROL_CB2) == 0x00 || (pcr & PCR_CONTROL_CB2) == 0x40) {
@@ -166,7 +177,7 @@ void MOS6522::WriteByte(uint16_t a_Offset, uint8_t a_Value)
 		}
 		break;
 	case ORA:
-	cout << "Read " << m_RegisterNames[static_cast<Register>(a_Offset & 0x000f)] << endl;
+// 	cout << "Read " << m_RegisterNames[static_cast<Register>(a_Offset & 0x000f)] << endl;
 		ora = a_Value;
 		IRQClear(IRQ_CA1);
 		if ((pcr & PCR_CONTROL_CA2) == 0x00 || (pcr & PCR_CONTROL_CA2) == 0x04) {
