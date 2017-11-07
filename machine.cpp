@@ -12,6 +12,15 @@
 #include "memory.hpp"
 #include "frontend.hpp"
 
+static uint32_t keytab[] = {'7'       , 'n'        , '5'        , 'v'        , 0 ,          '1'        , 'x'        , '3'        ,
+									'j'        , 't'        , 'r'        , 'f'        , 0          , SDLK_ESCAPE, 'q'        , 'd'        ,
+									'm'        , '6'        , 'b'        , '4'        , SDLK_LCTRL , 'z'        , '2'        , 'c'        ,
+									'k'        , '9'        , ';'        , '-'        , 0          , 0          , '\\'       , '\''       ,
+									SDLK_SPACE , ','        , '.'        , SDLK_UP    , SDLK_LSHIFT, SDLK_LEFT  , SDLK_DOWN  , SDLK_RIGHT ,
+									'u'        , 'i'        , 'o'        , 'p'        , SDLK_LALT  , SDLK_BACKSPACE, ']'     , '['        ,
+									'y'        , 'h'        , 'g'        , 'e'        , 0          , 'a'        , 's'        , 'w'        ,
+									'8'        , 'l'        , '0'        , '/'        , SDLK_RSHIFT, SDLK_RETURN, 0          , SDLK_EQUALS };
+
 
 Machine::Machine(std::shared_ptr<Oric> a_Oric) : 
 	m_Oric(a_Oric),
@@ -30,6 +39,7 @@ void Machine::Init(std::shared_ptr<Frontend> a_Frontend)
 	m_Memory = std::make_shared<Memory>(65536);
 	m_Cpu = std::make_shared<MOS6502>(shared_from_this());
 	m_Mos_6522 = std::make_shared<MOS6522>(shared_from_this());
+	m_Ay3 = std::make_shared<AY3_8912>(shared_from_this());
 
 	m_Cpu->memory_read_byte_handler = read_byte;
 	m_Cpu->memory_read_byte_zp_handler = read_byte_zp;
@@ -37,6 +47,10 @@ void Machine::Init(std::shared_ptr<Frontend> a_Frontend)
 	m_Cpu->memory_read_word_zp_handler = read_word_zp;
 	m_Cpu->memory_write_byte_handler = write_byte;
 	m_Cpu->memory_write_byte_zp_handler = write_byte_zp;
+	
+	for (uint8_t i=0; i < 64; ++i) {
+		m_KeyMap[keytab[i]] = i;
+	}
 }
 
 void Machine::Reset()
@@ -54,7 +68,8 @@ void Machine::Run(uint32_t a_Instructions, Oric* a_Oric)
 
 	uint32_t now = SDL_GetTicks();
 	uint64_t next_frame = static_cast<uint64_t>(now) * 1000;
-
+	SDL_Event event;
+ 
 	m_Brk = false;
 	while (! m_Brk) {
 		int32_t cycles = cycles_per_raster;
@@ -78,10 +93,30 @@ void Machine::Run(uint32_t a_Instructions, Oric* a_Oric)
 				next_frame = static_cast<uint64_t>(now) * 1000;
 			}
 			else {
-				std::cout << "sleeping: " << std::dec << (future - now) << std::endl;
+// 				std::cout << "sleeping: " << std::dec << (future - now) << std::endl;
 				SDL_Delay(future - now);
 			}
-				
+
+			while (SDL_PollEvent(&event)) {
+				/* We are only worried about SDL_KEYDOWN and SDL_KEYUP events */
+				switch (event.type) {
+				case SDL_KEYDOWN:
+				{
+					auto key = m_KeyMap.find(event.key.keysym.sym);
+					if (key != m_KeyMap.end()) {
+						printf( "Key press detected: %d\n", event.key.keysym.sym);
+						m_Ay3->KeyPress(key->second, true);
+					}
+					break;
+				}
+				case SDL_KEYUP:
+					printf( "Key release detected\n" );
+					break;
+
+				default:
+					break;
+				}
+			}
 		}
 	}
 }

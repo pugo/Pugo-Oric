@@ -3,8 +3,8 @@
 #include "mos6502.hpp"
 #include "mos6502_opcodes.hpp"
 #include "mos6502_cycles.hpp"
-#include "machine.hpp"
-#include "memory.hpp"
+#include <machine.hpp>
+#include <memory.hpp>
 
 #include <iostream>
 #include "stdio.h"

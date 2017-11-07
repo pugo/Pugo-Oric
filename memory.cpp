@@ -28,8 +28,8 @@
 
 #include "memory.hpp"
 
-#include "mos6502_opcodes.hpp"
-#include "mos6502.hpp"
+#include "chip/mos6502_opcodes.hpp"
+#include "chip/mos6502.hpp"
 
 
 Memory::Memory(uint32_t a_Size) :

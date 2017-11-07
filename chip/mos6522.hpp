@@ -63,7 +63,10 @@ public:
 	
 	uint8_t ReadByte(uint16_t a_Offset);
 	void WriteByte(uint16_t a_Offset, uint8_t a_Value);
-	
+
+
+	void WriteIRB(uint8_t a_Value) { irb = a_Value; }
+
 	void WriteCA1(bool a_Value);
 	void WriteCA2(bool a_Value);
 
@@ -78,14 +81,19 @@ private:
 
 	bool ca1;
 	bool ca2;
-	bool cb1;
-	bool cb2;
-	
-	uint8_t orb;		// Output Register B
-	uint8_t ora;		// Output Register A
+	bool ca2_do_pulse;
 
-	uint8_t ddrb;		// Data Direction Register B (input = 0, output = 1)
+	bool cb1;
+	bool cb2;	
+	bool cb2_do_pulse;
+
+	uint8_t ira;		// Input Register A
+	uint8_t ora;		// Output Register A
 	uint8_t ddra;		// Data Direction Register A (input = 0, output = 1)
+
+	uint8_t irb;		// Input Register B
+	uint8_t orb;		// Output Register B
+	uint8_t ddrb;		// Data Direction Register B (input = 0, output = 1)
 
 	uint8_t t1_latch_low;
 	uint8_t t1_latch_high;
@@ -109,12 +117,6 @@ private:
 
 	uint8_t ifr;		// Interrupt Flag Register:   | IRQ  | T1 | T2 | CB1 | CB2 | SR | CA1 | CA2 |
 	uint8_t ier;		// Interrupt Enable Register: | ctrl | T1 | T2 | CB1 | CB2 | SR | CA1 | CA2 |
-
-	uint8_t ira;		// Input Register A
-	uint8_t iral;
-
-	uint8_t irb;		// Input Register B
-	uint8_t irbl;
 	
 	std::shared_ptr<Machine> m_Machine;
 	std::shared_ptr<Memory> m_Memory;

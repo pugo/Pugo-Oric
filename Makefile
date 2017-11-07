@@ -30,7 +30,7 @@ INSTALL = /usr/bin/install
 DEBUG        = -ggdb 
 DEFINES      = ${DEBUG}
 
-INCPATHS    := -I/usr/include/SDL2
+INCPATHS    := -I/usr/include/SDL2 -I.
 LIBPATHS     = #-L/lib -L/usr/local/lib -L/usr/lib
 
 CFLAGS       = $(O) $(DEFINES) $(INCPATHS) $(INCLUDES)
@@ -38,9 +38,10 @@ LFLAGS       = $(LIBPATHS) $(LIBS)
 
 ## Objects ################################################
 
-COMMON_OBJECTS  = mos6502.o \
-		  mos6502_disasm.o \
-		  mos6522.o \
+COMMON_OBJECTS  = chip/mos6502.o \
+		  chip/mos6502_disasm.o \
+		  chip/mos6522.o \
+		  chip/ay3_8912.o \
 		  memory.o \
 		  machine.o \
 		  frontend.o
@@ -70,7 +71,8 @@ oric: $(EMU_OBJECTS)
 
 
 clean:
-	rm -f *.o *.bak *BAK *~ *% *pyc 
+	rm -f *.o *.bak *BAK *~ *% *pyc
+	rm -f chip/*.o chip/*.bak
 	rm -f oric
 	rm -f core*
 	rm -f -r doxygen/html doxygen/latex

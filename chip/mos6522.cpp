@@ -2,9 +2,9 @@
 
 #include <iostream>
 
+#include <machine.hpp>
+#include <memory.hpp>
 #include "mos6522.hpp"
-#include "machine.hpp"
-#include "memory.hpp"
 
 #include <boost/assign.hpp>
 #include <boost/tuple/tuple.hpp>
@@ -15,6 +15,10 @@
 #include <utility>
 
 using namespace std;
+
+// Oric port B:
+// | 7 | 6 | 5 | 4 | 3 | 2 | 1 | 0 |
+//                 | kp| Keyb. row |
 
 
 MOS6522::MOS6522(std::shared_ptr<Machine> a_Machine) :
@@ -41,14 +45,19 @@ void MOS6522::Reset()
 
 	ca1 = false;
 	ca2 = false;
+	ca2_do_pulse = false;
+
 	cb1 = false;
 	cb2 = false;
+	cb2_do_pulse = false;
 
-	orb = 0;
-	ora = 0;
+	ira = 0;   // input register A
+	ora = 0;   // output register A
+	ddra = 0;  // data direction register A
 
-	ddrb = 0;
-	ddra = 0;
+	irb = 0;   // input register B
+	orb = 0;   // output register B
+	ddrb = 0;  // data direction register B
 
 	t1_latch_low = 0;
 	t1_latch_high = 0;
@@ -65,14 +74,20 @@ void MOS6522::Reset()
 	pcr = 0;
 	ifr = 0;
 	ier = 0;
-	ira = 0;
-	iral = 0;
-	irb = 0;
-	irbl = 0;
 }
 
 short MOS6522::Exec(uint8_t a_Cycles)
 {
+	if (ca2_do_pulse) {
+		ca2 = true;
+		ca2_do_pulse = false;
+	}
+
+	if (cb2_do_pulse) {
+		cb2 = true;
+		cb2_do_pulse = false;
+	}
+
 	t1_counter -= a_Cycles;
 	
 	if (t1_counter < 0) {
@@ -82,7 +97,7 @@ short MOS6522::Exec(uint8_t a_Cycles)
 			case 0x80:
 				// One shot
 				if (t1_run) {
-					std::cout << "T1 interrupt one shot" << std::endl;
+// 					std::cout << "T1 interrupt one shot" << std::endl;
 					IRQSet(IRQ_T1);
 					t1_run = false;
 				}
@@ -92,7 +107,7 @@ short MOS6522::Exec(uint8_t a_Cycles)
 			case 0xC0:
 				// Continuous
 				if (t1_run) {
-					std::cout << "T1 interrupt cont" << std::endl;
+// 					std::cout << "T1 interrupt cont" << std::endl;
 					IRQSet(IRQ_T1);
 				}
 				t1_counter += ((t1_latch_high << 8) | t1_latch_low) + 2; // +2: compensate for boundary time and load time.
@@ -103,12 +118,15 @@ short MOS6522::Exec(uint8_t a_Cycles)
 	t2_counter -= a_Cycles;
 	if (t2_counter < 0) {
 		if (t2_run) {
-			std::cout << "T2 interrupt" << std::endl;
+// 			std::cout << "T2 interrupt" << std::endl;
 			IRQSet(IRQ_T2);
 		}
 		t2_counter &= 0xffff;
 	}
 
+	if ((orb & ddrb)) {
+//		std::cout << "---> orb: " << (orb & ddrb) << std::endl;
+	}
 }
 
 uint8_t MOS6522::ReadByte(uint16_t a_Offset)
@@ -175,13 +193,40 @@ void MOS6522::WriteByte(uint16_t a_Offset, uint8_t a_Value)
 		if ((pcr & PCR_CONTROL_CB2) == 0x00 || (pcr & PCR_CONTROL_CB2) == 0x40) {
 			IRQClear(IRQ_CB2);
 		}
+		switch (pcr & PCR_CONTROL_CA2) {
+			case 0x00:
+			case 0x40:
+				IRQClear(IRQ_CB2);
+				break;
+			case 0x80:
+				// set CA2 to low on read/write of ORA if CB2-ctrl is 100.
+				cb2 = false;
+				break;
+			case 0xa0:
+				// pulse low for one cycle if CB2-ctrl is 101.
+				cb2 = false;
+				cb2_do_pulse = true;
+				break;
+		}
 		break;
 	case ORA:
 // 	cout << "Read " << m_RegisterNames[static_cast<Register>(a_Offset & 0x000f)] << endl;
 		ora = a_Value;
 		IRQClear(IRQ_CA1);
-		if ((pcr & PCR_CONTROL_CA2) == 0x00 || (pcr & PCR_CONTROL_CA2) == 0x04) {
-			IRQClear(IRQ_CA2);
+		switch (pcr & PCR_CONTROL_CA2) {
+			case 0x00:
+			case 0x04:
+				IRQClear(IRQ_CA2);
+				break;
+			case 0x08:
+				// set CA2 to low on read/write of ORA if CA2-ctrl is 100.
+				ca2 = false;
+				break;
+			case 0x0a:
+				// pulse low for one cycle if CA2-ctrl is 101.
+				ca2 = false;
+				ca2_do_pulse = true;
+				break;
 		}
 		break;
 	case DDRB:
@@ -227,7 +272,16 @@ void MOS6522::WriteByte(uint16_t a_Offset, uint8_t a_Value)
 		break;
 	case PCR:
 		pcr = a_Value;
+		// Manual output modes
+		if ((pcr & 0x0c) == 0x0c) {
+			ca2 = !!(pcr & 0x02);
+		}
+		if ((pcr & 0xc0) == 0xc0) {
+			cb2 = !!(pcr & 0x20);
+		}
+
 		// TODO: ca and cb pulsing stuff.
+		
 		break;
 	case IFR:
 		// Interrupt flag bits are cleared by writing 1:s for corresponding bit.
@@ -282,7 +336,7 @@ void MOS6522::WriteCA1(bool a_Value)
 			IRQSet(IRQ_CA1);
 		}
 	}
-	else if (ca1 && ! a_Value) {
+	else if (ca1 && !a_Value) {
 		// Negative transition only of enabled in PCR.
 		if (!(pcr & PCR_CONTROL_CA1)) {
 			IRQSet(IRQ_CA1);
@@ -299,15 +353,14 @@ void MOS6522::WriteCA2(bool a_Value)
 		if ((pcr & PCR_CONTROL_CA2) == 0x04 || (pcr & PCR_CONTROL_CA2) == 0x06) {
 			IRQSet(IRQ_CA2);
 		}
-		ca2 = a_Value;
 	}
-	else if (ca2 && ! a_Value) {
+	else if (ca2 && !a_Value) {
 		// Negative transition only of enabled in PCR.
 		if ((pcr & PCR_CONTROL_CA2) == 0x00 || (pcr & PCR_CONTROL_CA2) == 0x02) {
 			IRQSet(IRQ_CA2);
 		}
-		ca2 = a_Value;
 	}
+	ca2 = a_Value;
 }
 
 
@@ -350,10 +403,10 @@ void MOS6522::WriteCB2(bool a_Value)
 void MOS6522::PrintStat()
 {
 	std::cout << "VIA stats:" << std::endl;
-	std::cout << "  -   ORB: " << (int)orb << std::endl;
 	std::cout << "  -   ORA: " << (int)ora << std::endl;
-	std::cout << "  -  DDRB: " << (int)ddrb << std::endl;
 	std::cout << "  -  DDRA: " << (int)ddra << std::endl;
+	std::cout << "  -   ORB: " << (int)orb << std::endl;
+	std::cout << "  -  DDRB: " << (int)ddrb << std::endl;
 	std::cout << "  - T1C_L: " << (int)(t1_counter & 0x00ff) << std::endl;
 	std::cout << "  - T1C_H: " << (int)(t1_counter >> 8) << std::endl;
 	std::cout << "  - T1L_L: " << (int)t1_latch_low << std::endl;

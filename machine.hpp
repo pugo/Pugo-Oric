@@ -21,13 +21,15 @@
 #include <iostream>
 #include <memory>
 
-#include "mos6502.hpp"
-#include "mos6522.hpp"
-
+#include "chip/mos6502.hpp"
+#include "chip/mos6522.hpp"
+#include "chip/ay3_8912.hpp"
 
 class Oric;
 class Memory;
 class Frontend;
+
+typedef std::map<uint32_t, uint8_t> KeyMap_t;
 
 class Machine : public std::enable_shared_from_this<Machine>
 {
@@ -73,7 +75,11 @@ protected:
 	
 	std::shared_ptr<MOS6502> m_Cpu;
 	std::shared_ptr<MOS6522> m_Mos_6522;
+	std::shared_ptr<AY3_8912> m_Ay3;
+
 	std::shared_ptr<Memory> m_Memory;
+
+	KeyMap_t m_KeyMap;
 
 	bool m_Running;
 };

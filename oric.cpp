@@ -25,6 +25,8 @@ void Oric::Init()
 	m_Frontend = std::make_shared<Frontend>(shared_from_this());
 	m_Machine->Init(m_Frontend);
 	m_Frontend->InitGraphics();
+
+	m_Machine->GetCPU()->SetQuiet(true);
 }
 
 Oric::~Oric()
@@ -80,6 +82,7 @@ bool Oric::HandleCommand(std::string& a_Line)
 		std::cout << "i              : print machine info" << std::endl;
 		std::cout << "m <address> <n>: dump memory from address and n bytes ahead" << std::endl;
 		std::cout << "quiet          : prevent debug output at run time" << std::endl;
+		std::cout << "debug          : show debug output at run time" << std::endl;
 		std::cout << "" << std::endl;
 		return true;
 	}
@@ -128,6 +131,10 @@ bool Oric::HandleCommand(std::string& a_Line)
 	else if (cmd == "quiet") {
 		m_Machine->GetCPU()->SetQuiet(true);
 		std::cout << "Quiet mode enabled" << std::endl;
+	}
+	else if (cmd == "debug") {
+		m_Machine->GetCPU()->SetQuiet(false);
+		std::cout << "Debug mode enabled" << std::endl;
 	}
 
 	else if (cmd == "q") { // quit
