@@ -136,15 +136,39 @@ uint8_t MOS6522::ReadByte(uint16_t a_Offset)
 	case ORB:
 // 	cout << "Read " << m_RegisterNames[static_cast<Register>(a_Offset & 0x000f)] << endl;
 		IRQClear(IRQ_CB1);
-		if ((pcr & PCR_CONTROL_CB2) == 0x00 || (pcr & PCR_CONTROL_CB2) == 0x40) {
-			IRQClear(IRQ_CB2);
+		switch (pcr & PCR_MASK_CA2) {
+			case 0x00:
+			case 0x40:
+				IRQClear(IRQ_CB2);
+				break;
+			case 0x80:
+				// set CA2 to low on read/write of ORA if CB2-ctrl is 100.
+				cb2 = false;
+				break;
+			case 0xa0:
+				// pulse low for one cycle if CB2-ctrl is 101.
+				cb2 = false;
+				cb2_do_pulse = true;
+				break;
 		}
 		return (orb & ddrb) | (irb & ~ddrb);
 	case ORA:
 // 	cout << "Read " << m_RegisterNames[static_cast<Register>(a_Offset & 0x000f)] << endl;
 		IRQClear(IRQ_CA1);
-		if ((pcr & PCR_CONTROL_CA2) == 0x00 || (pcr & PCR_CONTROL_CA2) == 0x04) {
-			IRQClear(IRQ_CA2);
+		switch (pcr & PCR_MASK_CA2) {
+			case 0x00:
+			case 0x04:
+				IRQClear(IRQ_CA2);
+				break;
+			case 0x08:
+				// set CA2 to low on read/write of ORA if CA2-ctrl is 100.
+				ca2 = false;
+				break;
+			case 0x0a:
+				// pulse low for one cycle if CA2-ctrl is 101.
+				ca2 = false;
+				ca2_do_pulse = true;
+				break;
 		}
 		return (ora & ddra) | (ira & ~ddra);
 	case DDRB:
@@ -190,10 +214,7 @@ void MOS6522::WriteByte(uint16_t a_Offset, uint8_t a_Value)
 // 	cout << "Write " << m_RegisterNames[static_cast<Register>(a_Offset & 0x000f)] << ": " << static_cast<unsigned int>(a_Value) << endl;
 		orb = a_Value;
 		IRQClear(IRQ_CB1);
-		if ((pcr & PCR_CONTROL_CB2) == 0x00 || (pcr & PCR_CONTROL_CB2) == 0x40) {
-			IRQClear(IRQ_CB2);
-		}
-		switch (pcr & PCR_CONTROL_CA2) {
+		switch (pcr & PCR_MASK_CA2) {
 			case 0x00:
 			case 0x40:
 				IRQClear(IRQ_CB2);
@@ -213,7 +234,7 @@ void MOS6522::WriteByte(uint16_t a_Offset, uint8_t a_Value)
 // 	cout << "Read " << m_RegisterNames[static_cast<Register>(a_Offset & 0x000f)] << endl;
 		ora = a_Value;
 		IRQClear(IRQ_CA1);
-		switch (pcr & PCR_CONTROL_CA2) {
+		switch (pcr & PCR_MASK_CA2) {
 			case 0x00:
 			case 0x04:
 				IRQClear(IRQ_CA2);
@@ -273,10 +294,10 @@ void MOS6522::WriteByte(uint16_t a_Offset, uint8_t a_Value)
 	case PCR:
 		pcr = a_Value;
 		// Manual output modes
-		if ((pcr & 0x0c) == 0x0c) {
+		if ((pcr & PCR_MASK_CA2) == 0x0c) {
 			ca2 = !!(pcr & 0x02);
 		}
-		if ((pcr & 0xc0) == 0xc0) {
+		if ((pcr & PCR_MASK_CB2) == 0xc0) {
 			cb2 = !!(pcr & 0x20);
 		}
 
@@ -330,73 +351,56 @@ void MOS6522::IRQClear(uint8_t bits)
 
 void MOS6522::WriteCA1(bool a_Value)
 {
-	if (!ca1 && a_Value) {
-		// Positive transition only of enabled in PCR.
-		if (pcr & PCR_CONTROL_CA1) {
+	if (ca1 != a_Value) {
+		ca1 = a_Value;
+		// Transitions only if enabled in PCR.
+		if ((ca1 && (pcr & PCR_MASK_CA1)) || (!ca1 && !(pcr & PCR_MASK_CA1))) {
 			IRQSet(IRQ_CA1);
-		}
-	}
-	else if (ca1 && !a_Value) {
-		// Negative transition only of enabled in PCR.
-		if (!(pcr & PCR_CONTROL_CA1)) {
-			IRQSet(IRQ_CA1);
-		}
-	}
 
-	ca1 = a_Value;
+			if (!ca2 && (pcr & PCR_MASK_CA2) == 0x08) {
+				ca2 = true;
+				// TODO: add hook
+			}
+		}
+	}
 }
 
 void MOS6522::WriteCA2(bool a_Value)
 {
-	if (!ca2 && a_Value) {
-		// Positive transition only of enabled in PCR.
-		if ((pcr & PCR_CONTROL_CA2) == 0x04 || (pcr & PCR_CONTROL_CA2) == 0x06) {
+	if (ca2 != a_Value) {
+		ca2 = a_Value;
+
+		if ((ca2 && ((pcr & 0x0C) == 0x04)) || (!ca2 && ((pcr & 0x0C) == 0x00))) {
 			IRQSet(IRQ_CA2);
 		}
 	}
-	else if (ca2 && !a_Value) {
-		// Negative transition only of enabled in PCR.
-		if ((pcr & PCR_CONTROL_CA2) == 0x00 || (pcr & PCR_CONTROL_CA2) == 0x02) {
-			IRQSet(IRQ_CA2);
-		}
-	}
-	ca2 = a_Value;
 }
 
 
 void MOS6522::WriteCB1(bool a_Value)
 {
-	if (!cb1 && a_Value) {
-		// Positive transition only of enabled in PCR.
-		if (pcr & PCR_CONTROL_CB1) {
+	if (cb1 != a_Value) {
+		cb1 = a_Value;
+		// Transitions only if enabled in PCR.
+		if ((cb1 && (pcr & PCR_MASK_CB1)) || (!cb1 && !(pcr & PCR_MASK_CB1))) {
 			IRQSet(IRQ_CB1);
-		}
-	}
-	else if (cb1 && ! a_Value) {
-		// Negative transition only of enabled in PCR.
-		if (!(pcr & PCR_CONTROL_CB1)) {
-			IRQSet(IRQ_CB1);
-		}
-	}
 
-	cb1 = a_Value;
+			if (!cb2 && (pcr & PCR_MASK_CB2) == 0x80) {
+				cb2 = true;
+				// TODO: add hook
+			}
+		}
+	}
 }
 
 void MOS6522::WriteCB2(bool a_Value)
 {
-	if (!cb2 && a_Value) {
-		// Positive transition only of enabled in PCR.
-		if ((pcr & PCR_CONTROL_CB2) == 0x40 || (pcr & PCR_CONTROL_CB2) == 0x60) {
+	if (cb2 != a_Value) {
+		cb2 = a_Value;
+
+		if ((cb2 && ((pcr & 0xC0) == 0x40)) || (!ca2 && ((pcr & 0xC0) == 0x00))) {
 			IRQSet(IRQ_CB2);
 		}
-		cb2 = a_Value;
-	}
-	else if (cb2 && ! a_Value) {
-		// Negative transition only of enabled in PCR.
-		if ((pcr & PCR_CONTROL_CB2) == 0x00 || (pcr & PCR_CONTROL_CB2) == 0x20) {
-			IRQSet(IRQ_CB2);
-		}
-		cb2 = a_Value;
 	}
 }
 

@@ -21,6 +21,8 @@ public:
 private:
 	std::shared_ptr<Machine> m_Machine;
 	std::shared_ptr<Memory> m_Memory;
+	
+	uint8_t m_KeyRows[8];
 };
 
 

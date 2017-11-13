@@ -33,6 +33,9 @@ AY3_8912::~AY3_8912()
 
 void AY3_8912::Reset()
 {
+	for (uint8_t i=0; i < 8; i++) {
+		m_KeyRows[i] = 0;
+	}
 }
 
 short AY3_8912::Exec(uint8_t a_Cycles)
@@ -42,4 +45,11 @@ short AY3_8912::Exec(uint8_t a_Cycles)
 void AY3_8912::KeyPress(uint8_t a_KeyBits, bool a_Down)
 {
 	std::cout << "key: " << (int)a_KeyBits << ", " << (a_Down ? "down" : "up") << std::endl;
+	if (a_Down) {
+		m_KeyRows[a_KeyBits >> 3] |= (1 << (a_KeyBits & 0x07));
+	}
+	else {
+		m_KeyRows[a_KeyBits >> 3] &= ~(1 << (a_KeyBits & 0x07));
+	}
 }
+

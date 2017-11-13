@@ -49,10 +49,10 @@ public:
 
 	// PCR controlling bits.
 	enum PCR {
-		PCR_CONTROL_CA1 = 0x01,
-		PCR_CONTROL_CA2 = 0x0E,
-		PCR_CONTROL_CB1 = 0x10,
-		PCR_CONTROL_CB2 = 0xE0
+		PCR_MASK_CA1 = 0x01,
+		PCR_MASK_CA2 = 0x0E,
+		PCR_MASK_CB1 = 0x10,
+		PCR_MASK_CB2 = 0xE0
 	};
 
 	MOS6522(std::shared_ptr<Machine> a_Machine);

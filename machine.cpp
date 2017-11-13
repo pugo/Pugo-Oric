@@ -101,17 +101,15 @@ void Machine::Run(uint32_t a_Instructions, Oric* a_Oric)
 				/* We are only worried about SDL_KEYDOWN and SDL_KEYUP events */
 				switch (event.type) {
 				case SDL_KEYDOWN:
+				case SDL_KEYUP:
 				{
 					auto key = m_KeyMap.find(event.key.keysym.sym);
 					if (key != m_KeyMap.end()) {
-						printf( "Key press detected: %d\n", event.key.keysym.sym);
-						m_Ay3->KeyPress(key->second, true);
+						printf( "Key event detected: %d (%s)\n", event.key.keysym.sym, (event.type == SDL_KEYDOWN) ? "down" : "up");
+						m_Ay3->KeyPress(key->second, event.type == SDL_KEYDOWN);
 					}
 					break;
 				}
-				case SDL_KEYUP:
-					printf( "Key release detected\n" );
-					break;
 
 				default:
 					break;
