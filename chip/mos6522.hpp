@@ -55,6 +55,9 @@ public:
 		PCR_MASK_CB2 = 0xE0
 	};
 
+	typedef void (*f_ca2_changed_handler)(Machine &a_Machine, bool a_Value);
+	typedef void (*f_cb2_changed_handler)(Machine &a_Machine, bool a_Value);
+
 	MOS6522(std::shared_ptr<Machine> a_Machine);
 	~MOS6522();
 
@@ -64,7 +67,9 @@ public:
 	uint8_t ReadByte(uint16_t a_Offset);
 	void WriteByte(uint16_t a_Offset, uint8_t a_Value);
 
-
+	uint8_t ReadORA() { return (ora & ddra); }
+	uint8_t ReadORB() { return (orb & ddrb); }
+	
 	void WriteIRB(uint8_t a_Value) { irb = a_Value; }
 
 	void WriteCA1(bool a_Value);
@@ -75,6 +80,9 @@ public:
 
 	void PrintStat();
 
+	f_ca2_changed_handler ca2_changed_handler;
+	f_cb2_changed_handler cb2_changed_handler;
+	
 private:
 	void IRQSet(uint8_t a_Bits);
 	void IRQClear(uint8_t a_Bits);

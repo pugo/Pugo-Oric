@@ -98,7 +98,13 @@ MOS6502::MOS6502(std::shared_ptr<Machine> a_Machine) :
 	SP(0),
 	m_Quiet(false),
 	m_Machine(a_Machine),
-	m_IRQFlag(false)
+	m_IRQFlag(false),
+	memory_read_byte_handler(nullptr),
+	memory_read_byte_zp_handler(nullptr),
+	memory_read_word_handler(nullptr),
+	memory_read_word_zp_handler(nullptr),
+	memory_write_byte_handler(nullptr),
+	memory_write_byte_zp_handler(nullptr)
 {
 	m_Memory = m_Machine->GetMemory();
 }

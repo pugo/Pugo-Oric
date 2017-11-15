@@ -33,8 +33,18 @@ AY3_8912::~AY3_8912()
 
 void AY3_8912::Reset()
 {
+	bdir = false;
+	bc1 = false;
+	bc2 = false;
+
+	m_CurrentRegister = 0;
+
 	for (uint8_t i=0; i < 8; i++) {
 		m_KeyRows[i] = 0;
+	}
+	
+	for (uint8_t i=0; i < 15; i++) {
+		m_Registers[i] = 0;
 	}
 }
 
@@ -53,3 +63,52 @@ void AY3_8912::KeyPress(uint8_t a_KeyBits, bool a_Down)
 	}
 }
 
+void AY3_8912::SetBdir(bool a_Value)
+{
+	if (bdir != a_Value) {
+		bdir = a_Value;
+		std::cout << "!!!! AY3 BDIR updated: " << (a_Value ? "true" : "false") << std::endl;
+		if (bdir) {
+			if (bc1) {
+				// TODO: read this from machine instead, to decouple chips.
+				uint8_t new_curr = m_Machine->GetVIA()->ReadORA();
+				if (new_curr < c_NumberOfRegisters) {
+					m_CurrentRegister = new_curr;
+					std::cout << "!!!! --- new current reg: " << static_cast<unsigned int>(m_CurrentRegister) << std::endl;
+				}
+			}
+			else {
+				m_Registers[m_CurrentRegister] = m_Machine->GetVIA()->ReadORA();
+				std::cout << "!!!! +++ register[" << static_cast<unsigned int>(m_CurrentRegister) << "] = "  << static_cast<unsigned 	int>(m_Registers[m_CurrentRegister]) << std::endl;
+			}
+		}
+	}
+}
+
+void AY3_8912::SetBc1(bool a_Value)
+{
+	bc1 = a_Value;
+	std::cout << "!!!! AY3 BC1 updated: " << (a_Value ? "true" : "false") << std::endl;
+}
+
+void AY3_8912::SetBc2(bool a_Value)
+{
+	bc2 = a_Value;
+	std::cout << "!!!! AY3 BC2 updated: " << (a_Value ? "true" : "false") << std::endl;
+}
+
+
+
+void AY3_8912::set_bdir(Machine& a_Machine, bool a_Value) {
+	a_Machine.GetAY3()->SetBdir(a_Value);
+}
+
+void AY3_8912::set_bc1(Machine& a_Machine, bool a_Value)
+{
+	a_Machine.GetAY3()->SetBc1(a_Value);
+}
+
+void AY3_8912::set_bc2(Machine& a_Machine, bool a_Value)
+{ 
+	a_Machine.GetAY3()->SetBc2(a_Value);
+}

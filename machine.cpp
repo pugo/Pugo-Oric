@@ -12,6 +12,7 @@
 #include "memory.hpp"
 #include "frontend.hpp"
 
+
 static uint32_t keytab[] = {'7'       , 'n'        , '5'        , 'v'        , 0 ,          '1'        , 'x'        , '3'        ,
 									'j'        , 't'        , 'r'        , 'f'        , 0          , SDLK_ESCAPE, 'q'        , 'd'        ,
 									'm'        , '6'        , 'b'        , '4'        , SDLK_LCTRL , 'z'        , '2'        , 'c'        ,
@@ -47,6 +48,9 @@ void Machine::Init(std::shared_ptr<Frontend> a_Frontend)
 	m_Cpu->memory_read_word_zp_handler = read_word_zp;
 	m_Cpu->memory_write_byte_handler = write_byte;
 	m_Cpu->memory_write_byte_zp_handler = write_byte_zp;
+	
+	m_Mos_6522->ca2_changed_handler = AY3_8912::set_bc1;
+	m_Mos_6522->cb2_changed_handler = AY3_8912::set_bdir;
 	
 	for (uint8_t i=0; i < 64; ++i) {
 		m_KeyMap[keytab[i]] = i;

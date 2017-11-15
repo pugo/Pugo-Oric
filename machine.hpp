@@ -42,6 +42,7 @@ public:
 	std::shared_ptr<Memory> GetMemory() { return m_Memory; }
 	std::shared_ptr<MOS6502> GetCPU() { return m_Cpu; }
 	std::shared_ptr<MOS6522> GetVIA() { return m_Mos_6522; }
+	std::shared_ptr<AY3_8912> GetAY3() { return m_Ay3; }
 
 	void Reset();
 	void Run(uint32_t a_Steps, Oric* a_Oric);

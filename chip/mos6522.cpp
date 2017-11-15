@@ -13,6 +13,7 @@
 #include <map>
 #include <string>
 #include <utility>
+#include <bitset>
 
 using namespace std;
 
@@ -22,7 +23,9 @@ using namespace std;
 
 
 MOS6522::MOS6522(std::shared_ptr<Machine> a_Machine) :
-	m_Machine(a_Machine)
+	m_Machine(a_Machine),
+	ca2_changed_handler(nullptr),
+	cb2_changed_handler(nullptr)
 {
 	m_Memory = m_Machine->GetMemory();
 	boost::assign::insert(m_RegisterNames)
@@ -81,11 +84,13 @@ short MOS6522::Exec(uint8_t a_Cycles)
 	if (ca2_do_pulse) {
 		ca2 = true;
 		ca2_do_pulse = false;
+		if (ca2_changed_handler) { ca2_changed_handler(*m_Machine, ca2); }
 	}
 
 	if (cb2_do_pulse) {
 		cb2 = true;
 		cb2_do_pulse = false;
+		if (cb2_changed_handler) { cb2_changed_handler(*m_Machine, cb2); }
 	}
 
 	t1_counter -= a_Cycles;
@@ -97,7 +102,6 @@ short MOS6522::Exec(uint8_t a_Cycles)
 			case 0x80:
 				// One shot
 				if (t1_run) {
-// 					std::cout << "T1 interrupt one shot" << std::endl;
 					IRQSet(IRQ_T1);
 					t1_run = false;
 				}
@@ -107,7 +111,6 @@ short MOS6522::Exec(uint8_t a_Cycles)
 			case 0xC0:
 				// Continuous
 				if (t1_run) {
-// 					std::cout << "T1 interrupt cont" << std::endl;
 					IRQSet(IRQ_T1);
 				}
 				t1_counter += ((t1_latch_high << 8) | t1_latch_low) + 2; // +2: compensate for boundary time and load time.
@@ -118,7 +121,6 @@ short MOS6522::Exec(uint8_t a_Cycles)
 	t2_counter -= a_Cycles;
 	if (t2_counter < 0) {
 		if (t2_run) {
-// 			std::cout << "T2 interrupt" << std::endl;
 			IRQSet(IRQ_T2);
 		}
 		t2_counter &= 0xffff;
@@ -142,13 +144,15 @@ uint8_t MOS6522::ReadByte(uint16_t a_Offset)
 				IRQClear(IRQ_CB2);
 				break;
 			case 0x80:
-				// set CA2 to low on read/write of ORA if CB2-ctrl is 100.
+				// set CB2 to low on read/write of ORB if CB2-ctrl is 100.
 				cb2 = false;
+				if (cb2_changed_handler) { cb2_changed_handler(*m_Machine, cb2); }
 				break;
 			case 0xa0:
 				// pulse low for one cycle if CB2-ctrl is 101.
 				cb2 = false;
 				cb2_do_pulse = true;
+				if (cb2_changed_handler) { cb2_changed_handler(*m_Machine, cb2); }
 				break;
 		}
 		return (orb & ddrb) | (irb & ~ddrb);
@@ -163,11 +167,13 @@ uint8_t MOS6522::ReadByte(uint16_t a_Offset)
 			case 0x08:
 				// set CA2 to low on read/write of ORA if CA2-ctrl is 100.
 				ca2 = false;
+				if (ca2_changed_handler) { ca2_changed_handler(*m_Machine, ca2); }
 				break;
 			case 0x0a:
 				// pulse low for one cycle if CA2-ctrl is 101.
 				ca2 = false;
 				ca2_do_pulse = true;
+				if (ca2_changed_handler) { ca2_changed_handler(*m_Machine, ca2); }
 				break;
 		}
 		return (ora & ddra) | (ira & ~ddra);
@@ -220,13 +226,15 @@ void MOS6522::WriteByte(uint16_t a_Offset, uint8_t a_Value)
 				IRQClear(IRQ_CB2);
 				break;
 			case 0x80:
-				// set CA2 to low on read/write of ORA if CB2-ctrl is 100.
+				// set CB2 to low on read/write of ORB if CB2-ctrl is 100.
 				cb2 = false;
+				if (cb2_changed_handler) { cb2_changed_handler(*m_Machine, cb2); }
 				break;
 			case 0xa0:
 				// pulse low for one cycle if CB2-ctrl is 101.
 				cb2 = false;
 				cb2_do_pulse = true;
+				if (cb2_changed_handler) { cb2_changed_handler(*m_Machine, cb2); }
 				break;
 		}
 		break;
@@ -242,11 +250,13 @@ void MOS6522::WriteByte(uint16_t a_Offset, uint8_t a_Value)
 			case 0x08:
 				// set CA2 to low on read/write of ORA if CA2-ctrl is 100.
 				ca2 = false;
+				if (ca2_changed_handler) { ca2_changed_handler(*m_Machine, ca2); }
 				break;
 			case 0x0a:
 				// pulse low for one cycle if CA2-ctrl is 101.
 				ca2 = false;
 				ca2_do_pulse = true;
+				if (ca2_changed_handler) { ca2_changed_handler(*m_Machine, ca2); }
 				break;
 		}
 		break;
@@ -294,11 +304,13 @@ void MOS6522::WriteByte(uint16_t a_Offset, uint8_t a_Value)
 	case PCR:
 		pcr = a_Value;
 		// Manual output modes
-		if ((pcr & PCR_MASK_CA2) == 0x0c) {
+		if ((pcr & 0x0c) == 0x0c) {
 			ca2 = !!(pcr & 0x02);
+			if (ca2_changed_handler) { ca2_changed_handler(*m_Machine, ca2); }
 		}
-		if ((pcr & PCR_MASK_CB2) == 0xc0) {
+		if ((pcr & 0xc0) == 0xc0) {
 			cb2 = !!(pcr & 0x20);
+			if (cb2_changed_handler) { cb2_changed_handler(*m_Machine, cb2); }
 		}
 
 		// TODO: ca and cb pulsing stuff.
@@ -322,6 +334,7 @@ void MOS6522::WriteByte(uint16_t a_Offset, uint8_t a_Value)
 		break;
 	case IORA2:
 		ora = a_Value;
+		cout << "----- Write ORA: " << std::bitset<8>(ora) << endl;
 		break;
 	}
 }
@@ -357,9 +370,10 @@ void MOS6522::WriteCA1(bool a_Value)
 		if ((ca1 && (pcr & PCR_MASK_CA1)) || (!ca1 && !(pcr & PCR_MASK_CA1))) {
 			IRQSet(IRQ_CA1);
 
+			// Handshake mode, set ca2 on pos transition of ca1.
 			if (!ca2 && (pcr & PCR_MASK_CA2) == 0x08) {
 				ca2 = true;
-				// TODO: add hook
+				if (ca2_changed_handler) { ca2_changed_handler(*m_Machine, ca2); }
 			}
 		}
 	}
@@ -370,9 +384,12 @@ void MOS6522::WriteCA2(bool a_Value)
 	if (ca2 != a_Value) {
 		ca2 = a_Value;
 
+		// Set interrupt on pos/neg transition if 0 or 4 in pcr.
 		if ((ca2 && ((pcr & 0x0C) == 0x04)) || (!ca2 && ((pcr & 0x0C) == 0x00))) {
 			IRQSet(IRQ_CA2);
 		}
+
+		if (ca2_changed_handler) { ca2_changed_handler(*m_Machine, ca2); }
 	}
 }
 
@@ -385,9 +402,10 @@ void MOS6522::WriteCB1(bool a_Value)
 		if ((cb1 && (pcr & PCR_MASK_CB1)) || (!cb1 && !(pcr & PCR_MASK_CB1))) {
 			IRQSet(IRQ_CB1);
 
+			// Handshake mode, set cb2 on pos transition of cb1.
 			if (!cb2 && (pcr & PCR_MASK_CB2) == 0x80) {
 				cb2 = true;
-				// TODO: add hook
+				if (cb2_changed_handler) { cb2_changed_handler(*m_Machine, cb2); }
 			}
 		}
 	}
@@ -398,9 +416,13 @@ void MOS6522::WriteCB2(bool a_Value)
 	if (cb2 != a_Value) {
 		cb2 = a_Value;
 
+		// Set interrupt on pos/neg transition if 0 or 40 in pcr.
 		if ((cb2 && ((pcr & 0xC0) == 0x40)) || (!ca2 && ((pcr & 0xC0) == 0x00))) {
-			IRQSet(IRQ_CB2);
+			IRQSet(IRQ_CB2);				if (cb2_changed_handler) { cb2_changed_handler(*m_Machine, cb2); }
+
 		}
+
+		if (cb2_changed_handler) { cb2_changed_handler(*m_Machine, cb2); }
 	}
 }
 
