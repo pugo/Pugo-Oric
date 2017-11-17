@@ -39,7 +39,7 @@
 #define READ_BYTE_IND_Y()   memory_read_byte_handler(*m_Machine, READ_ADDR_IND_Y())
 
 #define PUSH_BYTE_STACK(b)  (m_Memory->m_Mem[ (SP--) | STACK_BOTTOM ] = (b))
-#define POP_BYTE_STACK      (m_Memory->m_Mem[ (++SP) | STACK_BOTTOM ])
+#define POP_BYTE_STACK()    (m_Memory->m_Mem[ (++SP) | STACK_BOTTOM ])
 
 // Macros for flag handling
 #define SET_FLAG_NZ(B)     (N_INTERN = Z_INTERN = B)
@@ -285,7 +285,7 @@ short MOS6502::ExecInstruction(bool& a_Brk)
 
 	uint16_t pc_initial = PC;
 	uint8_t instruction = READ_BYTE_IMM();
-
+	std::cout << "... exec: " << std::hex << pc_initial << std::endl;
 	switch(instruction)
 	{
 		case LDA_IMM:
@@ -872,7 +872,7 @@ short MOS6502::ExecInstruction(bool& a_Brk)
 			break;
 
 		case RTS:
-			PC = (POP_BYTE_STACK | (POP_BYTE_STACK << 8)) + 1;
+			PC = (POP_BYTE_STACK() | (POP_BYTE_STACK() << 8)) + 1;
 			break;
 
 		case BRK:
@@ -885,8 +885,8 @@ short MOS6502::ExecInstruction(bool& a_Brk)
 			break;
 
 		case RTI:  // Return from interrupt
-			SetP(POP_BYTE_STACK); //  & 0xdb);
-			PC = POP_BYTE_STACK | (POP_BYTE_STACK << 8);
+			SetP(POP_BYTE_STACK()); //  & 0xdb);
+			PC = POP_BYTE_STACK() | (POP_BYTE_STACK() << 8);
 			break;
 
 		case NOP:
@@ -896,13 +896,13 @@ short MOS6502::ExecInstruction(bool& a_Brk)
 			PUSH_BYTE_STACK(A);
 			break;
 		case PLA:  // Pull accumulator from stack
-			A = POP_BYTE_STACK;
+			A = POP_BYTE_STACK();
 			break;
 		case PHP:  // Push status to stack
 			PUSH_BYTE_STACK(GetP());
 			break;
 		case PLP:  // Pull status from stack
-			SetP(POP_BYTE_STACK);
+			SetP(POP_BYTE_STACK());
 			break;
 
 		case TAX:  // Transfer A to X
@@ -925,7 +925,7 @@ short MOS6502::ExecInstruction(bool& a_Brk)
 			break;
 
 		default:
-			std::cout << "ILLEGAL OPCODE!" << std::endl;
+			std::cout << "ILLEGAL OPCODE: " << instruction << std::endl;
 			break;
 	};
 

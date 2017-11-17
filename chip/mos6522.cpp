@@ -237,6 +237,7 @@ void MOS6522::WriteByte(uint16_t a_Offset, uint8_t a_Value)
 				if (cb2_changed_handler) { cb2_changed_handler(*m_Machine, cb2); }
 				break;
 		}
+		m_Machine->GetAY3()->UpdateKeyOutput();
 		break;
 	case ORA:
 // 	cout << "Read " << m_RegisterNames[static_cast<Register>(a_Offset & 0x000f)] << endl;
@@ -334,11 +335,16 @@ void MOS6522::WriteByte(uint16_t a_Offset, uint8_t a_Value)
 		break;
 	case IORA2:
 		ora = a_Value;
-		cout << "----- Write ORA: " << std::bitset<8>(ora) << endl;
+// 		cout << "----- Write ORA: " << std::bitset<8>(ora) << endl;
 		break;
 	}
 }
 
+void MOS6522::SetIRBBit(const uint8_t a_Bit, const bool a_Value)
+{
+	uint8_t b = 1 << a_Bit;
+	irb = (irb & ~b) | (a_Value ? b : 0);
+}
 
 void MOS6522::IRQSet(uint8_t bits)
 {

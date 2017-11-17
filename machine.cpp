@@ -82,6 +82,7 @@ void Machine::Run(uint32_t a_Instructions, Oric* a_Oric)
 			uint8_t ran = m_Cpu->ExecInstruction(m_Brk);
 			cycles -= ran;
 			m_Mos_6522->Exec(ran);
+			m_Ay3->Exec(ran);
 
 			if (a_Instructions > 0 && ++instructions == a_Instructions) {
 				return;

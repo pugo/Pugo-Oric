@@ -6,6 +6,7 @@
 
 #include "ay3_8912.hpp"
 #include <iostream>
+#include <bitset>
 
 // Registers
 //              0, 1 | Lowest 12 bits = pitch channel A 
@@ -37,6 +38,7 @@ void AY3_8912::Reset()
 	bc1 = false;
 	bc2 = false;
 
+	m_CurrentKeyRow = 0;
 	m_CurrentRegister = 0;
 
 	for (uint8_t i=0; i < 8; i++) {
@@ -50,6 +52,7 @@ void AY3_8912::Reset()
 
 short AY3_8912::Exec(uint8_t a_Cycles)
 {
+	UpdateKeyOutput();
 }
 
 void AY3_8912::KeyPress(uint8_t a_KeyBits, bool a_Down)
@@ -61,25 +64,42 @@ void AY3_8912::KeyPress(uint8_t a_KeyBits, bool a_Down)
 	else {
 		m_KeyRows[a_KeyBits >> 3] &= ~(1 << (a_KeyBits & 0x07));
 	}
+	
+	if (m_CurrentKeyRow == (a_KeyBits >> 3)) {
+		UpdateKeyOutput();
+	}
 }
+
+void AY3_8912::UpdateKeyOutput()
+{
+	m_CurrentKeyRow = m_Machine->GetVIA()->ReadORB() & 0x07;
+
+	if (m_KeyRows[m_CurrentKeyRow] & (m_Registers[IO_PORT_A] ^ 0xff)) {
+		m_Machine->GetVIA()->SetIRBBit(3, true);
+	}
+	else {
+		m_Machine->GetVIA()->SetIRBBit(3, false);
+	}
+}
+
+
 
 void AY3_8912::SetBdir(bool a_Value)
 {
 	if (bdir != a_Value) {
 		bdir = a_Value;
-		std::cout << "!!!! AY3 BDIR updated: " << (a_Value ? "true" : "false") << std::endl;
 		if (bdir) {
 			if (bc1) {
 				// TODO: read this from machine instead, to decouple chips.
 				uint8_t new_curr = m_Machine->GetVIA()->ReadORA();
-				if (new_curr < c_NumberOfRegisters) {
+				if (new_curr < NUM_REGS) {
 					m_CurrentRegister = new_curr;
-					std::cout << "!!!! --- new current reg: " << static_cast<unsigned int>(m_CurrentRegister) << std::endl;
+// 					std::cout << "!!!! --- new current reg: " << static_cast<unsigned int>(m_CurrentRegister) << std::endl;
 				}
 			}
 			else {
 				m_Registers[m_CurrentRegister] = m_Machine->GetVIA()->ReadORA();
-				std::cout << "!!!! +++ register[" << static_cast<unsigned int>(m_CurrentRegister) << "] = "  << static_cast<unsigned 	int>(m_Registers[m_CurrentRegister]) << std::endl;
+// 				std::cout << "!!!! +++ register[" << static_cast<unsigned int>(m_CurrentRegister) << "] = "  << static_cast<unsigned 	int>(m_Registers[m_CurrentRegister]) << std::endl;
 			}
 		}
 	}
@@ -88,13 +108,11 @@ void AY3_8912::SetBdir(bool a_Value)
 void AY3_8912::SetBc1(bool a_Value)
 {
 	bc1 = a_Value;
-	std::cout << "!!!! AY3 BC1 updated: " << (a_Value ? "true" : "false") << std::endl;
 }
 
 void AY3_8912::SetBc2(bool a_Value)
 {
 	bc2 = a_Value;
-	std::cout << "!!!! AY3 BC2 updated: " << (a_Value ? "true" : "false") << std::endl;
 }
 
 

@@ -70,6 +70,8 @@ public:
 	uint8_t ReadORA() { return (ora & ddra); }
 	uint8_t ReadORB() { return (orb & ddrb); }
 	
+	void SetIRBBit(const uint8_t a_Bit, const bool a_Value);
+	
 	void WriteIRB(uint8_t a_Value) { irb = a_Value; }
 
 	void WriteCA1(bool a_Value);
