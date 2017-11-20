@@ -581,22 +581,30 @@ short MOS6502::ExecInstruction(bool& a_Brk)
 		case ASL_ZP:
 			b1 = memory_read_byte_zp_handler(*m_Machine, addr = READ_ADDR_ZP());
 			C = b1 & 0x80;
-			memory_write_byte_zp_handler(*m_Machine, addr, SET_FLAG_NZ(b1 <<= 1));
+			b1 <<= 1;
+			SET_FLAG_NZ(b1);
+			memory_write_byte_zp_handler(*m_Machine, addr, b1);
 			break;
 		case ASL_ZP_X:
 			b1 = memory_read_byte_zp_handler(*m_Machine, addr = READ_ADDR_ZP_X());
 			C = b1 & 0x80;
-			memory_write_byte_zp_handler(*m_Machine, addr, SET_FLAG_NZ(b1 <<= 1));
+			b1 <<= 1;
+			SET_FLAG_NZ(b1);
+			memory_write_byte_zp_handler(*m_Machine, addr, b1);
 			break;
 		case ASL_ABS:
 			b1 = memory_read_byte_handler(*m_Machine, addr = READ_ADDR_ABS());
 			C = b1 & 0x80;
-			memory_write_byte_handler(*m_Machine, addr, SET_FLAG_NZ(b1 <<= 1));
+			b1 <<= 1;
+			SET_FLAG_NZ(b1);
+			memory_write_byte_handler(*m_Machine, addr, b1);
 			break;
 		case ASL_ABS_X:
 			b1 = memory_read_byte_handler(*m_Machine, addr = READ_ADDR_ABS_X());
 			C = b1 & 0x80;
-			memory_write_byte_handler(*m_Machine, addr, SET_FLAG_NZ(b1 <<= 1));
+			b1 <<= 1;
+			SET_FLAG_NZ(b1);
+			memory_write_byte_handler(*m_Machine, addr, b1);
 			break;
 
 			//      +-+-+-+-+-+-+-+-+
