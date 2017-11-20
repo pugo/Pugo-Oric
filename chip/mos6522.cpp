@@ -121,7 +121,7 @@ short MOS6522::Exec(uint8_t a_Cycles)
 			if (t1_reload) {
 				--todo_cycles;
 				t1_counter = ((t1_latch_high << 8) | t1_latch_low); // +2: compensate for boundary time and load time.
-				std::cout << "Reloaded: " << (int)t1_counter << std::endl;
+// 				std::cout << "Reloaded: " << (int)t1_counter << std::endl;
 				t1_reload = false;
 			}
 
