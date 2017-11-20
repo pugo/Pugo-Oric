@@ -43,9 +43,6 @@ MOS6522::~MOS6522()
 
 void MOS6522::Reset()
 {
-	t1_run = false;
-	t2_run = false;
-
 	ca1 = false;
 	ca2 = false;
 	ca2_do_pulse = false;
@@ -66,11 +63,13 @@ void MOS6522::Reset()
 	t1_latch_high = 0;
 	t1_counter = 0;
 	t1_run = false;
+	t1_reload = false;
 
 	t2_latch_low = 0;
 	t2_latch_high = 0;
 	t2_counter = 0;
 	t2_run = false;
+	t2_reload = false;
 
 	sr = 0;
 	acr = 0;
@@ -81,6 +80,11 @@ void MOS6522::Reset()
 
 short MOS6522::Exec(uint8_t a_Cycles)
 {
+	if (a_Cycles == 0) {
+		return 0;
+	}
+
+// 	std::cout << "EXEC cycles: " << (int)a_Cycles << std::endl;
 	if (ca2_do_pulse) {
 		ca2 = true;
 		ca2_do_pulse = false;
@@ -93,42 +97,77 @@ short MOS6522::Exec(uint8_t a_Cycles)
 		if (cb2_changed_handler) { cb2_changed_handler(*m_Machine, cb2); }
 	}
 
-	t1_counter -= a_Cycles;
-	
-	if (t1_counter < 0) {
-		switch (acr & 0xc0)
-		{
-			case 0x00:
-			case 0x80:
-				// One shot
-				if (t1_run) {
-					IRQSet(IRQ_T1);
-					t1_run = false;
+	uint16_t todo_cycles;
+
+	switch (acr & 0xc0)
+	{
+		case 0x00:
+		case 0x80:
+			// One shot
+			if (t1_run && a_Cycles > t1_counter) {
+				IRQSet(IRQ_T1);
+				if (acr & 0x80) {
+					orb |= 0x80;
 				}
-				t1_counter &= 0xffff;
-				break;
-			case 0x40:
-			case 0xC0:
-				// Continuous
-				if (t1_run) {
-					IRQSet(IRQ_T1);
+				t1_run = false;
+			}
+			t1_counter -= a_Cycles;
+			break;
+		case 0x40:
+		case 0xC0:
+			// Continuous
+			todo_cycles = a_Cycles;
+
+			if (t1_reload) {
+				--todo_cycles;
+				t1_counter = ((t1_latch_high << 8) | t1_latch_low); // +2: compensate for boundary time and load time.
+				std::cout << "Reloaded: " << (int)t1_counter << std::endl;
+				t1_reload = false;
+			}
+
+			while (todo_cycles > t1_counter) {
+				todo_cycles -= (t1_counter + 1);
+// 				std::cout << "  todo cycles: " << (int)todo_cycles << std::endl;
+				t1_counter = 0xffff;
+				IRQSet(IRQ_T1);
+
+				if (acr & 0x80) {
+					orb ^= 0x80;
 				}
-				t1_counter += ((t1_latch_high << 8) | t1_latch_low) + 2; // +2: compensate for boundary time and load time.
-				break;
-		}
+
+				if (!todo_cycles) {
+					t1_reload = true;
+					break;
+				}
+
+				--todo_cycles;
+				t1_counter = ((t1_latch_high << 8) | t1_latch_low); // +2: compensate for boundary time and load time.
+			}
+
+			t1_counter -= todo_cycles;
+			break;
 	}
 
-	t2_counter -= a_Cycles;
-	if (t2_counter < 0) {
-		if (t2_run) {
+	if (!(acr & 0x20)) {
+		todo_cycles = a_Cycles;
+
+		if (t2_reload) {
+			--todo_cycles;
+			t2_reload = false;
+		}
+		
+		if (t2_run && todo_cycles > t2_counter) {
 			IRQSet(IRQ_T2);
+			t2_run = false;
 		}
-		t2_counter &= 0xffff;
+		t2_counter -= todo_cycles;
 	}
 
-	if ((orb & ddrb)) {
+// 	if ((orb & ddrb)) {
 //		std::cout << "---> orb: " << (orb & ddrb) << std::endl;
-	}
+// 	}
+
+	return a_Cycles;
 }
 
 uint8_t MOS6522::ReadByte(uint16_t a_Offset)
@@ -273,10 +312,13 @@ void MOS6522::WriteByte(uint16_t a_Offset, uint8_t a_Value)
 	case T1C_H:
 		t1_latch_high = a_Value;
 		t1_counter = (t1_latch_high << 8) | t1_latch_low;
+		t1_reload = true;
 		t1_run = true;
 		IRQClear(IRQ_T1);
-		// reload? Interrupt stuff
-		// om översta biten i acr: släck översta i orb.
+		// If ORB7 pulse mode is set, prepare by setting ORB7 low.
+		if ((acr & 0xc0) == 0x80) {
+			orb &= 0x7f;
+		}
 		break;
 	case T1L_L:
 		t1_latch_low = a_Value;
@@ -292,8 +334,8 @@ void MOS6522::WriteByte(uint16_t a_Offset, uint8_t a_Value)
 		t2_latch_high = a_Value;
 		t2_counter = (t2_latch_high << 8) | t2_latch_low;
 		t2_run = true;
+		t2_reload = true;
 		IRQClear(IRQ_T2);
-		// reload? 
 		break;
 	case SR:
 		sr = a_Value;

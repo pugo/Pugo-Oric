@@ -38,8 +38,8 @@
 #define READ_BYTE_IND_X()   memory_read_byte_handler(*m_Machine, READ_ADDR_IND_X())
 #define READ_BYTE_IND_Y()   memory_read_byte_handler(*m_Machine, READ_ADDR_IND_Y())
 
-#define PUSH_BYTE_STACK(b)  (m_Memory->m_Mem[ (SP--) | STACK_BOTTOM ] = (b))
-#define POP_BYTE_STACK()    (m_Memory->m_Mem[ (++SP) | STACK_BOTTOM ])
+#define PUSH_BYTE_STACK(b)  (m_Memory->m_Mem[STACK_BOTTOM | (SP--)] = (b))
+#define POP_BYTE_STACK()    (m_Memory->m_Mem[STACK_BOTTOM | (++SP)])
 
 // Macros for flag handling
 #define SET_FLAG_NZ(B)     (N_INTERN = Z_INTERN = B)
@@ -193,9 +193,11 @@ void MOS6502::Handle_IRQ()
 	if (I) { // Interrupt disabled ?
 		return;
 	}
-// 	std::cout << "IRQ" << std::endl;
+
+	std::cout << "///////////////// IRQ ///////////////////////////" << std::endl;
+
 	PUSH_BYTE_STACK(PC >> 8);
-	PUSH_BYTE_STACK(PC);
+	PUSH_BYTE_STACK(PC & 0xff);
 	PUSH_BYTE_STACK(GetP());
 	I = true;
 	PC = memory_read_word_handler(*m_Machine, IRQ_VECTOR_L);
@@ -276,7 +278,6 @@ short MOS6502::ExecInstruction(bool& a_Brk)
 {
 	if (m_IRQFlag) {
 		Handle_IRQ();
-		return 0;
 	}
 	
 	uint8_t b1, b2;
@@ -285,7 +286,7 @@ short MOS6502::ExecInstruction(bool& a_Brk)
 
 	uint16_t pc_initial = PC;
 	uint8_t instruction = READ_BYTE_IMM();
-	std::cout << "... exec: " << std::hex << pc_initial << std::endl;
+
 	switch(instruction)
 	{
 		case LDA_IMM:
@@ -752,13 +753,15 @@ short MOS6502::ExecInstruction(bool& a_Brk)
 
 		case BIT_ZP:
 			b1 = READ_BYTE_ZP();
-			N_INTERN = Z_INTERN = A & b1;
+			N_INTERN = b1;
+			Z_INTERN = A & b1;
 			V = b1 & FLAG_V;  // bit 6 -> V
 			break;
 
 		case BIT_ABS:
 			b1 = READ_BYTE_ABS();
-			N_INTERN = Z_INTERN = A & b1;
+			N_INTERN = b1;
+			Z_INTERN = A & b1;
 			V = b1 & FLAG_V;  // bit 6 -> V
 			break;
 
@@ -879,8 +882,9 @@ short MOS6502::ExecInstruction(bool& a_Brk)
 			PUSH_BYTE_STACK((PC+1) >> 8); // Byte after BRK will not be executed on return!
 			PUSH_BYTE_STACK(PC+1);
 			PUSH_BYTE_STACK(GetP() | FLAG_B);
-			PC = memory_read_word_handler(*m_Machine, IRQ_VECTOR_L);
 			I = true;
+			D = false;
+			PC = memory_read_word_handler(*m_Machine, IRQ_VECTOR_L);
 			a_Brk = true;
 			break;
 
@@ -925,7 +929,9 @@ short MOS6502::ExecInstruction(bool& a_Brk)
 			break;
 
 		default:
-			std::cout << "ILLEGAL OPCODE: " << instruction << std::endl;
+			std::cout << "ILLEGAL OPCODE: " << std::endl;
+			PrintStat();
+			a_Brk = true;
 			break;
 	};
 

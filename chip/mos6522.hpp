@@ -107,23 +107,25 @@ private:
 
 	uint8_t t1_latch_low;
 	uint8_t t1_latch_high;
-	int32_t t1_counter;
+	uint16_t t1_counter;
 	bool t1_run;
+	bool t1_reload;
 
 	uint8_t t2_latch_low;
 	uint8_t t2_latch_high;
-	int32_t t2_counter;
+	uint16_t t2_counter;
 	bool t2_run;
+	bool t2_reload;
 
 	uint8_t sr;		// Shift register
 
 	uint8_t acr;		// Auxilliary control register (shift mode, etc)
-					// |  7  |  6  |  5  |     4    |  3  |  2  |  1  |     0    | 
-					// |    CB2 ctrl     | CB1 ctrl |     CA2 ctrl    | CA1 ctrl | 
-
-	uint8_t pcr;		// Peripheral control register
 					// |  7  |  6  |    5    |  4  |  3  |  2  |      1       |      0       | 
 					// |  T1 ctrl  | T2 ctrl |     SR  ctrl    | PB latch en. | PA latch en. |
+
+	uint8_t pcr;		// Peripheral control register
+					// |  7  |  6  |  5  |     4    |  3  |  2  |  1  |     0    | 
+					// |    CB2 ctrl     | CB1 ctrl |     CA2 ctrl    | CA1 ctrl | 
 
 	uint8_t ifr;		// Interrupt Flag Register:   | IRQ  | T1 | T2 | CB1 | CB2 | SR | CA1 | CA2 |
 	uint8_t ier;		// Interrupt Enable Register: | ctrl | T1 | T2 | CB1 | CB2 | SR | CA1 | CA2 |
