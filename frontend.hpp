@@ -37,6 +37,7 @@ protected:
 	SDL_Texture* m_SdlTexture;
 
 	std::vector<uint8_t> m_Pixels;
+	bool m_Hires;
 	
 	uint32_t m_Colors[8] {0xff000000, 0xffff0000, 0xff00ff00, 0xffffff00, 0xff0000ff, 0xffff00ff, 0xff00ffff, 0xffffffff};
 };

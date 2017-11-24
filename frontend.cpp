@@ -8,7 +8,8 @@ Frontend::Frontend(std::shared_ptr<Oric> a_Oric) :
 	m_Oric(a_Oric),
 	m_SdlWindow(NULL),
 	m_SdlSurface(NULL),
-	m_SdlRenderer(NULL)
+	m_SdlRenderer(NULL),
+	m_Hires(false)
 {
 	m_Pixels = std::vector<uint8_t>(m_TextureWidth * m_TextureHeight * m_TextureBpp, 0);
 }
@@ -35,7 +36,7 @@ void Frontend::InitGraphics()
 		}
 
 		//Create window (240x224)
-		m_SdlWindow = SDL_CreateWindow("SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 600, 600, SDL_WINDOW_SHOWN);
+		m_SdlWindow = SDL_CreateWindow("Fjoll-Oric", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 600, 600, SDL_WINDOW_SHOWN);
 		if (m_SdlWindow == NULL) {
 			printf("Window could not be created! SDL_Error: %s\n", SDL_GetError());
 			success = false;
@@ -65,47 +66,78 @@ void Frontend::InitGraphics()
 	}
 }
 
+inline uint16_t calcRowAddr(uint8_t a_RasterLine, bool a_Hires)
+{
+	if (a_RasterLine < 200) {
+		if (a_Hires) {
+			return 0xa000 + a_RasterLine * 40;
+		}
+		else {
+			return 0xbb80 + (a_RasterLine >> 3) * 40;
+		}
+	}
+	
+	return 0xbb80 + (a_RasterLine >> 3) * 40;
+}
+
 void Frontend::UpdateGraphics(uint8_t a_RasterLine, uint8_t* a_Mem)
 {
-	uint8_t* char_mem = a_Mem + 0xb400;
-	
 	uint8_t dx = 0;
 	uint32_t bg_col = m_Colors[0];
 	uint32_t fg_col = m_Colors[7];
-	uint32_t* texture_line = (uint32_t*)&m_Pixels[a_RasterLine * m_TextureWidth * m_TextureBpp];
-	
-	for (uint16_t x = 0; x < 40; x++) {
-		uint8_t ch = a_Mem[0xbb80 + (a_RasterLine >> 3)*40 + x];
-		uint8_t chr_dat = char_mem[((ch & 0x7f) << 3) + (a_RasterLine & 0x07)];
 
+	uint32_t* texture_line = (uint32_t*)&m_Pixels[a_RasterLine * m_TextureWidth * m_TextureBpp];
+	uint16_t row = calcRowAddr(a_RasterLine, m_Hires);
+
+	// 40 characters wide, chars at 0xbb80 and up.
+	for (uint16_t x = 0; x < 40; x++) {
+		// get char code.
+		uint8_t ch = a_Mem[row + x];
+		bool ctrl_char = false;
+		
 		if (!(ch & 0x60)) {
-			chr_dat = 0;
+			ctrl_char = true;
 			switch(ch & 0x18)
 			{
-				case 0x00:
-					fg_col = m_Colors[ch & 7];
-					break;
-				case 0x08:
-// 					lattr = ch & 7;
-// 					std::cout << " ------- LATTR" << std::endl;
-					break;
-				case 0x10:
-					bg_col = m_Colors[ch & 7];
-					break;
-				case 0x18:
-// 					pattr = ch & 7;
-// 					std::cout << " ------- PATTR" << std::endl;
-					break;
+			case 0x00:
+				// Ink color.
+				fg_col = m_Colors[ch & 7];
+				break;
+			case 0x08:
+				// Charset modifiers.
+				//lattr = ch & 7;
+				break;
+			case 0x10:
+				// Paper color.
+				bg_col = m_Colors[ch & 7];
+				break;
+			case 0x18:
+				// Video control attrs.
+				m_Hires = !!(ch & 0x04);
+				row = calcRowAddr(a_RasterLine, m_Hires);
+				break;
 			}
 		}
-		
+
 		uint32_t _fg_col = fg_col;
 		uint32_t _bg_col = bg_col;
-		
+
+		// Inverse colors if upper bit is set in char code.
 		if (ch & 0x80) {
-			// Inverse colors
 			_fg_col = _fg_col ^ 0x00ffffff;
 			_bg_col = _bg_col ^ 0x00ffffff;
+		}
+
+		uint8_t chr_dat = 0;
+		if (!ctrl_char) {
+			if (m_Hires && a_RasterLine < 200) {
+				chr_dat = ch;	// Hires, read byte directly.
+			}
+			else {
+				// get char pixel data for read char code. If hires > 200, charmem is at 0x9800.
+				uint8_t* char_mem = a_Mem + (m_Hires ? 0x9800 : 0xb400);
+				chr_dat = char_mem[((ch & 0x7f) << 3) + (a_RasterLine & 0x07)] & 0x3f;
+			}
 		}
 
 		for (uint8_t i = 0x20; i > 0; i >>= 1, dx++) {

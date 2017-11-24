@@ -29,7 +29,7 @@ class Oric;
 class Memory;
 class Frontend;
 
-typedef std::map<uint32_t, uint8_t> KeyMap_t;
+typedef std::map<int32_t, uint8_t> KeyMap_t;
 
 class Machine : public std::enable_shared_from_this<Machine>
 {
