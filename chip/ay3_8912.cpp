@@ -22,7 +22,8 @@
 using namespace std;
 
 AY3_8912::AY3_8912(std::shared_ptr<Machine> a_Machine) :
-	m_Machine(a_Machine)
+	m_Machine(a_Machine),
+	m_read_data_handler(nullptr)
 {
 	m_Memory = m_Machine->GetMemory();
 	Reset();
@@ -91,15 +92,13 @@ void AY3_8912::SetBdir(bool a_Value)
 		if (bdir) {
 			if (bc1) {
 				// TODO: read this from machine instead, to decouple chips.
-				uint8_t new_curr = m_Machine->GetVIA()->ReadORA();
+				uint8_t new_curr = m_read_data_handler(*m_Machine);
 				if (new_curr < NUM_REGS) {
 					m_CurrentRegister = new_curr;
-// 					std::cout << "!!!! --- new current reg: " << static_cast<unsigned int>(m_CurrentRegister) << std::endl;
 				}
 			}
 			else {
-				m_Registers[m_CurrentRegister] = m_Machine->GetVIA()->ReadORA();
-// 				std::cout << "!!!! +++ register[" << static_cast<unsigned int>(m_CurrentRegister) << "] = "  << static_cast<unsigned 	int>(m_Registers[m_CurrentRegister]) << std::endl;
+				m_Registers[m_CurrentRegister] = m_read_data_handler(*m_Machine);
 			}
 		}
 	}

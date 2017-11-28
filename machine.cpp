@@ -49,6 +49,8 @@ void Machine::Init(std::shared_ptr<Frontend> a_Frontend)
 	m_Cpu->memory_write_byte_handler = write_byte;
 	m_Cpu->memory_write_byte_zp_handler = write_byte_zp;
 	
+	m_Ay3->m_read_data_handler = read_via_ora;
+	
 	m_Mos_6522->ca2_changed_handler = AY3_8912::set_bc1;
 	m_Mos_6522->cb2_changed_handler = AY3_8912::set_bdir;
 	
@@ -98,7 +100,6 @@ void Machine::Run(uint32_t a_Instructions, Oric* a_Oric)
 				next_frame = static_cast<uint64_t>(now) * 1000;
 			}
 			else {
-// 				std::cout << "sleeping: " << std::dec << (future - now) << std::endl;
 				SDL_Delay(future - now);
 			}
 
@@ -192,3 +193,13 @@ void inline Machine::write_byte_zp(Machine &a_Machine, uint8_t a_Address, uint8_
 	a_Machine.GetMemory()->m_Mem[a_Address] = a_Val;
 }
 
+
+uint8_t inline Machine::read_via_ora(Machine& a_Machine)
+{
+	return a_Machine.GetVIA()->ReadORA();
+}
+
+uint8_t inline Machine::read_via_orb(Machine& a_Machine)
+{
+	return a_Machine.GetVIA()->ReadORB();
+}

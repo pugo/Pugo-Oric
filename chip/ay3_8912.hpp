@@ -7,6 +7,9 @@
 
 class Machine;
 
+typedef uint8_t (*f_read_data_handler)(Machine &oric);
+
+
 class AY3_8912
 {
 public:
@@ -46,6 +49,8 @@ public:
 	static void set_bdir(Machine& a_Machine, bool a_Value);
 	static void set_bc1(Machine& a_Machine, bool a_Value);
 	static void set_bc2(Machine& a_Machine, bool a_Value);
+
+	f_read_data_handler m_read_data_handler;
 
 private:
 	std::shared_ptr<Machine> m_Machine;

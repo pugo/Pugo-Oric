@@ -12,9 +12,23 @@
 class Oric;
 class Memory;
 
+
 class Frontend
 {
 public:
+	enum VideoAttribs
+	{
+		HZ_50 = 0x02,
+		HIRES = 0x04
+	};
+
+	enum TextAttribs
+	{
+		ALTERNATE_CHARSET = 0x01,
+		DOUBLE_SIZE = 0x02,
+		BLINKING = 0x04,
+	};
+
 	Frontend(std::shared_ptr<Oric> a_Oric);
 	~Frontend();
 
@@ -24,22 +38,22 @@ public:
 	void RenderGraphics();
 
 protected:
-	std::shared_ptr<Oric> m_Oric;
-	std::shared_ptr<Memory> m_Memory;
-
+	uint32_t m_Colors[8] {0xff000000, 0xffff0000, 0xff00ff00, 0xffffff00, 0xff0000ff, 0xffff00ff, 0xff00ffff, 0xffffffff};
 	const uint8_t m_TextureWidth = 240;
 	const uint8_t m_TextureHeight = 224;
 	const uint8_t m_TextureBpp = 4;
-	
+
+	std::shared_ptr<Oric> m_Oric;
+	std::shared_ptr<Memory> m_Memory;
+
 	SDL_Window* m_SdlWindow;
 	SDL_Surface* m_SdlSurface;
 	SDL_Renderer* m_SdlRenderer;
 	SDL_Texture* m_SdlTexture;
 
 	std::vector<uint8_t> m_Pixels;
-	bool m_Hires;
-	
-	uint32_t m_Colors[8] {0xff000000, 0xffff0000, 0xff00ff00, 0xffffff00, 0xff0000ff, 0xffff00ff, 0xff00ffff, 0xffffffff};
+	uint8_t m_VideoAttrib;
+	uint8_t m_TextAttrib;
 };
 
 

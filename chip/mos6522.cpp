@@ -466,8 +466,7 @@ void MOS6522::WriteCB2(bool a_Value)
 
 		// Set interrupt on pos/neg transition if 0 or 40 in pcr.
 		if ((cb2 && ((pcr & 0xC0) == 0x40)) || (!ca2 && ((pcr & 0xC0) == 0x00))) {
-			IRQSet(IRQ_CB2);				if (cb2_changed_handler) { cb2_changed_handler(*m_Machine, cb2); }
-
+			IRQSet(IRQ_CB2);
 		}
 
 		if (cb2_changed_handler) { cb2_changed_handler(*m_Machine, cb2); }

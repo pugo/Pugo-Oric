@@ -9,7 +9,8 @@ Frontend::Frontend(std::shared_ptr<Oric> a_Oric) :
 	m_SdlWindow(NULL),
 	m_SdlSurface(NULL),
 	m_SdlRenderer(NULL),
-	m_Hires(false)
+	m_VideoAttrib(0),
+	m_TextAttrib(0)
 {
 	m_Pixels = std::vector<uint8_t>(m_TextureWidth * m_TextureHeight * m_TextureBpp, 0);
 }
@@ -30,13 +31,12 @@ void Frontend::InitGraphics()
 	}
 	else {
 		//Set texture filtering to linear
-		if(!SDL_SetHint( SDL_HINT_RENDER_SCALE_QUALITY, "1" ))
-		{
+		if (!SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1")) {
 			printf( "Warning: Linear texture filtering not enabled!" );
 		}
 
 		//Create window (240x224)
-		m_SdlWindow = SDL_CreateWindow("Fjoll-Oric", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 600, 600, SDL_WINDOW_SHOWN);
+		m_SdlWindow = SDL_CreateWindow("Pugo-Oric", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 600, 600, SDL_WINDOW_SHOWN);
 		if (m_SdlWindow == NULL) {
 			printf("Window could not be created! SDL_Error: %s\n", SDL_GetError());
 			success = false;
@@ -44,7 +44,7 @@ void Frontend::InitGraphics()
 		else {
 			//Create renderer for window
 			m_SdlRenderer = SDL_CreateRenderer(m_SdlWindow, -1, SDL_RENDERER_ACCELERATED);
-			if(m_SdlRenderer == NULL) {
+			if (m_SdlRenderer == NULL) {
 				printf( "Renderer could not be created! SDL Error: %s\n", SDL_GetError() );
 				success = false;
 			}
@@ -66,10 +66,10 @@ void Frontend::InitGraphics()
 	}
 }
 
-inline uint16_t calcRowAddr(uint8_t a_RasterLine, bool a_Hires)
+inline uint16_t calcRowAddr(uint8_t a_RasterLine, uint8_t a_VideoAttrib)
 {
 	if (a_RasterLine < 200) {
-		if (a_Hires) {
+		if (a_VideoAttrib & Frontend::VideoAttribs::HIRES) {
 			return 0xa000 + a_RasterLine * 40;
 		}
 		else {
@@ -85,9 +85,10 @@ void Frontend::UpdateGraphics(uint8_t a_RasterLine, uint8_t* a_Mem)
 	uint8_t dx = 0;
 	uint32_t bg_col = m_Colors[0];
 	uint32_t fg_col = m_Colors[7];
+	m_TextAttrib = 0;
 
 	uint32_t* texture_line = (uint32_t*)&m_Pixels[a_RasterLine * m_TextureWidth * m_TextureBpp];
-	uint16_t row = calcRowAddr(a_RasterLine, m_Hires);
+	uint16_t row = calcRowAddr(a_RasterLine, m_VideoAttrib);
 
 	// 40 characters wide, chars at 0xbb80 and up.
 	for (uint16_t x = 0; x < 40; x++) {
@@ -104,8 +105,8 @@ void Frontend::UpdateGraphics(uint8_t a_RasterLine, uint8_t* a_Mem)
 				fg_col = m_Colors[ch & 7];
 				break;
 			case 0x08:
-				// Charset modifiers.
-				//lattr = ch & 7;
+				// Text attributes.
+				m_TextAttrib = ch & 7;
 				break;
 			case 0x10:
 				// Paper color.
@@ -113,8 +114,8 @@ void Frontend::UpdateGraphics(uint8_t a_RasterLine, uint8_t* a_Mem)
 				break;
 			case 0x18:
 				// Video control attrs.
-				m_Hires = !!(ch & 0x04);
-				row = calcRowAddr(a_RasterLine, m_Hires);
+				m_VideoAttrib = ch & 0x07;
+				row = calcRowAddr(a_RasterLine, m_VideoAttrib);
 				break;
 			}
 		}
@@ -130,12 +131,13 @@ void Frontend::UpdateGraphics(uint8_t a_RasterLine, uint8_t* a_Mem)
 
 		uint8_t chr_dat = 0;
 		if (!ctrl_char) {
-			if (m_Hires && a_RasterLine < 200) {
+			if ((m_VideoAttrib & VideoAttribs::HIRES) && a_RasterLine < 200) {
 				chr_dat = ch;	// Hires, read byte directly.
 			}
 			else {
 				// get char pixel data for read char code. If hires > 200, charmem is at 0x9800.
-				uint8_t* char_mem = a_Mem + (m_Hires ? 0x9800 : 0xb400);
+				uint8_t* char_mem = a_Mem + ((m_VideoAttrib & VideoAttribs::HIRES) ? 0x9800 : 0xb400) +
+											((m_TextAttrib & TextAttribs::ALTERNATE_CHARSET) ? 128*8 : 0);
 				chr_dat = char_mem[((ch & 0x7f) << 3) + (a_RasterLine & 0x07)] & 0x3f;
 			}
 		}

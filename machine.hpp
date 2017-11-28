@@ -58,6 +58,9 @@ public:
 	static inline void write_byte(Machine& a_Machine, uint16_t a_Address, uint8_t a_Val);
 	static inline void write_byte_zp(Machine& a_Machine, uint8_t a_Address, uint8_t a_Val);
 
+	static inline uint8_t read_via_ora(Machine& a_Machine);
+	static inline uint8_t read_via_orb(Machine& a_Machine);
+	
 	bool m_Brk;
 
 	static const uint8_t cycles_per_raster = 64;
