@@ -25,7 +25,6 @@ AY3_8912::AY3_8912(std::shared_ptr<Machine> a_Machine) :
 	m_Machine(a_Machine),
 	m_read_data_handler(nullptr)
 {
-	m_Memory = m_Machine->GetMemory();
 	Reset();
 }
 
@@ -39,13 +38,8 @@ void AY3_8912::Reset()
 	bc1 = false;
 	bc2 = false;
 
-	m_CurrentKeyRow = 0;
 	m_CurrentRegister = 0;
 
-	for (uint8_t i=0; i < 8; i++) {
-		m_KeyRows[i] = 0;
-	}
-	
 	for (uint8_t i=0; i < 15; i++) {
 		m_Registers[i] = 0;
 	}
@@ -53,37 +47,7 @@ void AY3_8912::Reset()
 
 short AY3_8912::Exec(uint8_t a_Cycles)
 {
-	UpdateKeyOutput();
 }
-
-void AY3_8912::KeyPress(uint8_t a_KeyBits, bool a_Down)
-{
-	std::cout << "key: " << (int)a_KeyBits << ", " << (a_Down ? "down" : "up") << std::endl;
-	if (a_Down) {
-		m_KeyRows[a_KeyBits >> 3] |= (1 << (a_KeyBits & 0x07));
-	}
-	else {
-		m_KeyRows[a_KeyBits >> 3] &= ~(1 << (a_KeyBits & 0x07));
-	}
-	
-	if (m_CurrentKeyRow == (a_KeyBits >> 3)) {
-		UpdateKeyOutput();
-	}
-}
-
-void AY3_8912::UpdateKeyOutput()
-{
-	m_CurrentKeyRow = m_Machine->GetVIA()->ReadORB() & 0x07;
-
-	if (m_KeyRows[m_CurrentKeyRow] & (m_Registers[IO_PORT_A] ^ 0xff)) {
-		m_Machine->GetVIA()->SetIRBBit(3, true);
-	}
-	else {
-		m_Machine->GetVIA()->SetIRBBit(3, false);
-	}
-}
-
-
 
 void AY3_8912::SetBdir(bool a_Value)
 {
@@ -91,7 +55,6 @@ void AY3_8912::SetBdir(bool a_Value)
 		bdir = a_Value;
 		if (bdir) {
 			if (bc1) {
-				// TODO: read this from machine instead, to decouple chips.
 				uint8_t new_curr = m_read_data_handler(*m_Machine);
 				if (new_curr < NUM_REGS) {
 					m_CurrentRegister = new_curr;
@@ -113,7 +76,6 @@ void AY3_8912::SetBc2(bool a_Value)
 {
 	bc2 = a_Value;
 }
-
 
 
 void AY3_8912::set_bdir(Machine& a_Machine, bool a_Value) {

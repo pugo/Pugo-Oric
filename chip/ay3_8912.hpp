@@ -39,12 +39,11 @@ public:
 	void Reset();
 	short Exec(uint8_t a_Cycles);
 	
-	void KeyPress(uint8_t a_KeyBits, bool a_Down);
-	void UpdateKeyOutput();
-
 	void SetBdir(bool a_Value);
 	void SetBc1(bool a_Value);
 	void SetBc2(bool a_Value);
+
+	uint8_t GetRegister(Register a_Register) { return m_Registers[a_Register]; }
 
 	static void set_bdir(Machine& a_Machine, bool a_Value);
 	static void set_bc1(Machine& a_Machine, bool a_Value);
@@ -54,7 +53,6 @@ public:
 
 private:
 	std::shared_ptr<Machine> m_Machine;
-	std::shared_ptr<Memory> m_Memory;
 
 	bool bdir;
 	bool bc1;
@@ -62,9 +60,6 @@ private:
 
 	uint8_t m_CurrentRegister;
 	uint8_t m_Registers[NUM_REGS];
-
-	uint8_t m_CurrentKeyRow;
-	uint8_t m_KeyRows[8];
 };
 
 

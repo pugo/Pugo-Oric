@@ -129,10 +129,9 @@ private:
 
 	uint8_t ifr;		// Interrupt Flag Register:   | IRQ  | T1 | T2 | CB1 | CB2 | SR | CA1 | CA2 |
 	uint8_t ier;		// Interrupt Enable Register: | ctrl | T1 | T2 | CB1 | CB2 | SR | CA1 | CA2 |
-	
+
 	std::shared_ptr<Machine> m_Machine;
-	std::shared_ptr<Memory> m_Memory;
-	
+
 	std::map<Register, std::string> m_RegisterNames;
 };
 

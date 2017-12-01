@@ -27,7 +27,6 @@ MOS6522::MOS6522(std::shared_ptr<Machine> a_Machine) :
 	ca2_changed_handler(nullptr),
 	cb2_changed_handler(nullptr)
 {
-	m_Memory = m_Machine->GetMemory();
 	boost::assign::insert(m_RegisterNames)
 		(ORB, "ORB")(ORA, "ORA")(DDRB, "DDRB")(DDRA, "DDRA")
 		(T1C_L, "T1C_L")(T1C_H, "T1C_H")(T1L_L, "T1L_L")(T1L_H, "T1L_H")
@@ -276,7 +275,7 @@ void MOS6522::WriteByte(uint16_t a_Offset, uint8_t a_Value)
 				if (cb2_changed_handler) { cb2_changed_handler(*m_Machine, cb2); }
 				break;
 		}
-		m_Machine->GetAY3()->UpdateKeyOutput();
+		m_Machine->UpdateKeyOutput();
 		break;
 	case ORA:
 // 	cout << "Read " << m_RegisterNames[static_cast<Register>(a_Offset & 0x000f)] << endl;
@@ -395,7 +394,7 @@ void MOS6522::IRQSet(uint8_t bits)
 		ifr |= 0x80;
 	}
 	if (bits & ier) {
-		m_Machine->GetCPU()->IRQ();
+		m_Machine->IRQ();
 	}
 }
 

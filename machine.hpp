@@ -20,6 +20,7 @@
 
 #include <iostream>
 #include <memory>
+#include <map>
 
 #include "chip/mos6502.hpp"
 #include "chip/mos6522.hpp"
@@ -30,6 +31,9 @@ class Memory;
 class Frontend;
 
 typedef std::map<int32_t, uint8_t> KeyMap_t;
+
+typedef std::pair<int32_t, bool> KeyPress_t;
+typedef std::map<KeyPress_t, KeyPress_t> KeyTranslation_t;
 
 class Machine : public std::enable_shared_from_this<Machine>
 {
@@ -48,6 +52,11 @@ public:
 	void Run(uint32_t a_Steps, Oric* a_Oric);
 	void Run(uint16_t a_Address, long a_Steps, Oric* a_Oric) { m_Cpu->SetPC(a_Address); Run(a_Steps, a_Oric); }
 	void Stop() { m_Brk = true; }
+
+	void IRQ() { m_Cpu->IRQ(); }
+	
+	void KeyPress(uint8_t a_KeyBits, bool a_Down);
+	void UpdateKeyOutput();
 
 	static inline uint8_t read_byte(Machine& a_machine, uint16_t a_Address);
 	static inline uint8_t read_byte_zp(Machine& a_Machine, uint8_t a_Address);
@@ -72,8 +81,6 @@ public:
 protected:
 	bool PaintRaster(Oric* a_Oric);
 
-	uint16_t m_RasterCurrent;
-	
 	std::shared_ptr<Oric> m_Oric;
 	std::shared_ptr<Frontend> m_Frontend;
 	
@@ -83,9 +90,15 @@ protected:
 
 	std::shared_ptr<Memory> m_Memory;
 
-	KeyMap_t m_KeyMap;
-
 	bool m_Running;
+
+	uint16_t m_RasterCurrent;
+
+	KeyMap_t m_KeyMap;
+	KeyTranslation_t m_KeyTranslations;
+
+	uint8_t m_CurrentKeyRow;
+	uint8_t m_KeyRows[8];
 };
 
 #endif // MACHINE_H

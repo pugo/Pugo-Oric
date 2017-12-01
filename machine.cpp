@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <vector>
 #include <string>
+#include <boost/assign.hpp>
 
 #include "machine.hpp"
 #include "oric.hpp"
@@ -27,8 +28,20 @@ Machine::Machine(std::shared_ptr<Oric> a_Oric) :
 	m_Oric(a_Oric),
 	m_Running(false),
 	m_Brk(false),
-	m_RasterCurrent(0)
+	m_RasterCurrent(0),
+	m_CurrentKeyRow(0)
 {
+	for (uint8_t i=0; i < 8; i++) {
+		m_KeyRows[i] = 0;
+	}
+
+	boost::assign::insert(m_KeyTranslations)
+		(std::make_pair(0xe4, false), std::make_pair('/', false))
+		(std::make_pair(0xe4, true), std::make_pair('/', false))
+		(std::make_pair(0xf6, false), std::make_pair(';', false))
+		(std::make_pair(0xf6, true), std::make_pair(';', false))
+		(std::make_pair(0x2b, false), std::make_pair('=', false))
+		(std::make_pair(0x2b, true), std::make_pair('=', false));
 }
 
 Machine::~Machine()
@@ -86,6 +99,8 @@ void Machine::Run(uint32_t a_Instructions, Oric* a_Oric)
 			m_Mos_6522->Exec(ran);
 			m_Ay3->Exec(ran);
 
+			UpdateKeyOutput();
+
 			if (a_Instructions > 0 && ++instructions == a_Instructions) {
 				return;
 			}
@@ -109,10 +124,18 @@ void Machine::Run(uint32_t a_Instructions, Oric* a_Oric)
 				case SDL_KEYDOWN:
 				case SDL_KEYUP:
 				{
-					auto key = m_KeyMap.find(event.key.keysym.sym);
+					std::cout << "sym: " << event.key.keysym.sym << ", shifted: " << event.key.keysym.mod  << std::endl;
+					auto sym = event.key.keysym.sym;
+					auto trans = m_KeyTranslations.find(std::make_pair(sym, event.key.keysym.mod));
+					if (trans != m_KeyTranslations.end()) {
+						std::cout << "translated '" << trans->first.first << "' to '" << trans->second.first << "'" << std::endl;
+						sym = trans->second.first;
+					}
+					
+					auto key = m_KeyMap.find(sym);
 					if (key != m_KeyMap.end()) {
 						printf( "Key event detected: %d (%s)\n", event.key.keysym.sym, (event.type == SDL_KEYDOWN) ? "down" : "up");
-						m_Ay3->KeyPress(key->second, event.type == SDL_KEYDOWN);
+						KeyPress(key->second, event.type == SDL_KEYDOWN);
 					}
 					break;
 				}
@@ -139,6 +162,35 @@ bool Machine::PaintRaster(Oric* a_Oric)
 
 	return false;
 }
+
+void Machine::KeyPress(uint8_t a_KeyBits, bool a_Down)
+{
+	std::cout << "key: " << (int)a_KeyBits << ", " << (a_Down ? "down" : "up") << std::endl;
+	if (a_Down) {
+		m_KeyRows[a_KeyBits >> 3] |= (1 << (a_KeyBits & 0x07));
+	}
+	else {
+		m_KeyRows[a_KeyBits >> 3] &= ~(1 << (a_KeyBits & 0x07));
+	}
+	
+	if (m_CurrentKeyRow == (a_KeyBits >> 3)) {
+		UpdateKeyOutput();
+	}
+}
+
+void Machine::UpdateKeyOutput()
+{
+	m_CurrentKeyRow = m_Mos_6522->ReadORB() & 0x07;
+
+	if (m_KeyRows[m_CurrentKeyRow] & (m_Ay3->GetRegister(AY3_8912::IO_PORT_A) ^ 0xff)) {
+		m_Mos_6522->SetIRBBit(3, true);
+	}
+	else {
+		m_Mos_6522->SetIRBBit(3, false);
+	}
+}
+
+
 
 // --- Memory functions
 
