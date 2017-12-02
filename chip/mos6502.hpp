@@ -69,7 +69,7 @@ public:
 	bool ExecInstructionCycles(int16_t a_Cycles);
 	short ExecInstruction(bool& a_Brk);
 
-	Memory& GetMemory() { return *m_Memory; }
+// 	Memory& GetMemory() { return *m_Memory; }
 
 	// Registers
 	uint8_t A;
@@ -113,7 +113,7 @@ protected:
 	void Handle_IRQ();
 	
 	std::shared_ptr<Machine> m_Machine;
-	std::shared_ptr<Memory> m_Memory;
+	Memory& m_Memory;
 
 	uint16_t PC;
 	uint8_t SP;

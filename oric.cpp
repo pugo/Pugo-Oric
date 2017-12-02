@@ -126,7 +126,7 @@ bool Oric::HandleCommand(std::string& a_Line)
 			std::cout << "Use: m <start address> <length>" << std::endl;
 			return true;
 		}
-		m_Machine->GetMemory()->Show(StringToWord(parts[1]), StringToWord(parts[2]));
+		m_Machine->GetMemory().Show(StringToWord(parts[1]), StringToWord(parts[2]));
 	}
 	else if (cmd == "quiet") {
 		m_Machine->GetCPU()->SetQuiet(true);
@@ -176,8 +176,8 @@ int main(int argc, char *argv[])
 
 	std::shared_ptr<Oric> oric = Oric::GetInstance();
 	oric->Init();
-	oric->GetMachine()->GetMemory()->Load("ROMS/basic11b.rom", 0xc000);
-	oric->GetMachine()->GetMemory()->Load("ROMS/font.rom", 0xb400);
+	oric->GetMachine()->GetMemory().Load("ROMS/basic11b.rom", 0xc000);
+	oric->GetMachine()->GetMemory().Load("ROMS/font.rom", 0xb400);
 	oric->GetMachine()->Reset();
 
 	std::cout << std::endl;

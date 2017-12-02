@@ -25,9 +25,9 @@
 #include "chip/mos6502.hpp"
 #include "chip/mos6522.hpp"
 #include "chip/ay3_8912.hpp"
+#include "memory.hpp"
 
 class Oric;
-class Memory;
 class Frontend;
 
 typedef std::map<int32_t, uint8_t> KeyMap_t;
@@ -43,7 +43,7 @@ public:
 
 	void Init(std::shared_ptr<Frontend> a_Frontend);
 	
-	std::shared_ptr<Memory> GetMemory() { return m_Memory; }
+	Memory& GetMemory() { return m_Memory; }
 	std::shared_ptr<MOS6502> GetCPU() { return m_Cpu; }
 	std::shared_ptr<MOS6522> GetVIA() { return m_Mos_6522; }
 	std::shared_ptr<AY3_8912> GetAY3() { return m_Ay3; }
@@ -88,7 +88,7 @@ protected:
 	std::shared_ptr<MOS6522> m_Mos_6522;
 	std::shared_ptr<AY3_8912> m_Ay3;
 
-	std::shared_ptr<Memory> m_Memory;
+	Memory m_Memory;
 
 	bool m_Running;
 

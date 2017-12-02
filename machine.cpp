@@ -26,10 +26,12 @@ static int32_t keytab[] = {'7'       , 'n'        , '5'        , 'v'        , 0 
 
 Machine::Machine(std::shared_ptr<Oric> a_Oric) : 
 	m_Oric(a_Oric),
+	m_Memory(65535),
 	m_Running(false),
 	m_Brk(false),
 	m_RasterCurrent(0),
 	m_CurrentKeyRow(0)
+	
 {
 	for (uint8_t i=0; i < 8; i++) {
 		m_KeyRows[i] = 0;
@@ -50,7 +52,6 @@ Machine::~Machine()
 void Machine::Init(std::shared_ptr<Frontend> a_Frontend)
 {
 	m_Frontend = a_Frontend;
-	m_Memory = std::make_shared<Memory>(65536);
 	m_Cpu = std::make_shared<MOS6502>(shared_from_this());
 	m_Mos_6522 = std::make_shared<MOS6522>(shared_from_this());
 	m_Ay3 = std::make_shared<AY3_8912>(shared_from_this());
@@ -151,7 +152,7 @@ void Machine::Run(uint32_t a_Instructions, Oric* a_Oric)
 bool Machine::PaintRaster(Oric* a_Oric)
 {
 	if (m_RasterCurrent >= raster_visible_first && m_RasterCurrent < raster_visible_last) {
-		m_Frontend->UpdateGraphics(m_RasterCurrent - raster_visible_first, m_Memory->m_Mem);
+		m_Frontend->UpdateGraphics(m_RasterCurrent - raster_visible_first, m_Memory.m_Mem);
 	}
 	
 	if (++m_RasterCurrent == raster_max) {
@@ -201,12 +202,12 @@ uint8_t inline Machine::read_byte(Machine& a_Machine, uint16_t a_Address)
 		return a_Machine.GetVIA()->ReadByte(a_Address);
 	}
 
-	return a_Machine.GetMemory()->m_Mem[a_Address];
+	return a_Machine.GetMemory().m_Mem[a_Address];
 }
 
 uint8_t inline Machine::read_byte_zp(Machine &a_Machine, uint8_t a_Address)
 {
-	return a_Machine.GetMemory()->m_Mem[a_Address];
+	return a_Machine.GetMemory().m_Mem[a_Address];
 }
 
 uint16_t inline Machine::read_word(Machine &a_Machine, uint16_t a_Address)
@@ -215,12 +216,12 @@ uint16_t inline Machine::read_word(Machine &a_Machine, uint16_t a_Address)
 		std::cout << "read word: " << std::hex << a_Address << std::endl;
 	}
 
-	return a_Machine.GetMemory()->m_Mem[a_Address] | a_Machine.GetMemory()->m_Mem[a_Address + 1] << 8;
+	return a_Machine.GetMemory().m_Mem[a_Address] | a_Machine.GetMemory().m_Mem[a_Address + 1] << 8;
 }
 
 uint16_t inline Machine::read_word_zp(Machine &a_Machine, uint8_t a_Address)
 {
-	return a_Machine.GetMemory()->m_Mem[a_Address] | a_Machine.GetMemory()->m_Mem[a_Address+1 & 0xff] << 8;
+	return a_Machine.GetMemory().m_Mem[a_Address] | a_Machine.GetMemory().m_Mem[a_Address+1 & 0xff] << 8;
 }
 
 void inline Machine::write_byte(Machine &a_Machine, uint16_t a_Address, uint8_t a_Val)
@@ -233,7 +234,7 @@ void inline Machine::write_byte(Machine &a_Machine, uint16_t a_Address, uint8_t 
 		a_Machine.GetVIA()->WriteByte(a_Address, a_Val);
 	}
 
-	a_Machine.GetMemory()->m_Mem[a_Address] = a_Val;
+	a_Machine.GetMemory().m_Mem[a_Address] = a_Val;
 }
 
 void inline Machine::write_byte_zp(Machine &a_Machine, uint8_t a_Address, uint8_t a_Val)
@@ -242,7 +243,7 @@ void inline Machine::write_byte_zp(Machine &a_Machine, uint8_t a_Address, uint8_
 		return;
 	}
 
-	a_Machine.GetMemory()->m_Mem[a_Address] = a_Val;
+	a_Machine.GetMemory().m_Mem[a_Address] = a_Val;
 }
 
 

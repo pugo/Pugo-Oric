@@ -38,8 +38,8 @@
 #define READ_BYTE_IND_X()   memory_read_byte_handler(*m_Machine, READ_ADDR_IND_X())
 #define READ_BYTE_IND_Y()   memory_read_byte_handler(*m_Machine, READ_ADDR_IND_Y())
 
-#define PUSH_BYTE_STACK(b)  (m_Memory->m_Mem[STACK_BOTTOM | (SP--)] = (b))
-#define POP_BYTE_STACK()    (m_Memory->m_Mem[STACK_BOTTOM | (++SP)])
+#define PUSH_BYTE_STACK(b)  (m_Memory.m_Mem[STACK_BOTTOM | (SP--)] = (b))
+#define POP_BYTE_STACK()    (m_Memory.m_Mem[STACK_BOTTOM | (++SP)])
 
 // Macros for flag handling
 #define SET_FLAG_NZ(B)     (N_INTERN = Z_INTERN = B)
@@ -104,9 +104,9 @@ MOS6502::MOS6502(std::shared_ptr<Machine> a_Machine) :
 	memory_read_word_handler(nullptr),
 	memory_read_word_zp_handler(nullptr),
 	memory_write_byte_handler(nullptr),
-	memory_write_byte_zp_handler(nullptr)
+	memory_write_byte_zp_handler(nullptr),
+	m_Memory(a_Machine->GetMemory())
 {
-	m_Memory = m_Machine->GetMemory();
 }
 
 MOS6502::~MOS6502()
