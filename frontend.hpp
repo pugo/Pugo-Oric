@@ -29,7 +29,7 @@ public:
 		BLINKING = 0x04,
 	};
 
-	Frontend(std::shared_ptr<Oric> a_Oric);
+	Frontend(const Oric* a_Oric);
 	~Frontend();
 
 	void InitGraphics();
@@ -43,8 +43,7 @@ protected:
 	const uint8_t m_TextureHeight = 224;
 	const uint8_t m_TextureBpp = 4;
 
-	std::shared_ptr<Oric> m_Oric;
-	std::shared_ptr<Memory> m_Memory;
+	const Oric* m_Oric;
 
 	SDL_Window* m_SdlWindow;
 	SDL_Surface* m_SdlSurface;

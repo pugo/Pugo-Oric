@@ -24,14 +24,13 @@ static int32_t keytab[] = {'7'       , 'n'        , '5'        , 'v'        , 0 
 									'8'        , 'l'        , '0'        , '/'        , SDLK_RSHIFT, SDLK_RETURN, 0          , SDLK_EQUALS };
 
 
-Machine::Machine(std::shared_ptr<Oric> a_Oric) : 
+Machine::Machine(const Oric* a_Oric) : 
 	m_Oric(a_Oric),
 	m_Memory(65535),
 	m_Running(false),
 	m_Brk(false),
 	m_RasterCurrent(0),
 	m_CurrentKeyRow(0)
-	
 {
 	for (uint8_t i=0; i < 8; i++) {
 		m_KeyRows[i] = 0;
@@ -49,12 +48,12 @@ Machine::Machine(std::shared_ptr<Oric> a_Oric) :
 Machine::~Machine()
 {}
 
-void Machine::Init(std::shared_ptr<Frontend> a_Frontend)
+void Machine::Init(Frontend* a_Frontend)
 {
 	m_Frontend = a_Frontend;
-	m_Cpu = std::make_shared<MOS6502>(shared_from_this());
-	m_Mos_6522 = std::make_shared<MOS6522>(shared_from_this());
-	m_Ay3 = std::make_shared<AY3_8912>(shared_from_this());
+	m_Cpu = new MOS6502(*this);
+	m_Mos_6522 = new MOS6522(*this);
+	m_Ay3 = new AY3_8912(*this);
 
 	m_Cpu->memory_read_byte_handler = read_byte;
 	m_Cpu->memory_read_byte_zp_handler = read_byte_zp;
@@ -199,7 +198,7 @@ uint8_t inline Machine::read_byte(Machine& a_Machine, uint16_t a_Address)
 {
 	if (a_Address >= 0x300 && a_Address < 0x400) {
 // 		std::cout << "read: " << std::hex << a_Address << std::endl;
-		return a_Machine.GetVIA()->ReadByte(a_Address);
+		return a_Machine.GetVIA().ReadByte(a_Address);
 	}
 
 	return a_Machine.GetMemory().m_Mem[a_Address];
@@ -231,7 +230,7 @@ void inline Machine::write_byte(Machine &a_Machine, uint16_t a_Address, uint8_t 
 	}
 	
 	if (a_Address >= 0x300 && a_Address < 0x400) {
-		a_Machine.GetVIA()->WriteByte(a_Address, a_Val);
+		a_Machine.GetVIA().WriteByte(a_Address, a_Val);
 	}
 
 	a_Machine.GetMemory().m_Mem[a_Address] = a_Val;
@@ -249,10 +248,10 @@ void inline Machine::write_byte_zp(Machine &a_Machine, uint8_t a_Address, uint8_
 
 uint8_t inline Machine::read_via_ora(Machine& a_Machine)
 {
-	return a_Machine.GetVIA()->ReadORA();
+	return a_Machine.GetVIA().ReadORA();
 }
 
 uint8_t inline Machine::read_via_orb(Machine& a_Machine)
 {
-	return a_Machine.GetVIA()->ReadORB();
+	return a_Machine.GetVIA().ReadORB();
 }

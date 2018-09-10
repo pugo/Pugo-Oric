@@ -51,7 +51,7 @@ typedef void (*f_memory_write_byte_zp_handler)(Machine &oric, uint8_t address, u
 class MOS6502
 {
 public:
-	MOS6502(std::shared_ptr<Machine> a_Machine);
+	MOS6502(Machine& a_Machine);
 	~MOS6502();
 
 	void SetPC(uint16_t a_PC) { PC = a_PC; }
@@ -68,8 +68,6 @@ public:
 
 	bool ExecInstructionCycles(int16_t a_Cycles);
 	short ExecInstruction(bool& a_Brk);
-
-// 	Memory& GetMemory() { return *m_Memory; }
 
 	// Registers
 	uint8_t A;
@@ -112,7 +110,7 @@ public:
 protected:
 	void Handle_IRQ();
 	
-	std::shared_ptr<Machine> m_Machine;
+	Machine& m_Machine;
 	Memory& m_Memory;
 
 	uint16_t PC;

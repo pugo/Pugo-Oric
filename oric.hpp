@@ -10,11 +10,19 @@
 
 class Frontend;
 
-class Oric : public std::enable_shared_from_this<Oric>
+class Oric
 {
 public:
-	static std::shared_ptr<Oric> GetInstance() {
-		static std::shared_ptr<Oric> instance = std::make_shared<Oric>();
+	enum State
+	{
+		STATE_RUN,
+		STATE_MON,
+		STATE_QUIT
+	};
+
+	static Oric& GetInstance()
+	{
+		static Oric instance;
 		return instance;
 	}
 	
@@ -23,16 +31,19 @@ public:
 
 	void Init();
 
-	std::shared_ptr<Machine> GetMachine() { return m_Machine; }
-	std::shared_ptr<Frontend> GetFrontend() { return m_Frontend; }
-	void Monitor();
+	Machine& GetMachine() { return *m_Machine; }
+	Frontend& GetFrontend() { return *m_Frontend; }
+
+	void Run();
+	void Break();
 
 protected:
-	bool HandleCommand(std::string& a_Cmd);
+	State HandleCommand(std::string& a_Cmd);
 	uint16_t StringToWord(std::string& a_Addr);
 
-	std::shared_ptr<Frontend> m_Frontend;
-	std::shared_ptr<Machine> m_Machine;
+	State m_State;
+	Frontend* m_Frontend;
+	Machine* m_Machine;
 	std::string m_LastCommand;
 };
 

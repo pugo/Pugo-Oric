@@ -4,8 +4,7 @@
 #define AY3_8912_H
 
 #include <memory>
-
-class Machine;
+#include <machine.hpp>
 
 typedef uint8_t (*f_read_data_handler)(Machine &oric);
 
@@ -33,7 +32,7 @@ public:
 		NUM_REGS
 	};
 
-	AY3_8912(std::shared_ptr<Machine> a_Machine);
+	AY3_8912(Machine& a_Machine);
 	~AY3_8912();
 
 	void Reset();
@@ -52,7 +51,7 @@ public:
 	f_read_data_handler m_read_data_handler;
 
 private:
-	std::shared_ptr<Machine> m_Machine;
+	Machine& m_Machine;
 
 	bool bdir;
 	bool bc1;

@@ -15,37 +15,50 @@
 
 
 Oric::Oric() : 
+	m_State(STATE_RUN),
 	m_LastCommand("")
 {
 }
 
 void Oric::Init()
 {
-	m_Machine = std::make_shared<Machine>(shared_from_this());
-	m_Frontend = std::make_shared<Frontend>(shared_from_this());
+	m_Machine = new Machine(this);
+	m_Frontend = new Frontend(this);
 	m_Machine->Init(m_Frontend);
 	m_Frontend->InitGraphics();
 
-	m_Machine->GetCPU()->SetQuiet(true);
+	m_Machine->GetCPU().SetQuiet(true);
 }
 
 Oric::~Oric()
 {}
 
 
-void Oric::Monitor()
+void Oric::Run()
 {
-	std::string cmd;
-
 	while (true) {
-		std::cout << ">> " << std::flush;
-		std::cin.clear();
-		getline(std::cin, cmd);
+		switch (m_State) {
+			case STATE_RUN:
+				m_Machine->Run(0, this);
+				break;
+			case STATE_MON:
+			{
+				std::string cmd;
+				std::cout << ">> " << std::flush;
+				getline(std::cin, cmd);
 
-		if (! HandleCommand(cmd)) {
-			break;
+				m_State = HandleCommand(cmd);
+				break;
+			}
+			case STATE_QUIT:
+				return;
 		}
 	}
+}
+
+void Oric::Break()
+{
+	m_State = STATE_MON;
 }
 
 uint16_t Oric::StringToWord(std::string& a_Addr)
@@ -57,11 +70,11 @@ uint16_t Oric::StringToWord(std::string& a_Addr)
 	return x;
 }
 
-bool Oric::HandleCommand(std::string& a_Line)
+Oric::State Oric::HandleCommand(std::string& a_Line)
 {
 	if (a_Line.length() == 0) {
 		if (m_LastCommand.length() == 0) {
-			return true;
+			return STATE_MON;
 		}
 		a_Line = m_LastCommand;
 	}
@@ -84,23 +97,19 @@ bool Oric::HandleCommand(std::string& a_Line)
 		std::cout << "quiet          : prevent debug output at run time" << std::endl;
 		std::cout << "debug          : show debug output at run time" << std::endl;
 		std::cout << "" << std::endl;
-		return true;
+		return STATE_MON;
 	}
 	else if (cmd == "g") { // go <address>
-		long steps = 0; // 0 = infinite
-		if (parts.size() == 2) {
-			steps = std::stol(parts[1]);
-		}
-		m_Machine->Run(steps, this);
+		return STATE_RUN;
 	}
 	else if (cmd == "pc") { // set pc
 		if (parts.size() < 2) {
 			std::cout << "Error: missing address" << std::endl;
-			return true;
+			return STATE_MON;
 		}
 		uint16_t addr = StringToWord(parts[1]);
-		m_Machine->GetCPU()->SetPC(addr);
-		m_Machine->GetCPU()->PrintStat();
+		m_Machine->GetCPU().SetPC(addr);
+		m_Machine->GetCPU().PrintStat();
 	}
 	else if (cmd == "s") { // step
 		if (parts.size() == 2) {
@@ -108,41 +117,41 @@ bool Oric::HandleCommand(std::string& a_Line)
 		}
 		else {
 			bool brk = false;
-			m_Machine->GetCPU()->ExecInstruction(brk);
+			m_Machine->GetCPU().ExecInstruction(brk);
 			if (brk) {
 				std::cout << "Instruction BRK executed." << std::endl;
 			}
 		}
 	}
 	else if (cmd == "i") { // info
-		std::cout << "PC: " << m_Machine->GetCPU()->GetPC() << std::endl;
-		m_Machine->GetCPU()->PrintStat();
+		std::cout << "PC: " << m_Machine->GetCPU().GetPC() << std::endl;
+		m_Machine->GetCPU().PrintStat();
 	}
 	else if (cmd == "v") { // info
-		m_Machine->GetVIA()->PrintStat();
+		m_Machine->GetVIA().PrintStat();
 	}
 	else if (cmd == "m") { // info
 		if (parts.size() < 3) {
 			std::cout << "Use: m <start address> <length>" << std::endl;
-			return true;
+			return STATE_MON;
 		}
 		m_Machine->GetMemory().Show(StringToWord(parts[1]), StringToWord(parts[2]));
 	}
 	else if (cmd == "quiet") {
-		m_Machine->GetCPU()->SetQuiet(true);
+		m_Machine->GetCPU().SetQuiet(true);
 		std::cout << "Quiet mode enabled" << std::endl;
 	}
 	else if (cmd == "debug") {
-		m_Machine->GetCPU()->SetQuiet(false);
+		m_Machine->GetCPU().SetQuiet(false);
 		std::cout << "Debug mode enabled" << std::endl;
 	}
 
 	else if (cmd == "q") { // quit
 		std::cout << "quit" << std::endl;
-		return false;
+		return STATE_QUIT;
 	}
 
-	return true;
+	return STATE_MON;
 }
 
 static void signal_handler(int);
@@ -154,7 +163,8 @@ static void signal_handler(int a_Sig)
 {
 	std::cout << "Signal: " << a_Sig << std::endl;
 	if (a_Sig == SIGINT) {
-		Oric::GetInstance()->GetMachine()->Stop();
+		Oric::GetInstance().GetMachine().Stop();
+		Oric::GetInstance().Break();
 	}
 }
 
@@ -174,14 +184,14 @@ int main(int argc, char *argv[])
 
 	init_signals();
 
-	std::shared_ptr<Oric> oric = Oric::GetInstance();
-	oric->Init();
-	oric->GetMachine()->GetMemory().Load("ROMS/basic11b.rom", 0xc000);
-	oric->GetMachine()->GetMemory().Load("ROMS/font.rom", 0xb400);
-	oric->GetMachine()->Reset();
+	Oric& oric = Oric::GetInstance();
+	oric.Init();
+	oric.GetMachine().GetMemory().Load("ROMS/basic11b.rom", 0xc000);
+	oric.GetMachine().GetMemory().Load("ROMS/font.rom", 0xb400);
+	oric.GetMachine().Reset();
 
 	std::cout << std::endl;
-	oric->Monitor();
+	oric.Run();
 
 	return 0;
 }

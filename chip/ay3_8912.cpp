@@ -21,7 +21,7 @@
 
 using namespace std;
 
-AY3_8912::AY3_8912(std::shared_ptr<Machine> a_Machine) :
+AY3_8912::AY3_8912(Machine& a_Machine) :
 	m_Machine(a_Machine),
 	m_read_data_handler(nullptr)
 {
@@ -47,6 +47,7 @@ void AY3_8912::Reset()
 
 short AY3_8912::Exec(uint8_t a_Cycles)
 {
+	return 0;
 }
 
 void AY3_8912::SetBdir(bool a_Value)
@@ -55,13 +56,13 @@ void AY3_8912::SetBdir(bool a_Value)
 		bdir = a_Value;
 		if (bdir) {
 			if (bc1) {
-				uint8_t new_curr = m_read_data_handler(*m_Machine);
+				uint8_t new_curr = m_read_data_handler(m_Machine);
 				if (new_curr < NUM_REGS) {
 					m_CurrentRegister = new_curr;
 				}
 			}
 			else {
-				m_Registers[m_CurrentRegister] = m_read_data_handler(*m_Machine);
+				m_Registers[m_CurrentRegister] = m_read_data_handler(m_Machine);
 			}
 		}
 	}
@@ -79,15 +80,15 @@ void AY3_8912::SetBc2(bool a_Value)
 
 
 void AY3_8912::set_bdir(Machine& a_Machine, bool a_Value) {
-	a_Machine.GetAY3()->SetBdir(a_Value);
+	a_Machine.GetAY3().SetBdir(a_Value);
 }
 
 void AY3_8912::set_bc1(Machine& a_Machine, bool a_Value)
 {
-	a_Machine.GetAY3()->SetBc1(a_Value);
+	a_Machine.GetAY3().SetBc1(a_Value);
 }
 
 void AY3_8912::set_bc2(Machine& a_Machine, bool a_Value)
 { 
-	a_Machine.GetAY3()->SetBc2(a_Value);
+	a_Machine.GetAY3().SetBc2(a_Value);
 }

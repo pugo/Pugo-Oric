@@ -4,7 +4,7 @@
 
 #include <SDL_image.h>
 
-Frontend::Frontend(std::shared_ptr<Oric> a_Oric) :
+Frontend::Frontend(const Oric* a_Oric) :
 	m_Oric(a_Oric),
 	m_SdlWindow(NULL),
 	m_SdlSurface(NULL),

@@ -35,18 +35,18 @@ typedef std::map<int32_t, uint8_t> KeyMap_t;
 typedef std::pair<int32_t, bool> KeyPress_t;
 typedef std::map<KeyPress_t, KeyPress_t> KeyTranslation_t;
 
-class Machine : public std::enable_shared_from_this<Machine>
+class Machine
 {
 public:
-	Machine(std::shared_ptr<Oric> a_Oric);
+	Machine(const Oric* a_Oric);
 	virtual ~Machine();
 
-	void Init(std::shared_ptr<Frontend> a_Frontend);
+	void Init(Frontend* a_Frontend);
 	
 	Memory& GetMemory() { return m_Memory; }
-	std::shared_ptr<MOS6502> GetCPU() { return m_Cpu; }
-	std::shared_ptr<MOS6522> GetVIA() { return m_Mos_6522; }
-	std::shared_ptr<AY3_8912> GetAY3() { return m_Ay3; }
+	MOS6502& GetCPU() { return *m_Cpu; }
+	MOS6522& GetVIA() { return *m_Mos_6522; }
+	AY3_8912& GetAY3() { return *m_Ay3; }
 
 	void Reset();
 	void Run(uint32_t a_Steps, Oric* a_Oric);
@@ -81,12 +81,12 @@ public:
 protected:
 	bool PaintRaster(Oric* a_Oric);
 
-	std::shared_ptr<Oric> m_Oric;
-	std::shared_ptr<Frontend> m_Frontend;
+	const Oric* m_Oric;
+	Frontend* m_Frontend;
 	
-	std::shared_ptr<MOS6502> m_Cpu;
-	std::shared_ptr<MOS6522> m_Mos_6522;
-	std::shared_ptr<AY3_8912> m_Ay3;
+	MOS6502* m_Cpu;
+	MOS6522* m_Mos_6522;
+	AY3_8912* m_Ay3;
 
 	Memory m_Memory;
 

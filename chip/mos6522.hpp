@@ -58,7 +58,7 @@ public:
 	typedef void (*f_ca2_changed_handler)(Machine &a_Machine, bool a_Value);
 	typedef void (*f_cb2_changed_handler)(Machine &a_Machine, bool a_Value);
 
-	MOS6522(std::shared_ptr<Machine> a_Machine);
+	MOS6522(Machine& a_Machine);
 	~MOS6522();
 
 	void Reset();
@@ -130,7 +130,7 @@ private:
 	uint8_t ifr;		// Interrupt Flag Register:   | IRQ  | T1 | T2 | CB1 | CB2 | SR | CA1 | CA2 |
 	uint8_t ier;		// Interrupt Enable Register: | ctrl | T1 | T2 | CB1 | CB2 | SR | CA1 | CA2 |
 
-	std::shared_ptr<Machine> m_Machine;
+	Machine& m_Machine;
 
 	std::map<Register, std::string> m_RegisterNames;
 };
