@@ -14,16 +14,17 @@
 #include "frontend.hpp"
 
 
-static int32_t keytab[] = {'7'       , 'n'        , '5'        , 'v'        , 0 ,          '1'        , 'x'        , '3'        ,
-									'j'        , 't'        , 'r'        , 'f'        , 0          , SDLK_ESCAPE, 'q'        , 'd'        ,
-									'm'        , '6'        , 'b'        , '4'        , SDLK_LCTRL , 'z'        , '2'        , 'c'        ,
-									'k'        , '9'        , ';'        , '-'        , 0          , 0          , '\\'       , '\''       ,
-									SDLK_SPACE , ','        , '.'        , SDLK_UP    , SDLK_LSHIFT, SDLK_LEFT  , SDLK_DOWN  , SDLK_RIGHT ,
-									'u'        , 'i'        , 'o'        , 'p'        , SDLK_LALT  , SDLK_BACKSPACE, ']'     , '['        ,
-									'y'        , 'h'        , 'g'        , 'e'        , 0          , 'a'        , 's'        , 'w'        ,
-									'8'        , 'l'        , '0'        , '/'        , SDLK_RSHIFT, SDLK_RETURN, 0          , SDLK_EQUALS };
+static int32_t keytab[] = {
+	'7'       , 'n'        , '5'        , 'v'        , 0 ,          '1'        , 'x'        , '3'        ,
+	'j'        , 't'        , 'r'        , 'f'        , 0          , SDLK_ESCAPE, 'q'        , 'd'        ,
+	'm'        , '6'        , 'b'        , '4'        , SDLK_LCTRL , 'z'        , '2'        , 'c'        ,
+	'k'        , '9'        , ';'        , '-'        , 0          , 0          , '\\'       , '\''       ,
+	SDLK_SPACE , ','        , '.'        , SDLK_UP    , SDLK_LSHIFT, SDLK_LEFT  , SDLK_DOWN  , SDLK_RIGHT ,
+	'u'        , 'i'        , 'o'        , 'p'        , SDLK_LALT  , SDLK_BACKSPACE, ']'     , '['        ,
+	'y'        , 'h'        , 'g'        , 'e'        , 0          , 'a'        , 's'        , 'w'        ,
+	'8'        , 'l'        , '0'        , '/'        , SDLK_RSHIFT, SDLK_RETURN, 0          , SDLK_EQUALS };
 
-
+	
 Machine::Machine(const Oric* a_Oric) : 
 	m_Oric(a_Oric),
 	m_Memory(65535),
@@ -94,7 +95,7 @@ void Machine::Run(uint32_t a_Instructions, Oric* a_Oric)
 		int32_t cycles = cycles_per_raster;
 
 		while (cycles > 0) {
-			uint8_t ran = m_Cpu->ExecInstruction(m_Brk);
+			const uint8_t ran = m_Cpu->ExecInstruction(m_Brk);
 			cycles -= ran;
 			m_Mos_6522->Exec(ran);
 			m_Ay3->Exec(ran);
@@ -108,7 +109,7 @@ void Machine::Run(uint32_t a_Instructions, Oric* a_Oric)
 
 		if (PaintRaster(a_Oric)) {
 			next_frame += 20000;
-			uint32_t future = static_cast<uint32_t>(next_frame/1000);
+			const uint32_t future = static_cast<uint32_t>(next_frame/1000);
 			now = SDL_GetTicks();
 			
 			if (now > future) {
@@ -119,29 +120,29 @@ void Machine::Run(uint32_t a_Instructions, Oric* a_Oric)
 			}
 
 			while (SDL_PollEvent(&event)) {
-				/* We are only worried about SDL_KEYDOWN and SDL_KEYUP events */
-				switch (event.type) {
-				case SDL_KEYDOWN:
-				case SDL_KEYUP:
+				// We are only worried about SDL_KEYDOWN and SDL_KEYUP events.
+				switch (event.type)
 				{
-					std::cout << "sym: " << event.key.keysym.sym << ", shifted: " << event.key.keysym.mod  << std::endl;
-					auto sym = event.key.keysym.sym;
-					auto trans = m_KeyTranslations.find(std::make_pair(sym, event.key.keysym.mod));
-					if (trans != m_KeyTranslations.end()) {
-						std::cout << "translated '" << trans->first.first << "' to '" << trans->second.first << "'" << std::endl;
-						sym = trans->second.first;
+					case SDL_KEYDOWN:
+					case SDL_KEYUP:
+					{
+						std::cout << "sym: " << event.key.keysym.sym << ", shifted: " << event.key.keysym.mod  << std::endl;
+						auto sym = event.key.keysym.sym;
+						auto trans = m_KeyTranslations.find(std::make_pair(sym, event.key.keysym.mod));
+						if (trans != m_KeyTranslations.end()) {
+							std::cout << "translated '" << trans->first.first << "' to '" << trans->second.first << "'" << std::endl;
+							sym = trans->second.first;
+						}
+						
+						auto key = m_KeyMap.find(sym);
+						if (key != m_KeyMap.end()) {
+							printf( "Key event detected: %d (%s)\n", event.key.keysym.sym, (event.type == SDL_KEYDOWN) ? "down" : "up");
+							KeyPress(key->second, event.type == SDL_KEYDOWN);
+						}
+						break;
 					}
-					
-					auto key = m_KeyMap.find(sym);
-					if (key != m_KeyMap.end()) {
-						printf( "Key event detected: %d (%s)\n", event.key.keysym.sym, (event.type == SDL_KEYDOWN) ? "down" : "up");
-						KeyPress(key->second, event.type == SDL_KEYDOWN);
-					}
-					break;
-				}
-
-				default:
-					break;
+					default:
+						break;
 				}
 			}
 		}
@@ -192,15 +193,13 @@ void Machine::UpdateKeyOutput()
 
 
 
-// --- Memory functions
+// --- Memory functions -------------------
 
 uint8_t inline Machine::read_byte(Machine& a_Machine, uint16_t a_Address)
 {
 	if (a_Address >= 0x300 && a_Address < 0x400) {
-// 		std::cout << "read: " << std::hex << a_Address << std::endl;
 		return a_Machine.GetVIA().ReadByte(a_Address);
 	}
-
 	return a_Machine.GetMemory().m_Mem[a_Address];
 }
 
@@ -211,10 +210,9 @@ uint8_t inline Machine::read_byte_zp(Machine &a_Machine, uint8_t a_Address)
 
 uint16_t inline Machine::read_word(Machine &a_Machine, uint16_t a_Address)
 {
-	if (a_Address >= 0x300 && a_Address < 0x400) {
-		std::cout << "read word: " << std::hex << a_Address << std::endl;
-	}
-
+// 	if (a_Address >= 0x300 && a_Address < 0x400) {
+// 		std::cout << "read word: " << std::hex << a_Address << std::endl;
+// 	}
 	return a_Machine.GetMemory().m_Mem[a_Address] | a_Machine.GetMemory().m_Mem[a_Address + 1] << 8;
 }
 
@@ -228,7 +226,7 @@ void inline Machine::write_byte(Machine &a_Machine, uint16_t a_Address, uint8_t 
 	if (a_Address >= 0xc000) {
 		return;
 	}
-	
+
 	if (a_Address >= 0x300 && a_Address < 0x400) {
 		a_Machine.GetVIA().WriteByte(a_Address, a_Val);
 	}
@@ -241,7 +239,6 @@ void inline Machine::write_byte_zp(Machine &a_Machine, uint8_t a_Address, uint8_
 	if (a_Address >= 0x00ff) {
 		return;
 	}
-
 	a_Machine.GetMemory().m_Mem[a_Address] = a_Val;
 }
 

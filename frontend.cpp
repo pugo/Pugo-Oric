@@ -26,26 +26,26 @@ void Frontend::InitGraphics()
 
 	//Initialize SDL
 	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-		printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
+		std::cout << "SDL could not initialize! SDL_Error: " << SDL_GetError() << std::endl;
 		success = false;
 	}
 	else {
 		//Set texture filtering to linear
 		if (!SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1")) {
-			printf( "Warning: Linear texture filtering not enabled!" );
+			std::cout <<  "Warning: Linear texture filtering not enabled!" << std::endl;
 		}
 
 		//Create window (240x224)
 		m_SdlWindow = SDL_CreateWindow("Pugo-Oric", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 600, 600, SDL_WINDOW_SHOWN);
 		if (m_SdlWindow == NULL) {
-			printf("Window could not be created! SDL_Error: %s\n", SDL_GetError());
+			std::cout << "Window could not be created! SDL_Error: " << SDL_GetError() << std::endl;
 			success = false;
 		}
 		else {
 			//Create renderer for window
 			m_SdlRenderer = SDL_CreateRenderer(m_SdlWindow, -1, SDL_RENDERER_ACCELERATED);
 			if (m_SdlRenderer == NULL) {
-				printf( "Renderer could not be created! SDL Error: %s\n", SDL_GetError() );
+				std::cout <<  "Renderer could not be created! SDL Error: " << SDL_GetError() << std::endl;
 				success = false;
 			}
 			else {
@@ -66,18 +66,13 @@ void Frontend::InitGraphics()
 	}
 }
 
+// Return memory address corresponding to a raster line, for current video mode.
 inline uint16_t calcRowAddr(uint8_t a_RasterLine, uint8_t a_VideoAttrib)
 {
-	if (a_RasterLine < 200) {
-		if (a_VideoAttrib & Frontend::VideoAttribs::HIRES) {
-			return 0xa000 + a_RasterLine * 40;
-		}
-		else {
-			return 0xbb80 + (a_RasterLine >> 3) * 40;
-		}
+	if (a_VideoAttrib & Frontend::VideoAttribs::HIRES && a_RasterLine < 200) {		
+		return 0xa000 + a_RasterLine * 40;			// Hires: return address for hires data for line.
 	}
-	
-	return 0xbb80 + (a_RasterLine >> 3) * 40;
+	return 0xbb80 + (a_RasterLine >> 3) * 40;		// Text (lores or > 200): return address to char data for line (>>3).
 }
 
 void Frontend::UpdateGraphics(uint8_t a_RasterLine, uint8_t* a_Mem)
@@ -90,7 +85,7 @@ void Frontend::UpdateGraphics(uint8_t a_RasterLine, uint8_t* a_Mem)
 	uint32_t* texture_line = (uint32_t*)&m_Pixels[a_RasterLine * m_TextureWidth * m_TextureBpp];
 	uint16_t row = calcRowAddr(a_RasterLine, m_VideoAttrib);
 
-	// 40 characters wide, chars at 0xbb80 and up.
+	// 40 characters wide, regardless of lores or hires.
 	for (uint16_t x = 0; x < 40; x++) {
 		// get char code.
 		uint8_t ch = a_Mem[row + x];
@@ -142,6 +137,7 @@ void Frontend::UpdateGraphics(uint8_t a_RasterLine, uint8_t* a_Mem)
 			}
 		}
 
+		// Copy 6 pixels.
 		for (uint8_t i = 0x20; i > 0; i >>= 1, dx++) {
 			*texture_line++ = (chr_dat & i) ? _fg_col : _bg_col;
 		}
@@ -164,3 +160,4 @@ void Frontend::CloseGraphics()
 	//Quit SDL subsystems
 	SDL_Quit();
 }
+

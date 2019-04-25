@@ -18,7 +18,7 @@ libdir = ${exec_prefix}/lib
 mandir = ${prefix}/man
 
 CXX = c++
-CXXFLAGS = -g -O2 -std=c++11 -MD -MP
+CXXFLAGS = -g -O2 -std=c++11 -MD -MP -pg
 
 CXXTESTDIR = /usr/share/cxxtest
 CXXTESTGEN = /usr/bin/cxxtestgen
@@ -34,7 +34,7 @@ INCPATHS    := -I/usr/include/SDL2 -I.
 LIBPATHS     = #-L/lib -L/usr/local/lib -L/usr/lib
 
 CFLAGS       = $(O) $(DEFINES) $(INCPATHS) $(INCLUDES)
-LFLAGS       = $(LIBPATHS) $(LIBS)
+LFLAGS       = $(LIBPATHS) $(LIBS) -pg
 
 ## Objects ################################################
 

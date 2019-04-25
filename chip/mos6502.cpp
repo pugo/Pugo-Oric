@@ -1,4 +1,4 @@
-// Copyright (C) 2009-2016 by Anders Piniesjö <pugo@pugo.org>
+// Copyright (C) 2009-2018 by Anders Piniesjö <pugo@pugo.org>
 
 #include "mos6502.hpp"
 #include "mos6502_opcodes.hpp"

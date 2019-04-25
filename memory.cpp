@@ -113,5 +113,3 @@ void Memory::Show(uint32_t a_Pos, uint32_t a_Length)
 }
 
 
-// " (" << (char)(mem[pos + i] & 0x7f) << ")" << endl;
-

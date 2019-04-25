@@ -1,4 +1,4 @@
-//   Copyright (C) 2009-2014 by Anders Piniesjö <pugo@pugo.org>
+//   Copyright (C) 2009-2018 by Anders Piniesjö <pugo@pugo.org>
 
 #ifndef AY3_8912_H
 #define AY3_8912_H

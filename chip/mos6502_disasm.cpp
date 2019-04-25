@@ -8,29 +8,29 @@
 
 #define NUMBER_OPCODES 151
 
-/* The 6502's 13 addressing modes */
-#define IMMED 0 /* Immediate */
-#define ABSOL 1 /* Absolute */     
-#define ZEROP 2 /* Zero Page */
-#define IMPLI 3 /* Implied */
-#define INDIA 4 /* Indirect Absolute */
-#define ABSIX 5 /* Absolute indexed with X */
-#define ABSIY 6 /* Absolute indexed with Y */
-#define ZEPIX 7 /* Zero page indexed with X */
-#define ZEPIY 8 /* Zero page indexed with Y */
-#define INDIN 9 /* Indexed indirect (with x) */
-#define ININD 10 /* Indirect indexed (with y) */
-#define RELAT 11 /* Relative */
-#define ACCUM 12 /* Accumulator */
+// The 6502's 13 addressing modes
+#define IMMED 0	// Immediate
+#define ABSOL 1	// Absolute
+#define ZEROP 2	// Zero Page
+#define IMPLI 3	// Implied
+#define INDIA 4	// Indirect Absolute
+#define ABSIX 5	// Absolute indexed with X
+#define ABSIY 6	// Absolute indexed with Y
+#define ZEPIX 7	// Zero page indexed with X
+#define ZEPIY 8	// Zero page indexed with Y
+#define INDIN 9	// Indexed indirect (with x)
+#define ININD 10	// Indirect indexed (with y)
+#define RELAT 11	// Relative
+#define ACCUM 12	// Accumulator
 
 #define LSB_FIRST
 
 typedef struct OPcode {
-uint8_t number; /* Number of the opcode */
-uint8_t name; /* Index in the name table */
-uint8_t addressing; /* Addressing mode */
-uint8_t cycles; /* Number of cycles */
-uint8_t cross_page; /* 1 if cross-page boundaries affect cycles */
+	uint8_t number;		// Number of the opcode
+	uint8_t name;			// Index in the name table
+	uint8_t addressing;	// Addressing mode
+	uint8_t cycles;		// Number of cycles
+	uint8_t cross_page;	// 1 if cross-page boundaries affect cycles
 } OPcode;
 
 typedef union
@@ -44,12 +44,12 @@ typedef union
 } d_word;
 
 char name_table[56][4]={
-"ADC","AND","ASL","BCC","BCS","BEQ","BIT","BMI","BNE","BPL",
-"BRK","BVC","BVS","CLC","CLD","CLI","CLV","CMP","CPX","CPY",
-"DEC","DEX","DEY","EOR","INC","INX","INY","JMP","JSR","LDA",
-"LDX","LDY","LSR","NOP","ORA","PHA","PHP","PLA","PLP","ROL",
-"ROR","RTI","RTS","SBC","SEC","SED","SEI","STA","STX","STY",
-"TAX","TAY","TSX","TXA","TXS","TYA"};
+"ADC", "AND", "ASL", "BCC", "BCS", "BEQ", "BIT", "BMI", "BNE", "BPL",
+"BRK", "BVC", "BVS", "CLC", "CLD", "CLI", "CLV", "CMP", "CPX", "CPY",
+"DEC", "DEX", "DEY", "EOR", "INC", "INX", "INY", "JMP", "JSR", "LDA",
+"LDX", "LDY", "LSR", "NOP", "ORA", "PHA", "PHP", "PLA", "PLP", "ROL",
+"ROR", "RTI", "RTS", "SBC", "SEC", "SED", "SEI", "STA", "STX", "STY",
+"TAX", "TAY", "TSX", "TXA", "TXS", "TYA"};
 
 /* Opcode table */
 OPcode opcode_table[NUMBER_OPCODES] = {
@@ -268,8 +268,6 @@ char nes_mode = 0; /* 1 if NES commenting and warnings are enabled */
 FILE *f; /* Input file */
 unsigned short max=0xffff; /* Maximum number of bytes to disassemble */
 char line[512];
-
-/* This function emits a comment header with information about the file being disassembled */
 
 
 /* This function appends cycle counting to the comment block */

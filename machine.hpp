@@ -58,17 +58,17 @@ public:
 	void KeyPress(uint8_t a_KeyBits, bool a_Down);
 	void UpdateKeyOutput();
 
-	static inline uint8_t read_byte(Machine& a_machine, uint16_t a_Address);
-	static inline uint8_t read_byte_zp(Machine& a_Machine, uint8_t a_Address);
+	static uint8_t read_byte(Machine& a_machine, uint16_t a_Address);
+	static uint8_t read_byte_zp(Machine& a_Machine, uint8_t a_Address);
 
-	static inline uint16_t read_word(Machine& a_Machine, uint16_t a_Address);
-	static inline uint16_t read_word_zp(Machine& a_Machine, uint8_t a_Address);
+	static uint16_t read_word(Machine& a_Machine, uint16_t a_Address);
+	static uint16_t read_word_zp(Machine& a_Machine, uint8_t a_Address);
 
-	static inline void write_byte(Machine& a_Machine, uint16_t a_Address, uint8_t a_Val);
-	static inline void write_byte_zp(Machine& a_Machine, uint8_t a_Address, uint8_t a_Val);
+	static void write_byte(Machine& a_Machine, uint16_t a_Address, uint8_t a_Val);
+	static void write_byte_zp(Machine& a_Machine, uint8_t a_Address, uint8_t a_Val);
 
-	static inline uint8_t read_via_ora(Machine& a_Machine);
-	static inline uint8_t read_via_orb(Machine& a_Machine);
+	static uint8_t read_via_ora(Machine& a_Machine);
+	static uint8_t read_via_orb(Machine& a_Machine);
 	
 	bool m_Brk;
 

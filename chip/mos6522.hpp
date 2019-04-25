@@ -1,4 +1,4 @@
-//   Copyright (C) 2009-2014 by Anders Piniesjö <pugo@pugo.org>
+//   Copyright (C) 2009-2018 by Anders Piniesjö <pugo@pugo.org>
 
 #ifndef MOS6522_H
 #define MOS6522_H
