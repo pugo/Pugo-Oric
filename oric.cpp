@@ -93,6 +93,7 @@ Oric::State Oric::HandleCommand(std::string& a_Line)
 		std::cout << "pc <address>   : set program counter to address" << std::endl;
 		std::cout << "s [n]          : step one or possible n steps" << std::endl;
 		std::cout << "i              : print machine info" << std::endl;
+        std::cout << "v              : print VIA (6522) info" << std::endl;
 		std::cout << "m <address> <n>: dump memory from address and n bytes ahead" << std::endl;
 		std::cout << "quiet          : prevent debug output at run time" << std::endl;
 		std::cout << "debug          : show debug output at run time" << std::endl;

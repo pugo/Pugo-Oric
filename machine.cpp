@@ -15,7 +15,7 @@
 
 
 static int32_t keytab[] = {
-	'7'       , 'n'        , '5'        , 'v'        , 0 ,          '1'        , 'x'        , '3'        ,
+	'7'        , 'n'        , '5'        , 'v'        , 0 ,          '1'        , 'x'        , '3'        ,
 	'j'        , 't'        , 'r'        , 'f'        , 0          , SDLK_ESCAPE, 'q'        , 'd'        ,
 	'm'        , '6'        , 'b'        , '4'        , SDLK_LCTRL , 'z'        , '2'        , 'c'        ,
 	'k'        , '9'        , ';'        , '-'        , 0          , 0          , '\\'       , '\''       ,
@@ -28,7 +28,9 @@ static int32_t keytab[] = {
 Machine::Machine(const Oric* a_Oric) : 
 	m_Oric(a_Oric),
 	m_Memory(65535),
+    m_Tape(nullptr),
 	m_Running(false),
+    m_WarpMode(false),
 	m_Brk(false),
 	m_RasterCurrent(0),
 	m_CurrentKeyRow(0)
@@ -55,6 +57,13 @@ void Machine::Init(Frontend* a_Frontend)
 	m_Cpu = new MOS6502(*this);
 	m_Mos_6522 = new MOS6522(*this);
 	m_Ay3 = new AY3_8912(*this);
+
+    m_Tape = new TapeTap(*m_Mos_6522, "taps/MRWIMPY");
+//    m_Tape = new TapeTap(*m_Mos_6522, "taps/HUNCHBACK");
+//    m_Tape = new TapeTap(*m_Mos_6522, "taps/SCUBA");
+    if (!m_Tape->Init()) {
+        exit(1);
+    }
 
 	m_Cpu->memory_read_byte_handler = read_byte;
 	m_Cpu->memory_read_byte_zp_handler = read_byte_zp;
@@ -97,7 +106,9 @@ void Machine::Run(uint32_t a_Instructions, Oric* a_Oric)
 		while (cycles > 0) {
 			const uint8_t ran = m_Cpu->ExecInstruction(m_Brk);
 			cycles -= ran;
-			m_Mos_6522->Exec(ran);
+
+            m_Tape->Exec(ran);
+            m_Mos_6522->Exec(ran);
 			m_Ay3->Exec(ran);
 
 			UpdateKeyOutput();
@@ -106,6 +117,43 @@ void Machine::Run(uint32_t a_Instructions, Oric* a_Oric)
 				return;
 			}
 		}
+
+        while (SDL_PollEvent(&event)) {
+            // We are only worried about SDL_KEYDOWN and SDL_KEYUP events.
+            switch (event.type)
+            {
+                case SDL_KEYDOWN:
+                case SDL_KEYUP:
+                {
+                    std::cout << "sym: " << event.key.keysym.sym << ", shifted: " << event.key.keysym.mod  << std::endl;
+                    auto sym = event.key.keysym.sym;
+
+                    if (event.key.keysym.sym == SDLK_F12 && event.type == SDL_KEYDOWN) {
+                        m_WarpMode = !m_WarpMode;
+                        std::cout << "Warp mode: " << (m_WarpMode ? "on" : "off") << std::endl;
+                        if (! m_WarpMode) {
+                            now = SDL_GetTicks();
+                            next_frame = static_cast<uint64_t>(now) * 1000;
+                        }
+                    }
+
+                    auto trans = m_KeyTranslations.find(std::make_pair(sym, event.key.keysym.mod));
+                    if (trans != m_KeyTranslations.end()) {
+                        std::cout << "translated '" << trans->first.first << "' to '" << trans->second.first << "'" << std::endl;
+                        sym = trans->second.first;
+                    }
+
+                    auto key = m_KeyMap.find(sym);
+                    if (key != m_KeyMap.end()) {
+                        printf( "Key event detected: %d (%s)\n", event.key.keysym.sym, (event.type == SDL_KEYDOWN) ? "down" : "up");
+                        KeyPress(key->second, event.type == SDL_KEYDOWN);
+                    }
+                    break;
+                }
+                default:
+                    break;
+            }
+        }
 
 		if (PaintRaster(a_Oric)) {
 			next_frame += 20000;
@@ -116,35 +164,11 @@ void Machine::Run(uint32_t a_Instructions, Oric* a_Oric)
 				next_frame = static_cast<uint64_t>(now) * 1000;
 			}
 			else {
-				SDL_Delay(future - now);
+			    if (! m_WarpMode) {
+    				SDL_Delay(future - now);
+                }
 			}
 
-			while (SDL_PollEvent(&event)) {
-				// We are only worried about SDL_KEYDOWN and SDL_KEYUP events.
-				switch (event.type)
-				{
-					case SDL_KEYDOWN:
-					case SDL_KEYUP:
-					{
-						std::cout << "sym: " << event.key.keysym.sym << ", shifted: " << event.key.keysym.mod  << std::endl;
-						auto sym = event.key.keysym.sym;
-						auto trans = m_KeyTranslations.find(std::make_pair(sym, event.key.keysym.mod));
-						if (trans != m_KeyTranslations.end()) {
-							std::cout << "translated '" << trans->first.first << "' to '" << trans->second.first << "'" << std::endl;
-							sym = trans->second.first;
-						}
-						
-						auto key = m_KeyMap.find(sym);
-						if (key != m_KeyMap.end()) {
-							printf( "Key event detected: %d (%s)\n", event.key.keysym.sym, (event.type == SDL_KEYDOWN) ? "down" : "up");
-							KeyPress(key->second, event.type == SDL_KEYDOWN);
-						}
-						break;
-					}
-					default:
-						break;
-				}
-			}
 		}
 	}
 }
@@ -191,6 +215,11 @@ void Machine::UpdateKeyOutput()
 	}
 }
 
+
+void Machine::ViaORBChanged(uint8_t a_Orb)
+{
+    m_Tape->SetMotor(a_Orb & 0x40);
+}
 
 
 // --- Memory functions -------------------

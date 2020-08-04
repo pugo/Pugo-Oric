@@ -927,8 +927,15 @@ short MOS6502::ExecInstruction(bool& a_Brk)
 			SET_FLAG_NZ(X = SP);
 			break;
 
+	    case ILLEGAL_SLO_IZX:
+            b1 = memory_read_byte_handler(m_Machine, addr = READ_ADDR_IND_X());
+            C = b1 & 0x80;
+            memory_write_byte_handler(m_Machine, addr, SET_FLAG_NZ(b1 <<= 1));
+            SET_FLAG_NZ(A |= b1);
+            break;
+
 		default:
-			std::cout << "ILLEGAL OPCODE: " << std::endl;
+			std::cout << "ILLEGAL OPCODE: " << std::hex << instruction << std::endl;
 			PrintStat();
 			a_Brk = true;
 			break;

@@ -154,8 +154,10 @@ short MOS6522::Exec(uint8_t a_Cycles)
 			--todo_cycles;
 			t2_reload = false;
 		}
-		
+//        std::cout << "Timer2 decrease: " << (int)t2_counter << " - " << (int)todo_cycles << std::endl;
+
 		if (t2_run && todo_cycles > t2_counter) {
+            std::cout << "Timer2 Interrupt!" << std::endl;
 			IRQSet(IRQ_T2);
 			t2_run = false;
 		}
@@ -176,7 +178,7 @@ uint8_t MOS6522::ReadByte(uint16_t a_Offset)
 	case ORB:
 // 	cout << "Read " << m_RegisterNames[static_cast<Register>(a_Offset & 0x000f)] << endl;
 		IRQClear(IRQ_CB1);
-		switch (pcr & PCR_MASK_CA2) {
+		switch (pcr & PCR_MASK_CB2) {
 			case 0x00:
 			case 0x40:
 				IRQClear(IRQ_CB2);
@@ -258,7 +260,7 @@ void MOS6522::WriteByte(uint16_t a_Offset, uint8_t a_Value)
 // 	cout << "Write " << m_RegisterNames[static_cast<Register>(a_Offset & 0x000f)] << ": " << static_cast<unsigned int>(a_Value) << endl;
 		orb = a_Value;
 		IRQClear(IRQ_CB1);
-		switch (pcr & PCR_MASK_CA2) {
+		switch (pcr & PCR_MASK_CB2) {
 			case 0x00:
 			case 0x40:
 				IRQClear(IRQ_CB2);
@@ -276,6 +278,7 @@ void MOS6522::WriteByte(uint16_t a_Offset, uint8_t a_Value)
 				break;
 		}
 		m_Machine.UpdateKeyOutput();
+		m_Machine.ViaORBChanged(orb);
 		break;
 	case ORA:
 // 	cout << "Read " << m_RegisterNames[static_cast<Register>(a_Offset & 0x000f)] << endl;
@@ -411,13 +414,13 @@ void MOS6522::IRQClear(uint8_t bits)
 void MOS6522::WriteCA1(bool a_Value)
 {
 	if (ca1 != a_Value) {
-		ca1 = a_Value;
+        ca1 = a_Value;
 		// Transitions only if enabled in PCR.
 		if ((ca1 && (pcr & PCR_MASK_CA1)) || (!ca1 && !(pcr & PCR_MASK_CA1))) {
 			IRQSet(IRQ_CA1);
 
 			// Handshake mode, set ca2 on pos transition of ca1.
-			if (!ca2 && (pcr & PCR_MASK_CA2) == 0x08) {
+			if (ca1 && !ca2 && (pcr & PCR_MASK_CA2) == 0x08) {
 				ca2 = true;
 				if (ca2_changed_handler) { ca2_changed_handler(m_Machine, ca2); }
 			}
@@ -428,8 +431,7 @@ void MOS6522::WriteCA1(bool a_Value)
 void MOS6522::WriteCA2(bool a_Value)
 {
 	if (ca2 != a_Value) {
-		ca2 = a_Value;
-
+        ca2 = a_Value;
 		// Set interrupt on pos/neg transition if 0 or 4 in pcr.
 		if ((ca2 && ((pcr & 0x0C) == 0x04)) || (!ca2 && ((pcr & 0x0C) == 0x00))) {
 			IRQSet(IRQ_CA2);
@@ -442,13 +444,13 @@ void MOS6522::WriteCA2(bool a_Value)
 void MOS6522::WriteCB1(bool a_Value)
 {
 	if (cb1 != a_Value) {
-		cb1 = a_Value;
 		// Transitions only if enabled in PCR.
+        cb1 = a_Value;
 		if ((cb1 && (pcr & PCR_MASK_CB1)) || (!cb1 && !(pcr & PCR_MASK_CB1))) {
 			IRQSet(IRQ_CB1);
 
 			// Handshake mode, set cb2 on pos transition of cb1.
-			if (!cb2 && (pcr & PCR_MASK_CB2) == 0x80) {
+			if (cb1 && !cb2 && (pcr & PCR_MASK_CB2) == 0x80) {
 				cb2 = true;
 				if (cb2_changed_handler) { cb2_changed_handler(m_Machine, cb2); }
 			}
@@ -459,8 +461,7 @@ void MOS6522::WriteCB1(bool a_Value)
 void MOS6522::WriteCB2(bool a_Value)
 {
 	if (cb2 != a_Value) {
-		cb2 = a_Value;
-
+        cb2 = a_Value;
 		// Set interrupt on pos/neg transition if 0 or 40 in pcr.
 		if ((cb2 && ((pcr & 0xC0) == 0x40)) || (!ca2 && ((pcr & 0xC0) == 0x00))) {
 			IRQSet(IRQ_CB2);

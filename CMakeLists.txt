@@ -18,7 +18,7 @@ project(oric)
 find_package(Boost 1.71.0 COMPONENTS program_options log)
 find_package(SDL2 REQUIRED)
 
-set(ORIC_SOURCES oric.cpp memory.cpp machine.cpp frontend.cpp)
+set(ORIC_SOURCES oric.cpp memory.cpp machine.cpp frontend.cpp tape_tap.cpp)
 
 if(Boost_FOUND)
    include_directories(${Boost_INCLUDE_DIRS} ${SDL2_INCLUDE_DIRS} .)

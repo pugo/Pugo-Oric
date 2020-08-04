@@ -26,6 +26,7 @@
 #include "chip/mos6522.hpp"
 #include "chip/ay3_8912.hpp"
 #include "memory.hpp"
+#include "tape_tap.hpp"
 
 class Oric;
 class Frontend;
@@ -57,6 +58,7 @@ public:
 	
 	void KeyPress(uint8_t a_KeyBits, bool a_Down);
 	void UpdateKeyOutput();
+	void ViaORBChanged(uint8_t a_Orb);
 
 	static uint8_t read_byte(Machine& a_machine, uint16_t a_Address);
 	static uint8_t read_byte_zp(Machine& a_Machine, uint8_t a_Address);
@@ -89,8 +91,10 @@ protected:
 	AY3_8912* m_Ay3;
 
 	Memory m_Memory;
+    TapeTap* m_Tape;
 
 	bool m_Running;
+	bool m_WarpMode;
 
 	uint16_t m_RasterCurrent;
 
