@@ -12,23 +12,23 @@ public:
 	Memory(uint32_t a_Size);
 	~Memory();
 
-	void Load(const std::string& a_Path, uint32_t a_Address);
-	uint32_t GetSize() { return m_Size; }
+	void load(const std::string& path, uint32_t address);
+	uint32_t get_size() { return size; }
 	
-	void SetMemPos(uint16_t a_Address) { m_Mempos = a_Address; }
+	void set_mem_pos(uint16_t a_Address) { mempos = a_Address; }
 
 	friend Memory& operator<<(Memory& a_Os, unsigned int a_In) {
-		a_Os.m_Mem[a_Os.m_Mempos++] = static_cast<uint8_t>(a_In & 0xff);
+		a_Os.mem[a_Os.mempos++] = static_cast<uint8_t>(a_In & 0xff);
 		return a_Os;
 	}
 
-	void Show(uint32_t a_Pos, uint32_t a_Length);
+	void show(uint32_t a_Pos, uint32_t a_Length);
 
-	uint8_t* m_Mem;
+	uint8_t* mem;
 
 protected:
-	uint32_t m_Size;
-	uint32_t m_Mempos;
+	uint32_t size;
+	uint32_t mempos;
 };
 
 

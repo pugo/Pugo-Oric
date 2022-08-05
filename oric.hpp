@@ -20,7 +20,7 @@ public:
 		STATE_QUIT
 	};
 
-	static Oric& GetInstance()
+	static Oric& get_instance()
 	{
 		static Oric instance;
 		return instance;
@@ -29,22 +29,22 @@ public:
 	Oric();
 	~Oric();
 
-	void Init();
+	void init();
 
-	Machine& GetMachine() { return *m_Machine; }
-	Frontend& GetFrontend() { return *m_Frontend; }
+	Machine& get_machine() { return *machine; }
+	Frontend& get_frontend() { return *frontend; }
 
-	void Run();
-	void Break();
+	void run();
+	void do_break();
 
 protected:
-	State HandleCommand(std::string& a_Cmd);
-	uint16_t StringToWord(std::string& a_Addr);
+	State handle_command(std::string& a_Cmd);
+	uint16_t string_to_word(std::string& a_Addr);
 
-	State m_State;
-	Frontend* m_Frontend;
-	Machine* m_Machine;
-	std::string m_LastCommand;
+	State state;
+	Frontend* frontend;
+	Machine* machine;
+	std::string last_command;
 };
 
 #endif // ORIC_H

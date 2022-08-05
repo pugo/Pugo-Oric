@@ -55,39 +55,39 @@ public:
 		PCR_MASK_CB2 = 0xE0
 	};
 
-	typedef void (*f_ca2_changed_handler)(Machine &a_Machine, bool a_Value);
-	typedef void (*f_cb2_changed_handler)(Machine &a_Machine, bool a_Value);
+	typedef void (*f_ca2_changed_handler)(Machine &machine, bool value);
+	typedef void (*f_cb2_changed_handler)(Machine &machine, bool aValue);
 
 	MOS6522(Machine& a_Machine);
 	~MOS6522();
 
-	void Reset();
-	short Exec(uint8_t a_Cycles);
+	void reset();
+	short exec(uint8_t a_Cycles);
 	
-	uint8_t ReadByte(uint16_t a_Offset);
-	void WriteByte(uint16_t a_Offset, uint8_t a_Value);
+	uint8_t read_byte(uint16_t a_Offset);
+	void write_byte(uint16_t a_Offset, uint8_t a_Value);
 
-	uint8_t ReadORA() { return (ora & ddra); }
-	uint8_t ReadORB() { return (orb & ddrb); }
+	uint8_t read_ora() { return (ora & ddra); }
+	uint8_t read_orb() { return (orb & ddrb); }
 	
-	void SetIRBBit(const uint8_t a_Bit, const bool a_Value);
+	void set_irb_bit(const uint8_t a_Bit, const bool a_Value);
 	
-	void WriteIRB(uint8_t a_Value) { irb = a_Value; }
+	void write_irb(uint8_t a_Value) { irb = a_Value; }
 
-	void WriteCA1(bool a_Value);
-	void WriteCA2(bool a_Value);
+	void write_ca1(bool a_Value);
+	void write_ca2(bool a_Value);
 
-	void WriteCB1(bool a_Value);
-	void WriteCB2(bool a_Value);
+	void write_cb1(bool a_Value);
+	void write_cb2(bool a_Value);
 
-	void PrintStat();
+	void print_stat();
 
 	f_ca2_changed_handler ca2_changed_handler;
 	f_cb2_changed_handler cb2_changed_handler;
 	
 private:
-	void IRQSet(uint8_t a_Bits);
-	void IRQClear(uint8_t a_Bits);
+	void irq_set(uint8_t a_Bits);
+	void irq_clear(uint8_t a_Bits);
 
 	bool ca1;
 	bool ca2;
@@ -130,9 +130,9 @@ private:
 	uint8_t ifr;		// Interrupt Flag Register:   | IRQ  | T1 | T2 | CB1 | CB2 | SR | CA1 | CA2 |
 	uint8_t ier;		// Interrupt Enable Register: | ctrl | T1 | T2 | CB1 | CB2 | SR | CA1 | CA2 |
 
-	Machine& m_Machine;
+	Machine& machine;
 
-	std::map<Register, std::string> m_RegisterNames;
+	std::map<Register, std::string> register_names;
 };
 
 

@@ -29,30 +29,30 @@ public:
 		BLINKING = 0x04,
 	};
 
-	Frontend(const Oric* a_Oric);
+	Frontend(const Oric* oric);
 	~Frontend();
 
-	void InitGraphics();
-	void CloseGraphics();
-	void UpdateGraphics(uint8_t a_RasterLine, uint8_t* a_Mem);
-	void RenderGraphics();
+	void init_graphics();
+	void close_graphics();
+	void update_graphics(uint8_t raster_line, uint8_t* mem);
+	void render_graphics();
 
 protected:
-	uint32_t m_Colors[8] {0xff000000, 0xffff0000, 0xff00ff00, 0xffffff00, 0xff0000ff, 0xffff00ff, 0xff00ffff, 0xffffffff};
-	const uint8_t m_TextureWidth = 240;
-	const uint8_t m_TextureHeight = 224;
-	const uint8_t m_TextureBpp = 4;
+	uint32_t colors[8] {0xff000000, 0xffff0000, 0xff00ff00, 0xffffff00, 0xff0000ff, 0xffff00ff, 0xff00ffff, 0xffffffff};
+	const uint8_t texture_width = 240;
+	const uint8_t texture_height = 224;
+	const uint8_t texture_bpp = 4;
 
-	const Oric* m_Oric;
+	const Oric* oric;
 
-	SDL_Window* m_SdlWindow;
-	SDL_Surface* m_SdlSurface;
-	SDL_Renderer* m_SdlRenderer;
-	SDL_Texture* m_SdlTexture;
+	SDL_Window* sdl_window;
+	SDL_Surface* sdl_surface;
+	SDL_Renderer* sdl_renderer;
+	SDL_Texture* sdl_texture;
 
-	std::vector<uint8_t> m_Pixels;
-	uint8_t m_VideoAttrib;
-	uint8_t m_TextAttrib;
+	std::vector<uint8_t> pixels;
+	uint8_t video_attrib;
+	uint8_t text_attrib;
 };
 
 

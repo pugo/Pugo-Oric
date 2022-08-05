@@ -32,33 +32,33 @@ public:
 		NUM_REGS
 	};
 
-	AY3_8912(Machine& a_Machine);
+	AY3_8912(Machine& machine);
 	~AY3_8912();
 
-	void Reset();
-	short Exec(uint8_t a_Cycles);
+	void reset();
+	short exec(uint8_t cycles);
 	
-	void SetBdir(bool a_Value);
-	void SetBc1(bool a_Value);
-	void SetBc2(bool a_Value);
+	void set_bdir(bool value);
+	void set_bc1(bool value);
+	void set_bc2(bool value);
 
-	uint8_t GetRegister(Register a_Register) { return m_Registers[a_Register]; }
+	uint8_t get_register(Register a_Register) { return registers[a_Register]; }
 
-	static void set_bdir(Machine& a_Machine, bool a_Value);
-	static void set_bc1(Machine& a_Machine, bool a_Value);
-	static void set_bc2(Machine& a_Machine, bool a_Value);
+	static void set_bdir(Machine& machine, bool a_Value);
+	static void set_bc1(Machine& machine, bool a_Value);
+	static void set_bc2(Machine& machine, bool a_Value);
 
 	f_read_data_handler m_read_data_handler;
 
 private:
-	Machine& m_Machine;
+	Machine& machine;
 
 	bool bdir;
 	bool bc1;
 	bool bc2;
 
-	uint8_t m_CurrentRegister;
-	uint8_t m_Registers[NUM_REGS];
+	uint8_t current_register;
+	uint8_t registers[NUM_REGS];
 };
 
 

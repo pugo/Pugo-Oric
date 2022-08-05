@@ -291,7 +291,7 @@ void add_nes_str(char *instr, char *instr2)
 
 
 /* This function disassembles the opcode at the PC and outputs it in *output */
-std::string MOS6502::Disassemble(uint16_t a_Address)
+std::string MOS6502::disassemble(uint16_t a_Address)
 {
 	uint8_t tmp_byte1, tmp_byte2, opcode; 
 	char argument_signed;
@@ -299,7 +299,7 @@ std::string MOS6502::Disassemble(uint16_t a_Address)
 	char tmpstr[256], tmpstr2[256], tmpstr3[256];
 	int i,j,entry,found = 0;
 
-	opcode = m_Memory.m_Mem[a_Address];
+	opcode = memory.mem[a_Address];
 	for (i = 0; i < NUMBER_OPCODES; i++) {
 		if (opcode == opcode_table[i].number) {
 			found = 1; /* Found the opcode */
@@ -320,7 +320,7 @@ std::string MOS6502::Disassemble(uint16_t a_Address)
 		{
 		case IMMED:
 			a_Address++;
-			tmp_byte1 = m_Memory.m_Mem[a_Address]; /* Get immediate value */
+			tmp_byte1 = memory.mem[a_Address]; /* Get immediate value */
 			if (hex_output)
 				sprintf(tmpstr,"$%04X> %02X %02X:\t%s #$%02x\t;",org+a_Address-1,opcode,tmp_byte1,name_table[opcode_table[entry].name],tmp_byte1);
 			else
@@ -332,9 +332,9 @@ std::string MOS6502::Disassemble(uint16_t a_Address)
 
 		case ABSOL:
 			a_Address++;
-			tmp_word.B.l = m_Memory.m_Mem[a_Address]; /* Get low byte of a_Address */
+			tmp_word.B.l = memory.mem[a_Address]; /* Get low byte of a_Address */
 			a_Address++;
-			tmp_word.B.h = m_Memory.m_Mem[a_Address]; /* Get high byte of a_Address */
+			tmp_word.B.h = memory.mem[a_Address]; /* Get high byte of a_Address */
 
 			if (hex_output)
 				sprintf(tmpstr,"$%04X> %02X %02X%02X:\t%s $%02X%02X\t;",org+a_Address-2,opcode,tmp_word.B.l,tmp_word.B.h,name_table[opcode_table[entry].name],tmp_word.B.h,tmp_word.B.l);
@@ -347,7 +347,7 @@ std::string MOS6502::Disassemble(uint16_t a_Address)
 
 		case ZEROP:
 			a_Address++;
-			tmp_byte1 = m_Memory.m_Mem[a_Address]; /* Get low byte of a_Address */
+			tmp_byte1 = memory.mem[a_Address]; /* Get low byte of a_Address */
 
 			if (hex_output)
 				sprintf(tmpstr,"$%04X> %02X %02X:\t%s $%02X\t\t;",org+a_Address-1,opcode,tmp_byte1,name_table[opcode_table[entry].name],tmp_byte1);
@@ -370,9 +370,9 @@ std::string MOS6502::Disassemble(uint16_t a_Address)
 
 		case INDIA:
 			a_Address++;
-			tmp_word.B.l = m_Memory.m_Mem[a_Address]; /* Get low byte of a_Address */
+			tmp_word.B.l = memory.mem[a_Address]; /* Get low byte of a_Address */
 			a_Address++;
-			tmp_word.B.h = m_Memory.m_Mem[a_Address]; /* Get high byte of a_Address */
+			tmp_word.B.h = memory.mem[a_Address]; /* Get high byte of a_Address */
 
 			if (hex_output)
 				sprintf(tmpstr,"$%04X> %02X %02X%02X:\t%s ($%02X%02X)\t;",org+a_Address-2,opcode,tmp_word.B.l,tmp_word.B.h,name_table[opcode_table[entry].name],tmp_word.B.h,tmp_word.B.l);
@@ -385,9 +385,9 @@ std::string MOS6502::Disassemble(uint16_t a_Address)
 
 		case ABSIX:
 			a_Address++;
-			tmp_word.B.l = m_Memory.m_Mem[a_Address]; /* Get low byte of a_Address */
+			tmp_word.B.l = memory.mem[a_Address]; /* Get low byte of a_Address */
 			a_Address++;
-			tmp_word.B.h = m_Memory.m_Mem[a_Address]; /* Get high byte of a_Address */
+			tmp_word.B.h = memory.mem[a_Address]; /* Get high byte of a_Address */
 
 			if (hex_output)
 				sprintf(tmpstr,"$%04X> %02X %02X%02X:\t%s $%02X%02X,X\t;",org+a_Address-2,opcode,tmp_word.B.l,tmp_word.B.h,name_table[opcode_table[entry].name],tmp_word.B.h,tmp_word.B.l);
@@ -400,9 +400,9 @@ std::string MOS6502::Disassemble(uint16_t a_Address)
 
 		case ABSIY:
 			a_Address++;
-			tmp_word.B.l = m_Memory.m_Mem[a_Address]; /* Get low byte of a_Address */
+			tmp_word.B.l = memory.mem[a_Address]; /* Get low byte of a_Address */
 			a_Address++;
-			tmp_word.B.h = m_Memory.m_Mem[a_Address]; /* Get high byte of a_Address */
+			tmp_word.B.h = memory.mem[a_Address]; /* Get high byte of a_Address */
 
 			if (hex_output)
 				sprintf(tmpstr,"$%04X> %02X %02X%02X:\t%s $%02X%02X,Y\t;",org+a_Address-2,opcode,tmp_word.B.l,tmp_word.B.h,name_table[opcode_table[entry].name],tmp_word.B.h,tmp_word.B.l);
@@ -415,7 +415,7 @@ std::string MOS6502::Disassemble(uint16_t a_Address)
 
 		case ZEPIX:
 			a_Address++;
-			tmp_byte1 = m_Memory.m_Mem[a_Address]; /* Get low byte of a_Address */
+			tmp_byte1 = memory.mem[a_Address]; /* Get low byte of a_Address */
 
 			if (hex_output)
 				sprintf(tmpstr,"$%04X> %02X %02X:\t%s $%02X,X\t\t;",org+a_Address-1,opcode,tmp_byte1,name_table[opcode_table[entry].name],tmp_byte1);
@@ -428,7 +428,7 @@ std::string MOS6502::Disassemble(uint16_t a_Address)
 
 		case ZEPIY:
 			a_Address++;
-			tmp_byte1 = m_Memory.m_Mem[a_Address]; /* Get low byte of a_Address */
+			tmp_byte1 = memory.mem[a_Address]; /* Get low byte of a_Address */
 
 			if (hex_output)
 				sprintf(tmpstr,"$%04X> %02X %02X:\t%s $%02X,Y\t\t;",org+a_Address-1,opcode,tmp_byte1,name_table[opcode_table[entry].name],tmp_byte1);
@@ -441,7 +441,7 @@ std::string MOS6502::Disassemble(uint16_t a_Address)
 
 		case INDIN:
 			a_Address++;
-			tmp_byte1 = m_Memory.m_Mem[a_Address]; /* Get low byte of a_Address */
+			tmp_byte1 = memory.mem[a_Address]; /* Get low byte of a_Address */
 
 			if (hex_output)
 				sprintf(tmpstr,"$%04X> %02X %02X:\t%s ($%02X,X)\t\t;",org+a_Address-1,opcode,tmp_byte1,name_table[opcode_table[entry].name],tmp_byte1);
@@ -454,7 +454,7 @@ std::string MOS6502::Disassemble(uint16_t a_Address)
 
 		case ININD:
 			a_Address++;
-			tmp_byte1 = m_Memory.m_Mem[a_Address]; /* Get low byte of a_Address */
+			tmp_byte1 = memory.mem[a_Address]; /* Get low byte of a_Address */
 
 			if (hex_output)
 				sprintf(tmpstr,"$%04X> %02X %02X:\t%s ($%02X),Y\t\t;",org+a_Address-1,opcode,tmp_byte1,name_table[opcode_table[entry].name],tmp_byte1);
@@ -467,7 +467,7 @@ std::string MOS6502::Disassemble(uint16_t a_Address)
 
 		case RELAT:
 			a_Address++;
-			tmp_byte1 = m_Memory.m_Mem[a_Address]; /* Get relative modifier */
+			tmp_byte1 = memory.mem[a_Address]; /* Get relative modifier */
 
 			if (hex_output) 
 				sprintf(tmpstr,"$%04X> %02X %02X:\t%s $%04X\t\t;",org+a_Address-1,opcode,tmp_byte1,name_table[opcode_table[entry].name],(org+a_Address)+(signed char)(tmp_byte1)+1);

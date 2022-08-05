@@ -26,39 +26,39 @@
 class TapeTap
 {
 public:
-    TapeTap(MOS6522& a_Via, const std::string& a_Path);
+	TapeTap(MOS6522& via, const std::string& path);
 	virtual ~TapeTap();
 
-    bool Init();
-	void Reset();
+	bool init();
+	void reset();
 
-    void PrintStat();
+	void print_stat();
 
-    void SetMotor(bool a_MotorOn);
-    short Exec(uint8_t a_Cycles);
+	void set_motor(bool motor_on);
+	short exec(uint8_t cycles);
 
 protected:
-    bool ReadHeader();
-    uint8_t CurrentBit();
+    bool read_header();
+    uint8_t get_current_bit();
 
-    std::string m_Path;
-    MOS6522& m_Via;
-    size_t m_Size;
-    size_t m_BodyStart;
+    std::string path;
+    MOS6522& via;
+    size_t size;
+    size_t body_start;
 
-    bool m_RunMotor;
-    int32_t m_Delay;
-    int32_t m_DuplicateBytes;
+    bool do_run_motor;
+    int32_t delay;
+    int32_t duplicate_bytes;
 
-    uint32_t m_TapePos;
-    uint8_t m_BitCount;
-    uint8_t m_CurrentBit;
-    uint8_t m_Parity;
+    uint32_t tape_pos;
+    uint8_t bit_count;
+    uint8_t current_bit;
+    uint8_t parity;
 
-    int16_t m_TapeCyclesCounter;
-    uint8_t m_TapePulse;
+    int16_t tape_cycles_counter;
+    uint8_t tape_pulse;
 
-    uint8_t* m_Data;
+    uint8_t* data;
 
     static const int Pulse_1 = 208;
     static const int Pulse_0 = 416;

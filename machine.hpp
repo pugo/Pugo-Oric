@@ -39,26 +39,26 @@ typedef std::map<KeyPress_t, KeyPress_t> KeyTranslation_t;
 class Machine
 {
 public:
-	Machine(const Oric* a_Oric);
+	Machine(const Oric* oric);
 	virtual ~Machine();
 
-	void Init(Frontend* a_Frontend);
+	void init(Frontend* frontend);
 	
-	Memory& GetMemory() { return m_Memory; }
-	MOS6502& GetCPU() { return *m_Cpu; }
-	MOS6522& GetVIA() { return *m_Mos_6522; }
-	AY3_8912& GetAY3() { return *m_Ay3; }
+	Memory& get_memory() { return memory; }
+	MOS6502& get_cpu() { return *cpu; }
+	MOS6522& get_via() { return *mos_6522; }
+	AY3_8912& get_ay3() { return *ay3; }
 
-	void Reset();
-	void Run(uint32_t a_Steps, Oric* a_Oric);
-	void Run(uint16_t a_Address, long a_Steps, Oric* a_Oric) { m_Cpu->SetPC(a_Address); Run(a_Steps, a_Oric); }
-	void Stop() { m_Brk = true; }
+	void reset();
+	void run(uint32_t steps, Oric* oric);
+	void run(uint16_t address, long steps, Oric* oric) { cpu->set_pc(address); run(steps, oric); }
+	void stop() { break_exec = true; }
 
-	void IRQ() { m_Cpu->IRQ(); }
+	void irq() { cpu->IRQ(); }
 	
-	void KeyPress(uint8_t a_KeyBits, bool a_Down);
-	void UpdateKeyOutput();
-	void ViaORBChanged(uint8_t a_Orb);
+	void key_press(uint8_t a_KeyBits, bool a_Down);
+	void update_key_output();
+	void via_orb_changed(uint8_t a_Orb);
 
 	static uint8_t read_byte(Machine& a_machine, uint16_t a_Address);
 	static uint8_t read_byte_zp(Machine& a_Machine, uint8_t a_Address);
@@ -72,8 +72,6 @@ public:
 	static uint8_t read_via_ora(Machine& a_Machine);
 	static uint8_t read_via_orb(Machine& a_Machine);
 	
-	bool m_Brk;
-
 	static const uint8_t cycles_per_raster = 64;
 	static const uint16_t raster_max = 312;
 	static const uint16_t raster_visible_lines = 224;
@@ -81,28 +79,29 @@ public:
 	static const uint16_t raster_visible_last = raster_visible_first + raster_visible_lines;
 	
 protected:
-	bool PaintRaster(Oric* a_Oric);
+	bool paint_raster(Oric* oric);
 
-	const Oric* m_Oric;
-	Frontend* m_Frontend;
+	const Oric* oric;
+	Frontend* frontend;
 	
-	MOS6502* m_Cpu;
-	MOS6522* m_Mos_6522;
-	AY3_8912* m_Ay3;
+	MOS6502* cpu;
+	MOS6522* mos_6522;
+	AY3_8912* ay3;
+	bool break_exec;
 
-	Memory m_Memory;
-    TapeTap* m_Tape;
+	Memory memory;
+	TapeTap* tape;
 
-	bool m_Running;
-	bool m_WarpMode;
+	bool is_running;
+	bool warpmode_on;
 
-	uint16_t m_RasterCurrent;
+	uint16_t raster_current;
 
-	KeyMap_t m_KeyMap;
-	KeyTranslation_t m_KeyTranslations;
+	KeyMap_t key_map;
+	KeyTranslation_t key_translations;
 
-	uint8_t m_CurrentKeyRow;
-	uint8_t m_KeyRows[8];
+	uint8_t current_key_row;
+	uint8_t key_rows[8];
 };
 
 #endif // MACHINE_H

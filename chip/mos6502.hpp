@@ -41,20 +41,20 @@ public:
 	MOS6502(Machine& a_Machine);
 	~MOS6502();
 
-	void SetPC(uint16_t a_PC) { PC = a_PC; }
-	uint16_t GetPC() { return PC; }
-	uint8_t GetSP() { return SP; }
-	uint8_t GetP();
-	void SetP(uint8_t a_P);
+	void set_pc(uint16_t pc) { PC = pc; }
+	uint16_t get_pc() { return PC; }
+	uint8_t get_sp() { return SP; }
+	uint8_t get_p();
+	void set_p(uint8_t p);
 
-	void SetQuiet(bool a_Val) { m_Quiet = a_Val; }
+	void set_quiet(bool val) { quiet = val; }
 
 	void Reset();
 	void PrintStat();
-	void PrintStat(uint16_t a_Address);
+	void PrintStat(uint16_t address);
 
-	bool ExecInstructionCycles(int16_t a_Cycles);
-	short ExecInstruction(bool& a_Brk);
+	bool exec_instruction_cycles(int16_t cycles);
+	short exec_instruction(bool& a_Brk);
 
 	// Registers
 	uint8_t A;
@@ -77,7 +77,7 @@ public:
 	void NMI();
 	void IRQ();
 
-	int inline SignedByteToInt(uint8_t a_B);
+	int inline signed_byte_to_int(uint8_t b);
 
 	// Add and sub are complex
 	void ADC(uint8_t a_Val);
@@ -92,18 +92,18 @@ public:
 	f_memory_write_byte_handler memory_write_byte_handler;
 	f_memory_write_byte_zp_handler memory_write_byte_zp_handler;
 
-	std::string Disassemble(uint16_t a_Address);
+	std::string disassemble(uint16_t a_Address);
 
 protected:
-	void Handle_IRQ();
+	void handle_irq();
 	
-	Machine& m_Machine;
-	Memory& m_Memory;
+	Machine& machine;
+	Memory& memory;
 
 	uint16_t PC;
 	uint8_t SP;
-	bool m_Quiet;
-	bool m_IRQFlag;
+	bool quiet;
+	bool irq_flag;
 };
 
 #endif // MOS6502_H

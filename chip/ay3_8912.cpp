@@ -21,74 +21,74 @@
 
 using namespace std;
 
-AY3_8912::AY3_8912(Machine& a_Machine) :
-	m_Machine(a_Machine),
+AY3_8912::AY3_8912(Machine& machine) :
+	machine(machine),
 	m_read_data_handler(nullptr)
 {
-	Reset();
+	reset();
 }
 
 AY3_8912::~AY3_8912()
 {
 }
 
-void AY3_8912::Reset()
+void AY3_8912::reset()
 {
 	bdir = false;
 	bc1 = false;
 	bc2 = false;
 
-	m_CurrentRegister = 0;
+	current_register = 0;
 
 	for (uint8_t i=0; i < 15; i++) {
-		m_Registers[i] = 0;
+		registers[i] = 0;
 	}
 }
 
-short AY3_8912::Exec(uint8_t a_Cycles)
+short AY3_8912::exec(uint8_t cycles)
 {
 	return 0;
 }
 
-void AY3_8912::SetBdir(bool a_Value)
+void AY3_8912::set_bdir(bool value)
 {
-	if (bdir != a_Value) {
-		bdir = a_Value;
+	if (bdir != value) {
+		bdir = value;
 		if (bdir) {
 			if (bc1) {
-				uint8_t new_curr = m_read_data_handler(m_Machine);
+				uint8_t new_curr = m_read_data_handler(machine);
 				if (new_curr < NUM_REGS) {
-					m_CurrentRegister = new_curr;
+					current_register = new_curr;
 				}
 			}
 			else {
-				m_Registers[m_CurrentRegister] = m_read_data_handler(m_Machine);
+				registers[current_register] = m_read_data_handler(machine);
 			}
 		}
 	}
 }
 
-void AY3_8912::SetBc1(bool a_Value)
+void AY3_8912::set_bc1(bool value)
 {
-	bc1 = a_Value;
+	bc1 = value;
 }
 
-void AY3_8912::SetBc2(bool a_Value)
+void AY3_8912::set_bc2(bool value)
 {
-	bc2 = a_Value;
+	bc2 = value;
 }
 
 
-void AY3_8912::set_bdir(Machine& a_Machine, bool a_Value) {
-	a_Machine.GetAY3().SetBdir(a_Value);
+void AY3_8912::set_bdir(Machine& machine, bool a_Value) {
+	machine.get_ay3().set_bdir(a_Value);
 }
 
-void AY3_8912::set_bc1(Machine& a_Machine, bool a_Value)
+void AY3_8912::set_bc1(Machine& machine, bool a_Value)
 {
-	a_Machine.GetAY3().SetBc1(a_Value);
+	machine.get_ay3().set_bc1(a_Value);
 }
 
-void AY3_8912::set_bc2(Machine& a_Machine, bool a_Value)
-{ 
-	a_Machine.GetAY3().SetBc2(a_Value);
+void AY3_8912::set_bc2(Machine& machine, bool a_Value)
+{
+	machine.get_ay3().set_bc2(a_Value);
 }

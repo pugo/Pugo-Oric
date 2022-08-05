@@ -23,24 +23,24 @@ using namespace std;
 
 
 MOS6522::MOS6522(Machine& a_Machine) :
-	m_Machine(a_Machine),
+	machine(a_Machine),
 	ca2_changed_handler(nullptr),
 	cb2_changed_handler(nullptr)
 {
-	boost::assign::insert(m_RegisterNames)
+	boost::assign::insert(register_names)
 		(ORB, "ORB")(ORA, "ORA")(DDRB, "DDRB")(DDRA, "DDRA")
 		(T1C_L, "T1C_L")(T1C_H, "T1C_H")(T1L_L, "T1L_L")(T1L_H, "T1L_H")
 		(T2C_L, "T2C_L")(T2C_H, "T2C_H")(SR, "SR")(ACR, "ACR")
 		(PCR, "PCR")(IFR, "IFR")(IER, "IER")(IORA2, "IORA2");
 
-	Reset();
+	reset();
 }
 
 MOS6522::~MOS6522()
 {
 }
 
-void MOS6522::Reset()
+void MOS6522::reset()
 {
 	ca1 = false;
 	ca2 = false;
@@ -77,7 +77,7 @@ void MOS6522::Reset()
 	ier = 0;
 }
 
-short MOS6522::Exec(uint8_t a_Cycles)
+short MOS6522::exec(uint8_t a_Cycles)
 {
 	if (a_Cycles == 0) {
 		return 0;
@@ -87,13 +87,13 @@ short MOS6522::Exec(uint8_t a_Cycles)
 	if (ca2_do_pulse) {
 		ca2 = true;
 		ca2_do_pulse = false;
-		if (ca2_changed_handler) { ca2_changed_handler(m_Machine, ca2); }
+		if (ca2_changed_handler) { ca2_changed_handler(machine, ca2); }
 	}
 
 	if (cb2_do_pulse) {
 		cb2 = true;
 		cb2_do_pulse = false;
-		if (cb2_changed_handler) { cb2_changed_handler(m_Machine, cb2); }
+		if (cb2_changed_handler) { cb2_changed_handler(machine, cb2); }
 	}
 
 	uint16_t todo_cycles;
@@ -104,7 +104,7 @@ short MOS6522::Exec(uint8_t a_Cycles)
 		case 0x80:
 			// One shot
 			if (t1_run && a_Cycles > t1_counter) {
-				IRQSet(IRQ_T1);
+				irq_set(IRQ_T1);
 				if (acr & 0x80) {
 					orb |= 0x80;
 				}
@@ -128,7 +128,7 @@ short MOS6522::Exec(uint8_t a_Cycles)
 				todo_cycles -= (t1_counter + 1);
 // 				std::cout << "  todo cycles: " << (int)todo_cycles << std::endl;
 				t1_counter = 0xffff;
-				IRQSet(IRQ_T1);
+				irq_set(IRQ_T1);
 
 				if (acr & 0x80) {
 					orb ^= 0x80;
@@ -158,7 +158,7 @@ short MOS6522::Exec(uint8_t a_Cycles)
 
 		if (t2_run && todo_cycles > t2_counter) {
             std::cout << "Timer2 Interrupt!" << std::endl;
-			IRQSet(IRQ_T2);
+			irq_set(IRQ_T2);
 			t2_run = false;
 		}
 		t2_counter -= todo_cycles;
@@ -171,49 +171,49 @@ short MOS6522::Exec(uint8_t a_Cycles)
 	return a_Cycles;
 }
 
-uint8_t MOS6522::ReadByte(uint16_t a_Offset)
+uint8_t MOS6522::read_byte(uint16_t a_Offset)
 {
 	switch(a_Offset & 0x000f)
 	{
 	case ORB:
 // 	cout << "Read " << m_RegisterNames[static_cast<Register>(a_Offset & 0x000f)] << endl;
-		IRQClear(IRQ_CB1);
+			irq_clear(IRQ_CB1);
 		switch (pcr & PCR_MASK_CB2) {
 			case 0x00:
 			case 0x40:
-				IRQClear(IRQ_CB2);
+				irq_clear(IRQ_CB2);
 				break;
 			case 0x80:
 				// set CB2 to low on read/write of ORB if CB2-ctrl is 100.
 				cb2 = false;
-				if (cb2_changed_handler) { cb2_changed_handler(m_Machine, cb2); }
+				if (cb2_changed_handler) { cb2_changed_handler(machine, cb2); }
 				break;
 			case 0xa0:
 				// pulse low for one cycle if CB2-ctrl is 101.
 				cb2 = false;
 				cb2_do_pulse = true;
-				if (cb2_changed_handler) { cb2_changed_handler(m_Machine, cb2); }
+				if (cb2_changed_handler) { cb2_changed_handler(machine, cb2); }
 				break;
 		}
 		return (orb & ddrb) | (irb & ~ddrb);
 	case ORA:
 // 	cout << "Read " << m_RegisterNames[static_cast<Register>(a_Offset & 0x000f)] << endl;
-		IRQClear(IRQ_CA1);
+			irq_clear(IRQ_CA1);
 		switch (pcr & PCR_MASK_CA2) {
 			case 0x00:
 			case 0x04:
-				IRQClear(IRQ_CA2);
+				irq_clear(IRQ_CA2);
 				break;
 			case 0x08:
 				// set CA2 to low on read/write of ORA if CA2-ctrl is 100.
 				ca2 = false;
-				if (ca2_changed_handler) { ca2_changed_handler(m_Machine, ca2); }
+				if (ca2_changed_handler) { ca2_changed_handler(machine, ca2); }
 				break;
 			case 0x0a:
 				// pulse low for one cycle if CA2-ctrl is 101.
 				ca2 = false;
 				ca2_do_pulse = true;
-				if (ca2_changed_handler) { ca2_changed_handler(m_Machine, ca2); }
+				if (ca2_changed_handler) { ca2_changed_handler(machine, ca2); }
 				break;
 		}
 		return (ora & ddra) | (ira & ~ddra);
@@ -222,7 +222,7 @@ uint8_t MOS6522::ReadByte(uint16_t a_Offset)
 	case DDRA:
 		return ddra;
 	case T1C_L:
-		IRQClear(IRQ_T1);
+		irq_clear(IRQ_T1);
 		return t1_counter & 0x00ff;
 	case T1C_H:
 		return t1_counter >> 8;
@@ -231,12 +231,12 @@ uint8_t MOS6522::ReadByte(uint16_t a_Offset)
 	case T1L_H:
 		return t1_latch_high;
 	case T2C_L:
-		IRQClear(IRQ_T2);
+		irq_clear(IRQ_T2);
 		return t2_counter & 0x00ff;
 	case T2C_H:
 		return t2_counter >> 8;
 	case SR:
-		IRQClear(IRQ_SR);
+		irq_clear(IRQ_SR);
 		return sr;
 	case ACR:
 		return acr;
@@ -252,53 +252,53 @@ uint8_t MOS6522::ReadByte(uint16_t a_Offset)
 	return 0;
 }
 
-void MOS6522::WriteByte(uint16_t a_Offset, uint8_t a_Value)
+void MOS6522::write_byte(uint16_t a_Offset, uint8_t a_Value)
 {
 	switch(a_Offset & 0x000f)
 	{
 	case ORB:
 // 	cout << "Write " << m_RegisterNames[static_cast<Register>(a_Offset & 0x000f)] << ": " << static_cast<unsigned int>(a_Value) << endl;
 		orb = a_Value;
-		IRQClear(IRQ_CB1);
+			irq_clear(IRQ_CB1);
 		switch (pcr & PCR_MASK_CB2) {
 			case 0x00:
 			case 0x40:
-				IRQClear(IRQ_CB2);
+				irq_clear(IRQ_CB2);
 				break;
 			case 0x80:
 				// set CB2 to low on read/write of ORB if CB2-ctrl is 100.
 				cb2 = false;
-				if (cb2_changed_handler) { cb2_changed_handler(m_Machine, cb2); }
+				if (cb2_changed_handler) { cb2_changed_handler(machine, cb2); }
 				break;
 			case 0xa0:
 				// pulse low for one cycle if CB2-ctrl is 101.
 				cb2 = false;
 				cb2_do_pulse = true;
-				if (cb2_changed_handler) { cb2_changed_handler(m_Machine, cb2); }
+				if (cb2_changed_handler) { cb2_changed_handler(machine, cb2); }
 				break;
 		}
-		m_Machine.UpdateKeyOutput();
-		m_Machine.ViaORBChanged(orb);
+		machine.update_key_output();
+			machine.via_orb_changed(orb);
 		break;
 	case ORA:
 // 	cout << "Read " << m_RegisterNames[static_cast<Register>(a_Offset & 0x000f)] << endl;
 		ora = a_Value;
-		IRQClear(IRQ_CA1);
+			irq_clear(IRQ_CA1);
 		switch (pcr & PCR_MASK_CA2) {
 			case 0x00:
 			case 0x04:
-				IRQClear(IRQ_CA2);
+				irq_clear(IRQ_CA2);
 				break;
 			case 0x08:
 				// set CA2 to low on read/write of ORA if CA2-ctrl is 100.
 				ca2 = false;
-				if (ca2_changed_handler) { ca2_changed_handler(m_Machine, ca2); }
+				if (ca2_changed_handler) { ca2_changed_handler(machine, ca2); }
 				break;
 			case 0x0a:
 				// pulse low for one cycle if CA2-ctrl is 101.
 				ca2 = false;
 				ca2_do_pulse = true;
-				if (ca2_changed_handler) { ca2_changed_handler(m_Machine, ca2); }
+				if (ca2_changed_handler) { ca2_changed_handler(machine, ca2); }
 				break;
 		}
 		break;
@@ -316,7 +316,7 @@ void MOS6522::WriteByte(uint16_t a_Offset, uint8_t a_Value)
 		t1_counter = (t1_latch_high << 8) | t1_latch_low;
 		t1_reload = true;
 		t1_run = true;
-		IRQClear(IRQ_T1);
+			irq_clear(IRQ_T1);
 		// If ORB7 pulse mode is set, prepare by setting ORB7 low.
 		if ((acr & 0xc0) == 0x80) {
 			orb &= 0x7f;
@@ -327,7 +327,7 @@ void MOS6522::WriteByte(uint16_t a_Offset, uint8_t a_Value)
 		break;
 	case T1L_H:
 		t1_latch_high = a_Value;
-		IRQClear(IRQ_T1);
+			irq_clear(IRQ_T1);
 		break;
 	case T2C_L:
 		t2_latch_low = a_Value;
@@ -337,11 +337,11 @@ void MOS6522::WriteByte(uint16_t a_Offset, uint8_t a_Value)
 		t2_counter = (t2_latch_high << 8) | t2_latch_low;
 		t2_run = true;
 		t2_reload = true;
-		IRQClear(IRQ_T2);
+			irq_clear(IRQ_T2);
 		break;
 	case SR:
 		sr = a_Value;
-		IRQClear(IRQ_SR);
+			irq_clear(IRQ_SR);
 		break;
 	case ACR:
 		acr = a_Value;
@@ -351,11 +351,11 @@ void MOS6522::WriteByte(uint16_t a_Offset, uint8_t a_Value)
 		// Manual output modes
 		if ((pcr & 0x0c) == 0x0c) {
 			ca2 = !!(pcr & 0x02);
-			if (ca2_changed_handler) { ca2_changed_handler(m_Machine, ca2); }
+			if (ca2_changed_handler) { ca2_changed_handler(machine, ca2); }
 		}
 		if ((pcr & 0xc0) == 0xc0) {
 			cb2 = !!(pcr & 0x20);
-			if (cb2_changed_handler) { cb2_changed_handler(m_Machine, cb2); }
+			if (cb2_changed_handler) { cb2_changed_handler(machine, cb2); }
 		}
 
 		// TODO: ca and cb pulsing stuff.
@@ -384,26 +384,26 @@ void MOS6522::WriteByte(uint16_t a_Offset, uint8_t a_Value)
 	}
 }
 
-void MOS6522::SetIRBBit(const uint8_t a_Bit, const bool a_Value)
+void MOS6522::set_irb_bit(const uint8_t a_Bit, const bool a_Value)
 {
 	uint8_t b = 1 << a_Bit;
 	irb = (irb & ~b) | (a_Value ? b : 0);
 }
 
-void MOS6522::IRQSet(uint8_t bits)
+void MOS6522::irq_set(uint8_t a_Bits)
 {
-	ifr |= bits;
+	ifr |= a_Bits;
 	if ((ifr & ier) & 0x7f) {
 		ifr |= 0x80;
 	}
-	if (bits & ier) {
-		m_Machine.IRQ();
+	if (a_Bits & ier) {
+		machine.irq();
 	}
 }
 
-void MOS6522::IRQClear(uint8_t bits)
+void MOS6522::irq_clear(uint8_t a_Bits)
 {
-	ifr &= ~bits;
+	ifr &= ~a_Bits;
 
 	// Clear bit 7 if no (enabled) interrupts exist.
 	if (!((ifr & ier) & 0x7f)) {
@@ -411,67 +411,67 @@ void MOS6522::IRQClear(uint8_t bits)
 	}
 }
 
-void MOS6522::WriteCA1(bool a_Value)
+void MOS6522::write_ca1(bool a_Value)
 {
 	if (ca1 != a_Value) {
         ca1 = a_Value;
 		// Transitions only if enabled in PCR.
 		if ((ca1 && (pcr & PCR_MASK_CA1)) || (!ca1 && !(pcr & PCR_MASK_CA1))) {
-			IRQSet(IRQ_CA1);
+			irq_set(IRQ_CA1);
 
 			// Handshake mode, set ca2 on pos transition of ca1.
 			if (ca1 && !ca2 && (pcr & PCR_MASK_CA2) == 0x08) {
 				ca2 = true;
-				if (ca2_changed_handler) { ca2_changed_handler(m_Machine, ca2); }
+				if (ca2_changed_handler) { ca2_changed_handler(machine, ca2); }
 			}
 		}
 	}
 }
 
-void MOS6522::WriteCA2(bool a_Value)
+void MOS6522::write_ca2(bool a_Value)
 {
 	if (ca2 != a_Value) {
         ca2 = a_Value;
 		// Set interrupt on pos/neg transition if 0 or 4 in pcr.
 		if ((ca2 && ((pcr & 0x0C) == 0x04)) || (!ca2 && ((pcr & 0x0C) == 0x00))) {
-			IRQSet(IRQ_CA2);
+			irq_set(IRQ_CA2);
 		}
 
-		if (ca2_changed_handler) { ca2_changed_handler(m_Machine, ca2); }
+		if (ca2_changed_handler) { ca2_changed_handler(machine, ca2); }
 	}
 }
 
-void MOS6522::WriteCB1(bool a_Value)
+void MOS6522::write_cb1(bool a_Value)
 {
 	if (cb1 != a_Value) {
 		// Transitions only if enabled in PCR.
         cb1 = a_Value;
 		if ((cb1 && (pcr & PCR_MASK_CB1)) || (!cb1 && !(pcr & PCR_MASK_CB1))) {
-			IRQSet(IRQ_CB1);
+			irq_set(IRQ_CB1);
 
 			// Handshake mode, set cb2 on pos transition of cb1.
 			if (cb1 && !cb2 && (pcr & PCR_MASK_CB2) == 0x80) {
 				cb2 = true;
-				if (cb2_changed_handler) { cb2_changed_handler(m_Machine, cb2); }
+				if (cb2_changed_handler) { cb2_changed_handler(machine, cb2); }
 			}
 		}
 	}
 }
 
-void MOS6522::WriteCB2(bool a_Value)
+void MOS6522::write_cb2(bool a_Value)
 {
 	if (cb2 != a_Value) {
         cb2 = a_Value;
 		// Set interrupt on pos/neg transition if 0 or 40 in pcr.
 		if ((cb2 && ((pcr & 0xC0) == 0x40)) || (!ca2 && ((pcr & 0xC0) == 0x00))) {
-			IRQSet(IRQ_CB2);
+			irq_set(IRQ_CB2);
 		}
 
-		if (cb2_changed_handler) { cb2_changed_handler(m_Machine, cb2); }
+		if (cb2_changed_handler) { cb2_changed_handler(machine, cb2); }
 	}
 }
 
-void MOS6522::PrintStat()
+void MOS6522::print_stat()
 {
 	std::cout << "VIA stats:" << std::endl;
 	std::cout << "  -   ORA: " << (int)ora << std::endl;
