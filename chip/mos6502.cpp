@@ -105,7 +105,7 @@ MOS6502::MOS6502(Machine& a_Machine) :
 	memory_read_word_zp_handler(nullptr),
 	memory_write_byte_handler(nullptr),
 	memory_write_byte_zp_handler(nullptr),
-	memory(a_Machine.get_memory())
+	memory(a_Machine.memory)
 {
 }
 

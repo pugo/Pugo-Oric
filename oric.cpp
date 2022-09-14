@@ -26,8 +26,9 @@ void Oric::init()
 	frontend = new Frontend(this);
 	machine->init(frontend);
 	frontend->init_graphics();
+	frontend->init_audio();
 
-	machine->get_cpu().set_quiet(true);
+	machine->cpu->set_quiet(true);
 }
 
 Oric::~Oric()
@@ -109,8 +110,8 @@ Oric::State Oric::handle_command(std::string& a_Cmd)
 			return STATE_MON;
 		}
 		uint16_t addr = string_to_word(parts[1]);
-		machine->get_cpu().set_pc(addr);
-		machine->get_cpu().PrintStat();
+		machine->cpu->set_pc(addr);
+		machine->cpu->PrintStat();
 	}
 	else if (cmd == "s") { // step
 		if (parts.size() == 2) {
@@ -118,32 +119,32 @@ Oric::State Oric::handle_command(std::string& a_Cmd)
 		}
 		else {
 			bool brk = false;
-			machine->get_cpu().exec_instruction(brk);
+			machine->cpu->exec_instruction(brk);
 			if (brk) {
 				std::cout << "Instruction BRK executed." << std::endl;
 			}
 		}
 	}
 	else if (cmd == "i") { // info
-		std::cout << "PC: " << machine->get_cpu().get_pc() << std::endl;
-		machine->get_cpu().PrintStat();
+		std::cout << "PC: " << machine->cpu->get_pc() << std::endl;
+		machine->cpu->PrintStat();
 	}
 	else if (cmd == "v") { // info
-		machine->get_via().print_stat();
+		machine->mos_6522->print_stat();
 	}
 	else if (cmd == "m") { // info
 		if (parts.size() < 3) {
 			std::cout << "Use: m <start address> <length>" << std::endl;
 			return STATE_MON;
 		}
-		machine->get_memory().show(string_to_word(parts[1]), string_to_word(parts[2]));
+		machine->memory.show(string_to_word(parts[1]), string_to_word(parts[2]));
 	}
 	else if (cmd == "quiet") {
-		machine->get_cpu().set_quiet(true);
+		machine->cpu->set_quiet(true);
 		std::cout << "Quiet mode enabled" << std::endl;
 	}
 	else if (cmd == "debug") {
-		machine->get_cpu().set_quiet(false);
+		machine->cpu->set_quiet(false);
 		std::cout << "Debug mode enabled" << std::endl;
 	}
 
@@ -187,8 +188,8 @@ int main(int argc, char *argv[])
 
 	Oric& oric = Oric::get_instance();
 	oric.init();
-	oric.get_machine().get_memory().load("ROMS/basic11b.rom", 0xc000);
-	oric.get_machine().get_memory().load("ROMS/font.rom", 0xb400);
+	oric.get_machine().memory.load("ROMS/basic11b.rom", 0xc000);
+	oric.get_machine().memory.load("ROMS/font.rom", 0xb400);
 	oric.get_machine().reset();
 
 	std::cout << std::endl;

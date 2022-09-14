@@ -7,6 +7,7 @@
 #include <machine.hpp>
 
 typedef uint8_t (*f_read_data_handler)(Machine &oric);
+typedef uint8_t (*f_write_data_handler)(Machine &oric);
 
 
 class AY3_8912
@@ -49,6 +50,7 @@ public:
 	static void set_bc2(Machine& machine, bool a_Value);
 
 	f_read_data_handler m_read_data_handler;
+	f_write_data_handler m_write_data_handler;
 
 private:
 	Machine& machine;

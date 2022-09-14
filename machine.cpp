@@ -75,6 +75,7 @@ void Machine::init(Frontend* frontend)
 	cpu->memory_write_byte_zp_handler = write_byte_zp;
 
 	ay3->m_read_data_handler = read_via_ora;
+//	ay3->m_write_data_handler = write_vi
 
 	mos_6522->ca2_changed_handler = AY3_8912::set_bc1;
 	mos_6522->cb2_changed_handler = AY3_8912::set_bdir;
@@ -230,14 +231,14 @@ void Machine::via_orb_changed(uint8_t a_Orb)
 uint8_t inline Machine::read_byte(Machine& a_Machine, uint16_t a_Address)
 {
 	if (a_Address >= 0x300 && a_Address < 0x400) {
-		return a_Machine.get_via().read_byte(a_Address);
+		return a_Machine.mos_6522->read_byte(a_Address);
 	}
-	return a_Machine.get_memory().mem[a_Address];
+	return a_Machine.memory.mem[a_Address];
 }
 
 uint8_t inline Machine::read_byte_zp(Machine &a_Machine, uint8_t a_Address)
 {
-	return a_Machine.get_memory().mem[a_Address];
+	return a_Machine.memory.mem[a_Address];
 }
 
 uint16_t inline Machine::read_word(Machine &a_Machine, uint16_t a_Address)
@@ -245,12 +246,12 @@ uint16_t inline Machine::read_word(Machine &a_Machine, uint16_t a_Address)
 // 	if (a_Address >= 0x300 && a_Address < 0x400) {
 // 		std::cout << "read word: " << std::hex << a_Address << std::endl;
 // 	}
-	return a_Machine.get_memory().mem[a_Address] | a_Machine.get_memory().mem[a_Address + 1] << 8;
+	return a_Machine.memory.mem[a_Address] | a_Machine.memory.mem[a_Address + 1] << 8;
 }
 
 uint16_t inline Machine::read_word_zp(Machine &a_Machine, uint8_t a_Address)
 {
-	return a_Machine.get_memory().mem[a_Address] | a_Machine.get_memory().mem[a_Address + 1 & 0xff] << 8;
+	return a_Machine.memory.mem[a_Address] | a_Machine.memory.mem[a_Address + 1 & 0xff] << 8;
 }
 
 void inline Machine::write_byte(Machine &a_Machine, uint16_t a_Address, uint8_t a_Val)
@@ -260,10 +261,10 @@ void inline Machine::write_byte(Machine &a_Machine, uint16_t a_Address, uint8_t 
 	}
 
 	if (a_Address >= 0x300 && a_Address < 0x400) {
-		a_Machine.get_via().write_byte(a_Address, a_Val);
+		a_Machine.mos_6522->write_byte(a_Address, a_Val);
 	}
 
-	a_Machine.get_memory().mem[a_Address] = a_Val;
+	a_Machine.memory.mem[a_Address] = a_Val;
 }
 
 void inline Machine::write_byte_zp(Machine &a_Machine, uint8_t a_Address, uint8_t a_Val)
@@ -271,16 +272,16 @@ void inline Machine::write_byte_zp(Machine &a_Machine, uint8_t a_Address, uint8_
 	if (a_Address >= 0x00ff) {
 		return;
 	}
-	a_Machine.get_memory().mem[a_Address] = a_Val;
+	a_Machine.memory.mem[a_Address] = a_Val;
 }
 
 
 uint8_t inline Machine::read_via_ora(Machine& a_Machine)
 {
-	return a_Machine.get_via().read_ora();
+	return a_Machine.mos_6522->read_ora();
 }
 
 uint8_t inline Machine::read_via_orb(Machine& a_Machine)
 {
-	return a_Machine.get_via().read_orb();
+	return a_Machine.mos_6522->read_orb();
 }

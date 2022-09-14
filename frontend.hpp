@@ -33,6 +33,7 @@ public:
 	~Frontend();
 
 	void init_graphics();
+	void init_audio();
 	void close_graphics();
 	void update_graphics(uint8_t raster_line, uint8_t* mem);
 	void render_graphics();
@@ -49,6 +50,7 @@ protected:
 	SDL_Surface* sdl_surface;
 	SDL_Renderer* sdl_renderer;
 	SDL_Texture* sdl_texture;
+	SDL_AudioDeviceID audio_device;
 
 	std::vector<uint8_t> pixels;
 	uint8_t video_attrib;

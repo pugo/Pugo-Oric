@@ -44,11 +44,6 @@ public:
 
 	void init(Frontend* frontend);
 	
-	Memory& get_memory() { return memory; }
-	MOS6502& get_cpu() { return *cpu; }
-	MOS6522& get_via() { return *mos_6522; }
-	AY3_8912& get_ay3() { return *ay3; }
-
 	void reset();
 	void run(uint32_t steps, Oric* oric);
 	void run(uint16_t address, long steps, Oric* oric) { cpu->set_pc(address); run(steps, oric); }
@@ -77,19 +72,19 @@ public:
 	static const uint16_t raster_visible_lines = 224;
 	static const uint16_t raster_visible_first = 65;
 	static const uint16_t raster_visible_last = raster_visible_first + raster_visible_lines;
-	
-protected:
-	bool paint_raster(Oric* oric);
 
-	const Oric* oric;
-	Frontend* frontend;
-	
 	MOS6502* cpu;
 	MOS6522* mos_6522;
 	AY3_8912* ay3;
 	bool break_exec;
-
 	Memory memory;
+	Frontend* frontend;
+
+protected:
+	bool paint_raster(Oric* oric);
+
+	const Oric* oric;
+
 	TapeTap* tape;
 
 	bool is_running;

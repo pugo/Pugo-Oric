@@ -82,8 +82,8 @@ short MOS6522::exec(uint8_t a_Cycles)
 	if (a_Cycles == 0) {
 		return 0;
 	}
-
 // 	std::cout << "EXEC cycles: " << (int)a_Cycles << std::endl;
+
 	if (ca2_do_pulse) {
 		ca2 = true;
 		ca2_do_pulse = false;

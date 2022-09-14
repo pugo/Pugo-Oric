@@ -8,16 +8,31 @@
 #include <iostream>
 #include <bitset>
 
-// Registers
-//              0, 1 | Lowest 12 bits = pitch channel A 
-//              2, 3 | Lowest 12 bits = pitch channel B
-//              4, 5 | Lowest 12 bits = pitch channel C
-//                 6 | Lowest 5 bits = pitch of noise channel
-//                 7 | Enablers, bit 6 = port A output/input
-//                 8 | Bit 3, 4, 5 = mix noise with ch A, B or C
-//                   | Bit 0, 1, 2 = enable ch A, B, C
-// 9, 10, 11, 12, 13 | Channel amplitudes
-//                14 | I/O port A
+//                                     |   7  |   6  |   5  |   4  |   3  |   2  |   1  |   0  |
+//     0     Channel A Tone Period     |                  8 bit fine tune A                    |
+//     1                               |                           |        coarse tune A      |
+//     2     Channel B Tone Period     |                  8 bit fine tune B                    |
+//     3                               |                           |        coarse tune B      |
+//     4     Channel C Tone Period     |                  8 bit fine tune C                    |
+//     5                               |                           |        coarse tune C      |
+//     6     Noise Period              |                    |       5 bit period control       |
+//     7     Enable (inv)              |    IN~/OUT  |       Noise~       |        Tone~       |
+//                                     |  IOB |  IOA |   C  |   B  |   A  |   C  |   B  |   A  |
+//     8     Channel A Amplitude       |                    |   M  |  L3  |  L2  |  L1  |  L0  |
+//     9     Channel B Amplitude       |                    |   M  |  L3  |  L2  |  L1  |  L0  |
+//     A     Channel C Amplitude       |                    |   M  |  L3  |  L2  |  L1  |  L0  |
+//     B     Envelope Period           |                  8 bit fine tune E                    |
+//     C                               |                  8 bit Coarse tune E                  |
+//     D     Envelope shape/cycle      |                           | CONT |  ATT |  ALT | HOLD |
+//     E     IO Port A Data Store      |                8 bit parallel IO on port A            |
+//     F     IO Port B Data Store      |                8 bit parallel IO on port B            |
+
+
+// BDIR   BC2   BC1
+//   0     1     0     Inactive
+//   0     1     1     Read from PSG
+//   1     1     0     Write to PSG
+//   1     1     1     Latch address
 
 using namespace std;
 
@@ -55,17 +70,28 @@ void AY3_8912::set_bdir(bool value)
 	if (bdir != value) {
 		bdir = value;
 		if (bdir) {
-			if (bc1) {
+			if (bc1) {  // 1 1 0
 				uint8_t new_curr = m_read_data_handler(machine);
 				if (new_curr < NUM_REGS) {
 					current_register = new_curr;
 				}
 			}
-			else {
+			else {      // 1 1 1
 				registers[current_register] = m_read_data_handler(machine);
 			}
 		}
+		else {
+			if (bc1) {  // 0 1 1
+				std::cout << "---- read AY" << std::endl;
+			}
+		}
 	}
+
+	std::cout << "AY3_8912 regs: " << std::hex <<
+  	  (int)registers[0] << " " << (int)registers[1] << " " << (int)registers[2] << " " << (int)registers[3] << " " <<
+ 	  (int)registers[4] << " " << (int)registers[5] << " " << (int)registers[6] << " " << (int)registers[7] << " " <<
+	  (int)registers[8] << " " << (int)registers[9] << " " << (int)registers[10] << " " << (int)registers[11] << " " <<
+     (int)registers[12] << " " << (int)registers[13] << " " << (int)registers[14] << " " << (int)registers[15] << " " << std::endl;
 }
 
 void AY3_8912::set_bc1(bool value)
@@ -80,15 +106,15 @@ void AY3_8912::set_bc2(bool value)
 
 
 void AY3_8912::set_bdir(Machine& machine, bool a_Value) {
-	machine.get_ay3().set_bdir(a_Value);
+	machine.ay3->set_bdir(a_Value);
 }
 
 void AY3_8912::set_bc1(Machine& machine, bool a_Value)
 {
-	machine.get_ay3().set_bc1(a_Value);
+	machine.ay3->set_bc1(a_Value);
 }
 
 void AY3_8912::set_bc2(Machine& machine, bool a_Value)
 {
-	machine.get_ay3().set_bc2(a_Value);
+	machine.ay3->set_bc2(a_Value);
 }
