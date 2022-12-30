@@ -11,24 +11,27 @@ Frontend::Frontend(const Oric* oric) :
 	sdl_surface(NULL),
 	sdl_renderer(NULL),
 	video_attrib(0),
-	text_attrib(0)
+	text_attrib(0),
+    sound_frequency(440),
+    sound_high(0),
+    sound_samples_played(0)
 {
 	pixels = std::vector<uint8_t>(texture_width * texture_height * texture_bpp, 0);
 }
 
 Frontend::~Frontend()
 {
+    close_graphics();
+    close_sound();
+    close_sdl();
 }
 
-void Frontend::init_graphics()
+bool Frontend::init_graphics()
 {
-	// Initialization flag
-	bool success = true;
-
 	// Initialize SDL
 	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
 		std::cout << "SDL could not initialize! SDL_Error: " << SDL_GetError() << std::endl;
-		success = false;
+        return false;
 	}
 	else {
 		// Set texture filtering to linear
@@ -40,14 +43,14 @@ void Frontend::init_graphics()
 		sdl_window = SDL_CreateWindow("Pugo-Oric", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 600, 600, SDL_WINDOW_SHOWN);
 		if (sdl_window == NULL) {
 			std::cout << "Window could not be created! SDL_Error: " << SDL_GetError() << std::endl;
-			success = false;
+            return false;
 		}
 		else {
 			// Create renderer for window
 			sdl_renderer = SDL_CreateRenderer(sdl_window, -1, SDL_RENDERER_ACCELERATED);
 			if (sdl_renderer == NULL) {
 				std::cout <<  "Renderer could not be created! SDL Error: " << SDL_GetError() << std::endl;
-				success = false;
+                return false;
 			}
 			else {
 				SDL_RendererInfo info;
@@ -56,8 +59,11 @@ void Frontend::init_graphics()
 					std::cout << SDL_GetPixelFormatName( info.texture_formats[i] ) << std::endl;
 				}
 
-				sdl_texture = SDL_CreateTexture(sdl_renderer, SDL_PIXELFORMAT_ARGB8888,
-														  SDL_TEXTUREACCESS_STREAMING, texture_width, texture_height);
+				sdl_texture = SDL_CreateTexture(sdl_renderer,
+                                                SDL_PIXELFORMAT_ARGB8888,
+                                                SDL_TEXTUREACCESS_STREAMING,
+                                                texture_width,
+                                                texture_height);
 
 				// Initialize renderer color
 				SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0xff, 0xff, 0xff);
@@ -65,7 +71,94 @@ void Frontend::init_graphics()
 			}
 		}
 	}
+
+    return true;
 }
+
+
+void Frontend::close_graphics()
+{
+    //Destroy window
+    SDL_DestroyWindow(sdl_window);
+    sdl_window = NULL;
+}
+
+
+void audio_callback(void* user_data, uint8_t* raw_buffer, int len)
+{
+    std::cout << "audio_callback" << std::endl;
+
+    Frontend* frontend = (Frontend*)user_data;
+    Sint16* buffer = (Sint16*)raw_buffer;
+
+    for(int i = 0; i < (len / 2); ++i, ++frontend->sound_samples_played)
+    {
+        if ((frontend->sound_samples_played % 100) == 0) {
+            frontend->sound_high = !frontend->sound_high;
+        }
+
+//        double time = (double)frontend->sound_samples_played / 44100.0;
+        buffer[i] = (Sint16)28000 * frontend->sound_high;
+    }
+}
+
+
+bool Frontend::init_sound()
+{
+    std::cout << "Initializing sound.." << std::endl;
+
+    if(SDL_Init(SDL_INIT_AUDIO) < 0)
+    {
+        std::cout << "Error: failed initializing SDL: " << SDL_GetError() << std::endl;
+        return false;
+    }
+
+    SDL_AudioSpec audio_spec_want, audio_spec;
+    SDL_memset(&audio_spec_want, 0, sizeof(audio_spec_want));
+
+    audio_spec_want.freq     = 44100;
+    audio_spec_want.format   = AUDIO_S16SYS;
+    audio_spec_want.channels = 1;
+    audio_spec_want.samples  = 2048;
+    audio_spec_want.callback = audio_callback;
+    audio_spec_want.userdata = (void*) this;
+
+    sound_audio_device_id = SDL_OpenAudioDevice(NULL,
+                                                0,
+                                                &audio_spec_want,
+                                                &audio_spec,
+                                                SDL_AUDIO_ALLOW_FORMAT_CHANGE);
+
+    if(!sound_audio_device_id)
+    {
+        std::cout << "Error: creating SDL audio device: " << SDL_GetError() << std::endl;
+        return false;
+    }
+
+    if (audio_spec_want.format != audio_spec.format) {
+        SDL_LogError(SDL_LOG_CATEGORY_AUDIO, "Failed to get the desired AudioSpec");
+    }
+
+    SDL_Delay(100); // wait while sound is playing
+    SDL_PauseAudioDevice(sound_audio_device_id, 0);
+    SDL_Delay(2000); // wait while sound is playing
+    SDL_PauseAudioDevice(sound_audio_device_id, 1);
+
+    return true;
+}
+
+
+void Frontend::close_sound()
+{
+    SDL_CloseAudioDevice(sound_audio_device_id);
+}
+
+
+void Frontend::close_sdl()
+{
+    SDL_Quit(); // Quit all SDL subsystems
+}
+
 
 // Return memory address corresponding to a raster line, for current video mode.
 inline uint16_t calcRowAddr(uint8_t a_RasterLine, uint8_t a_VideoAttrib)
@@ -150,15 +243,5 @@ void Frontend::render_graphics()
 	SDL_UpdateTexture(sdl_texture, NULL, &pixels[0], texture_width * texture_bpp);
 	SDL_RenderCopy(sdl_renderer, sdl_texture, NULL, NULL );
 	SDL_RenderPresent(sdl_renderer);
-}
-
-void Frontend::close_graphics()
-{
-	//Destroy window
-	SDL_DestroyWindow(sdl_window);
-	sdl_window = NULL;
-
-	//Quit SDL subsystems
-	SDL_Quit();
 }
 

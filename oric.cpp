@@ -20,18 +20,25 @@ Oric::Oric() :
 {
 }
 
+
 void Oric::init()
 {
 	machine = new Machine(this);
 	frontend = new Frontend(this);
+
 	machine->init(frontend);
 	frontend->init_graphics();
+    frontend->init_sound();
 
 	machine->get_cpu().set_quiet(true);
 }
 
+
 Oric::~Oric()
-{}
+{
+    delete machine;
+    delete frontend;
+}
 
 
 void Oric::run()
@@ -56,10 +63,12 @@ void Oric::run()
 	}
 }
 
+
 void Oric::do_break()
 {
 	state = STATE_MON;
 }
+
 
 uint16_t Oric::string_to_word(std::string& a_Addr)
 {
@@ -69,6 +78,7 @@ uint16_t Oric::string_to_word(std::string& a_Addr)
 	ss >> x;
 	return x;
 }
+
 
 Oric::State Oric::handle_command(std::string& a_Cmd)
 {
@@ -155,6 +165,7 @@ Oric::State Oric::handle_command(std::string& a_Cmd)
 	return STATE_MON;
 }
 
+
 static void signal_handler(int);
 void init_signals(void);
 
@@ -169,6 +180,7 @@ static void signal_handler(int a_Sig)
 	}
 }
 
+
 void init_signals()
 {
 	sigact.sa_handler = signal_handler;
@@ -176,6 +188,7 @@ void init_signals()
 	sigact.sa_flags = 0;
 	sigaction(SIGINT, &sigact, (struct sigaction *)NULL);
 }
+
 
 int main(int argc, char *argv[])
 {

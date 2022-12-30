@@ -58,11 +58,11 @@ void Machine::init(Frontend* frontend)
 	mos_6522 = new MOS6522(*this);
 	ay3 = new AY3_8912(*this);
 
-//    m_Tape = new TapeTap(*m_Mos_6522, "taps/Xenon1.tap");
-//    m_Tape = new TapeTap(*m_Mos_6522, "taps/WIMPY.TAP");
-//    m_Tape = new TapeTap(*m_Mos_6522, "taps/hunchbk.tap");
-   tape = new TapeTap(*mos_6522, "taps/Oricium12.tap");
-//    m_Tape = new TapeTap(*m_Mos_6522, "taps/SCUBA");
+//    tape = new TapeTap(*mos_6522, "taps/Xenon1.tap");
+//    tape = new TapeTap(*mos_6522, "taps/WIMPY.TAP");
+    tape = new TapeTap(*mos_6522, "taps/HUNCHBACK");
+//   tape = new TapeTap(*mos_6522, "taps/Oricium12.tap");
+//    tape = new TapeTap(*mos_6522, "taps/SCUBA");
     if (!tape->init()) {
         exit(1);
     }
