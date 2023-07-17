@@ -75,6 +75,7 @@ protected:
 	SDL_Surface* sdl_surface;
 	SDL_Renderer* sdl_renderer;
 	SDL_Texture* sdl_texture;
+	SDL_AudioDeviceID audio_device;
 
 	std::vector<uint8_t> pixels;
 	uint8_t video_attrib;
