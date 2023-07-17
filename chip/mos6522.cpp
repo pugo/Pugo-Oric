@@ -1,4 +1,19 @@
-// Copyright (C) 2009-2018 by Anders Piniesjö <pugo@pugo.org>
+// =========================================================================
+//   Copyright (C) 2009-2023 by Anders Piniesjö <pugo@pugo.org>
+//
+//   This program is free software: you can redistribute it and/or modify
+//   it under the terms of the GNU General Public License as published by
+//   the Free Software Foundation, either version 3 of the License, or
+//   (at your option) any later version.
+//
+//   This program is distributed in the hope that it will be useful,
+//   but WITHOUT ANY WARRANTY; without even the implied warranty of
+//   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//   GNU General Public License for more details.
+//
+//   You should have received a copy of the GNU General Public License
+//   along with this program.  If not, see <http://www.gnu.org/licenses/>
+// =========================================================================
 
 #include <iostream>
 
@@ -16,6 +31,20 @@
 #include <bitset>
 
 using namespace std;
+
+// VIA Lines        Oric usage
+// ----------       ---------------------------------
+// PA0..PA7         PSG data bus, printer data lines
+// CA1              printer acknowledge line
+// CA2              PSG BC1 line
+// PB0..PB2         keyboard lines-demultiplexer
+// PB3              keyboard sense line
+// PB4              printer strobe line
+// PB5              (not connected)
+// PB6              tape connector motor control
+// PB7              tape connector output
+// CB1              tape connector input
+// CB2              PSG BDIR line
 
 // Oric port B:
 // | 7 | 6 | 5 | 4 | 3 | 2 | 1 | 0 |
@@ -177,7 +206,7 @@ uint8_t MOS6522::read_byte(uint16_t a_Offset)
 	{
 	case ORB:
 // 	cout << "Read " << m_RegisterNames[static_cast<Register>(a_Offset & 0x000f)] << endl;
-			irq_clear(IRQ_CB1);
+        irq_clear(IRQ_CB1);
 		switch (pcr & PCR_MASK_CB2) {
 			case 0x00:
 			case 0x40:
@@ -198,7 +227,7 @@ uint8_t MOS6522::read_byte(uint16_t a_Offset)
 		return (orb & ddrb) | (irb & ~ddrb);
 	case ORA:
 // 	cout << "Read " << m_RegisterNames[static_cast<Register>(a_Offset & 0x000f)] << endl;
-			irq_clear(IRQ_CA1);
+        irq_clear(IRQ_CA1);
 		switch (pcr & PCR_MASK_CA2) {
 			case 0x00:
 			case 0x04:
@@ -259,7 +288,7 @@ void MOS6522::write_byte(uint16_t a_Offset, uint8_t a_Value)
 	case ORB:
 // 	cout << "Write " << m_RegisterNames[static_cast<Register>(a_Offset & 0x000f)] << ": " << static_cast<unsigned int>(a_Value) << endl;
 		orb = a_Value;
-			irq_clear(IRQ_CB1);
+        irq_clear(IRQ_CB1);
 		switch (pcr & PCR_MASK_CB2) {
 			case 0x00:
 			case 0x40:
@@ -278,12 +307,12 @@ void MOS6522::write_byte(uint16_t a_Offset, uint8_t a_Value)
 				break;
 		}
 		machine.update_key_output();
-			machine.via_orb_changed(orb);
+		machine.via_orb_changed(orb);
 		break;
 	case ORA:
 // 	cout << "Read " << m_RegisterNames[static_cast<Register>(a_Offset & 0x000f)] << endl;
 		ora = a_Value;
-			irq_clear(IRQ_CA1);
+        irq_clear(IRQ_CA1);
 		switch (pcr & PCR_MASK_CA2) {
 			case 0x00:
 			case 0x04:

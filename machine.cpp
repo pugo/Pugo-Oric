@@ -1,4 +1,19 @@
-// Copyright (C) 2009-2016 by Anders Piniesjö <pugo@pugo.org>
+// =========================================================================
+//   Copyright (C) 2009-2023 by Anders Piniesjö <pugo@pugo.org>
+//
+//   This program is free software: you can redistribute it and/or modify
+//   it under the terms of the GNU General Public License as published by
+//   the Free Software Foundation, either version 3 of the License, or
+//   (at your option) any later version.
+//
+//   This program is distributed in the hope that it will be useful,
+//   but WITHOUT ANY WARRANTY; without even the implied warranty of
+//   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//   GNU General Public License for more details.
+//
+//   You should have received a copy of the GNU General Public License
+//   along with this program.  If not, see <http://www.gnu.org/licenses/>
+// =========================================================================
 
 #include <unistd.h>
 #include <iostream>
@@ -12,6 +27,20 @@
 #include "oric.hpp"
 #include "memory.hpp"
 #include "frontend.hpp"
+
+// VIA Lines        Oric usage
+// ----------       ---------------------------------
+// PA0..PA7         PSG data bus, printer data lines
+// CA1              printer acknowledge line
+// CA2              PSG BC1 line
+// PB0..PB2         keyboard lines-demultiplexer
+// PB3              keyboard sense line
+// PB4              printer strobe line
+// PB5              (not connected)
+// PB6              tape connector motor control
+// PB7              tape connector output
+// CB1              tape connector input
+// CB2              PSG BDIR line
 
 
 static int32_t keytab[] = {
@@ -74,9 +103,18 @@ void Machine::init(Frontend* frontend)
 	cpu->memory_write_byte_handler = write_byte;
 	cpu->memory_write_byte_zp_handler = write_byte_zp;
 
+    // AY data bus reads from VIA ORA (Output Register A).
 	ay3->m_read_data_handler = read_via_ora;
 
+    // CA1 is connected to printer ACK line.
+    // -- printer not supported.
+
+    // CA2 is connected to AY BC1 line.
 	mos_6522->ca2_changed_handler = AY3_8912::set_bc1;
+
+    // CB1 is connected to tape connector input, tape_tap.cpp writes directly to CB1.
+
+    // CB2 is connected to AY BDIR line.
 	mos_6522->cb2_changed_handler = AY3_8912::set_bdir;
 	
 	for (uint8_t i=0; i < 64; ++i) {

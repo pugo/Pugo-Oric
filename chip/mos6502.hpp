@@ -1,6 +1,28 @@
 // =========================================================================
-//   Copyright (C) 2009-2018 by Anders Piniesjö <pugo@pugo.org>
+//   Copyright (C) 2009-2023 by Anders Piniesjö <pugo@pugo.org>
+//
+//   This program is free software: you can redistribute it and/or modify
+//   it under the terms of the GNU General Public License as published by
+//   the Free Software Foundation, either version 3 of the License, or
+//   (at your option) any later version.
+//
+//   This program is distributed in the hope that it will be useful,
+//   but WITHOUT ANY WARRANTY; without even the implied warranty of
+//   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//   GNU General Public License for more details.
+//
+//   You should have received a copy of the GNU General Public License
+//   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
+
+// The 6522 has provision for two eight-bits IO ports (A and B) plus control
+// lines (CA1, CA2, CB1, CB2), interfacing with the other components.
+//
+// Port A is used as a secondary bus : PA0 - PA7 lines connect both to the AY (sound)
+// data bus and to the printer port. AY selection is done thanks to CA2 and CB2 lines.
+//
+// Port B provides many connections to the keyboard, tape, and printer port.
+
 
 #ifndef MOS6502_H
 #define MOS6502_H
