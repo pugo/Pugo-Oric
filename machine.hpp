@@ -30,6 +30,7 @@
 
 class Oric;
 class Frontend;
+class AY3_8912;
 
 typedef std::map<int32_t, uint8_t> KeyMap_t;
 

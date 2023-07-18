@@ -45,7 +45,7 @@ public:
 		BLINKING = 0x04,
 	};
 
-	Frontend(const Oric* oric);
+	Frontend(Oric* oric);
 	~Frontend();
 
     bool init_graphics();
@@ -59,17 +59,13 @@ public:
     void update_graphics(uint8_t raster_line, uint8_t* mem);
 	void render_graphics();
 
-    uint16_t sound_frequency;
-    uint8_t sound_high;
-    uint64_t sound_samples_played;
-
 protected:
 	uint32_t colors[8] {0xff000000, 0xffff0000, 0xff00ff00, 0xffffff00, 0xff0000ff, 0xffff00ff, 0xff00ffff, 0xffffffff};
 	const uint8_t texture_width = 240;
 	const uint8_t texture_height = 224;
 	const uint8_t texture_bpp = 4;
 
-	const Oric* oric;
+	Oric* oric;
 
 	SDL_Window* sdl_window;
 	SDL_Surface* sdl_surface;

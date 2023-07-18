@@ -105,7 +105,7 @@ void Machine::init(Frontend* frontend)
 
     // AY data bus reads from VIA ORA (Output Register A).
 	ay3->m_read_data_handler = read_via_ora;
-//	ay3->m_write_data_handler = write_vi
+    //	ay3->m_write_data_handler = write_vi
 
     // CA1 is connected to printer ACK line.
     // -- printer not supported.

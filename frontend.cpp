@@ -16,20 +16,19 @@
 // =========================================================================
 
 #include "frontend.hpp"
+#include "chip/ay3_8912.hpp"
+#include "oric.hpp"
 
 #include <SDL_image.h>
 
 
-Frontend::Frontend(const Oric* oric) :
+Frontend::Frontend(Oric* oric) :
 	oric(oric),
 	sdl_window(NULL),
 	sdl_surface(NULL),
 	sdl_renderer(NULL),
 	video_attrib(0),
-	text_attrib(0),
-    sound_frequency(440),
-    sound_high(0),
-    sound_samples_played(0)
+	text_attrib(0)
 {
 	pixels = std::vector<uint8_t>(texture_width * texture_height * texture_bpp, 0);
 }
@@ -99,25 +98,6 @@ void Frontend::close_graphics()
 }
 
 
-void audio_callback(void* user_data, uint8_t* raw_buffer, int len)
-{
-    std::cout << "audio_callback" << std::endl;
-
-    Frontend* frontend = (Frontend*)user_data;
-    Sint16* buffer = (Sint16*)raw_buffer;
-
-    for(int i = 0; i < (len / 2); ++i, ++frontend->sound_samples_played)
-    {
-        if ((frontend->sound_samples_played % 100) == 0) {
-            frontend->sound_high = !frontend->sound_high;
-        }
-
-//        double time = (double)frontend->sound_samples_played / 44100.0;
-        buffer[i] = (Sint16)28000 * frontend->sound_high;
-    }
-}
-
-
 bool Frontend::init_sound()
 {
     std::cout << "Initializing sound.." << std::endl;
@@ -135,8 +115,10 @@ bool Frontend::init_sound()
     audio_spec_want.format   = AUDIO_S16SYS;
     audio_spec_want.channels = 1;
     audio_spec_want.samples  = 2048;
-    audio_spec_want.callback = audio_callback;
-    audio_spec_want.userdata = (void*) this;
+//    audio_spec_want.callback = audio_callback;
+    AY3_8912* ay3 = oric->get_machine().ay3;
+    audio_spec_want.callback = ay3->audio_callback;
+    audio_spec_want.userdata = (void*) ay3;
 
     sound_audio_device_id = SDL_OpenAudioDevice(NULL,
                                                 0,
@@ -154,8 +136,8 @@ bool Frontend::init_sound()
         SDL_LogError(SDL_LOG_CATEGORY_AUDIO, "Failed to get the desired AudioSpec");
     }
 
-//    SDL_Delay(100); // wait while sound is playing
-//    SDL_PauseAudioDevice(sound_audio_device_id, 0);
+    SDL_Delay(100); // wait while sound is playing
+    SDL_PauseAudioDevice(sound_audio_device_id, 0);
 //    SDL_Delay(2000); // wait while sound is playing
 //    SDL_PauseAudioDevice(sound_audio_device_id, 1);
 
