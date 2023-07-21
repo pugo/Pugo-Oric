@@ -113,9 +113,8 @@ bool Frontend::init_sound()
 
     audio_spec_want.freq     = 44100;
     audio_spec_want.format   = AUDIO_S16SYS;
-    audio_spec_want.channels = 1;
-    audio_spec_want.samples  = 2048;
-//    audio_spec_want.callback = audio_callback;
+    audio_spec_want.channels = 2;
+    audio_spec_want.samples  = 1024;
     AY3_8912* ay3 = oric->get_machine().ay3;
     audio_spec_want.callback = ay3->audio_callback;
     audio_spec_want.userdata = (void*) ay3;

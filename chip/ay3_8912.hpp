@@ -20,7 +20,6 @@
 
 #include <memory>
 #include <machine.hpp>
-#include <boost/circular_buffer.hpp>
 
 
 typedef uint8_t (*f_read_data_handler)(Machine &oric);
@@ -50,12 +49,6 @@ public:
 		NUM_REGS
 	};
 
-    struct Write {
-        uint32_t cycle;
-        Register reg;
-        uint8_t value;
-    };
-
 	AY3_8912(Machine& machine);
 	~AY3_8912();
 
@@ -73,14 +66,11 @@ public:
 	static void set_bc2(Machine& machine, bool a_Value);
     static void audio_callback(void* user_data, uint8_t* raw_buffer, int len);
 
-
     f_read_data_handler m_read_data_handler;
 	f_write_data_handler m_write_data_handler;
 
-    // Testing...
-    uint64_t sound_frequency;
-    uint8_t sound_high;
-    uint64_t sound_samples_played;
+    uint32_t sound_buffer_index;
+    int16_t sound_buffer[16384];
 
 private:
     inline void write_to_psg(uint8_t value);
@@ -94,12 +84,15 @@ private:
 	uint8_t current_register;
 	uint8_t registers[NUM_REGS];
 
-    uint16_t tone_period[3];
-    uint8_t noise_period;
+    uint16_t channel_tone_period[3];
+    uint16_t channel_counter[3];
+    uint16_t channel_value[3];
+    uint16_t channel_enabled[3];
 
+    uint8_t noise_period;
     uint16_t volumes[3];
 
-    boost::circular_buffer<Write> ay_writes;
+    uint16_t cycle_count;
 };
 
 

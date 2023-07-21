@@ -21,6 +21,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <iostream>
 
 class Machine;
 class Memory;
@@ -82,7 +83,7 @@ public:
 	uint8_t read_byte(uint16_t a_Offset);
 	void write_byte(uint16_t a_Offset, uint8_t a_Value);
 
-	uint8_t read_ora() { return (ora & ddra); }
+    uint8_t read_ora() { return (ora & ddra); }
 	uint8_t read_orb() { return (orb & ddrb); }
 	
 	void set_irb_bit(const uint8_t a_Bit, const bool a_Value);

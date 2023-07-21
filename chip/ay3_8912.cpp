@@ -78,13 +78,10 @@ using namespace std;
 AY3_8912::AY3_8912(Machine& machine) :
 	machine(machine),
 	m_read_data_handler(nullptr),
-    ay_writes(32768),
-    sound_frequency(30),
-    sound_high(0),
-    sound_samples_played(0)
+    cycle_count(0),
+    sound_buffer_index(0)
 {
 	reset();
-    std::cout << "AY3_8912 writes buffer size: " << ay_writes.capacity() << std::endl;
 }
 
 AY3_8912::~AY3_8912()
@@ -96,20 +93,53 @@ void AY3_8912::reset()
 	bc1 = false;
 	bc2 = false;
 	current_register = 0;
+    cycle_count = 0;
+    sound_buffer_index = 0;
 
     // Reset all registers.
 	for (auto& i : registers) { i = 0; }
 
     // Reset all tone and noise periods.
-    for (auto& tp : tone_period) { tp = 0; }
+    for (auto& tp : channel_tone_period) { tp = 0; }
+    for (auto& cc : channel_counter) { cc = 0; }
+    for (auto& cv : channel_value) { cv = 0; }
+    for (auto& ce : channel_enabled) { ce = 0; }
+
     noise_period = 0;
 
     for (auto& v : volumes) { v = 0; }
 }
 
+#define CYCLES_PER_SAMPLE (1000000 / 44100)
+
 short AY3_8912::exec(uint8_t cycles)
 {
     while (cycles) {
+        for (uint8_t channel = 0; channel < 3; channel++) {
+            channel_counter[channel]++;
+            if (channel_counter[channel] >= channel_tone_period[channel]) {
+                channel_counter[channel] = 0;
+                channel_value[channel] ^= 1;
+            }
+        }
+
+        if (++cycle_count >= CYCLES_PER_SAMPLE) {
+            int32_t out = 0;
+
+            for (uint8_t channel = 0; channel < 3; channel++) {
+                out += channel_enabled[channel] * channel_value[channel] * volumes[channel];
+            }
+
+            out /= 3;
+            out -= 8192;
+
+            if ((sound_buffer_index + 2) < 2048) {
+                sound_buffer[sound_buffer_index++] = out;
+                sound_buffer[sound_buffer_index++] = out;
+            }
+            cycle_count = 0;
+        }
+
         --cycles;
     }
 
@@ -140,67 +170,67 @@ void AY3_8912::set_bdir(bool value)
         }
 	}
 
-//	std::cout << "AY3_8912 regs: " << std::hex <<
-//  	  (int)registers[0] << " " << (int)registers[1] << " " << (int)registers[2] << " " << (int)registers[3] << " " <<
-// 	  (int)registers[4] << " " << (int)registers[5] << " " << (int)registers[6] << " " << (int)registers[7] << " " <<
-//	  (int)registers[8] << " " << (int)registers[9] << " " << (int)registers[10] << " " << (int)registers[11] << " " <<
-//      (int)registers[12] << " " << (int)registers[13] << " " << (int)registers[14] << " " << (int)registers[15] << " " << std::endl;
+	std::cout << "AY3_8912 regs: " << std::hex <<
+  	  (int)registers[0] << " " << (int)registers[1] << " " << (int)registers[2] << " " << (int)registers[3] << " " <<
+ 	  (int)registers[4] << " " << (int)registers[5] << " " << (int)registers[6] << " " << (int)registers[7] << " " <<
+	  (int)registers[8] << " " << (int)registers[9] << " " << (int)registers[10] << " " << (int)registers[11] << " " <<
+      (int)registers[12] << " " << (int)registers[13] << " " << (int)registers[14] << std::endl;
 }
 
 inline void AY3_8912::write_to_psg(uint8_t value)
 {
-    registers[current_register] = value;
 
     switch (current_register) {
         case CH_A_PERIOD_LOW:
         case CH_A_PERIOD_HIGH:
+            registers[current_register] = value;
+            channel_tone_period[0] = (((registers[CH_A_PERIOD_HIGH] & 0x0f) << 8) + registers[CH_A_PERIOD_LOW]) * 8;
+            if (channel_tone_period[0] == 0) { channel_tone_period[0] = 1; }
+            break;
         case CH_B_PERIOD_LOW:
         case CH_B_PERIOD_HIGH:
+            registers[current_register] = value;
+            channel_tone_period[1] = (((registers[CH_B_PERIOD_HIGH] & 0x0f) << 8) + registers[CH_B_PERIOD_LOW]) * 8;
+            if (channel_tone_period[1] == 0) { channel_tone_period[1] = 1; }
+            break;
         case CH_C_PERIOD_LOW:
         case CH_C_PERIOD_HIGH:
+            registers[current_register] = value;
+            channel_tone_period[2] = (((registers[CH_C_PERIOD_HIGH] & 0x0f) << 8) + registers[CH_C_PERIOD_LOW]) * 8;
+            if (channel_tone_period[2] == 0) { channel_tone_period[2] = 1; }
+            break;
+
         case NOICE_PERIOD:
+            registers[current_register] = value;
+            noise_period = value;
+            break;
+
         case ENABLE:
+            registers[current_register] = value;
+            channel_enabled[0] = (value & 0x01) ? 0 : 1;
+            channel_enabled[1] = (value & 0x02) ? 0 : 1;
+            channel_enabled[2] = (value & 0x04) ? 0 : 1;
+            break;
+
         case CH_A_AMPLITUDE:
-        case CH_B_AMPLITUDE:
-        case CH_C_AMPLITUDE:
-            struct Write write = {1, static_cast<Register>(current_register), value};
-            ay_writes.push_back(write);
-            std::cout << "-- ay writes now: " << ay_writes.size() << std::endl;
-            std::cout << "  -- end value: " << (int)ay_writes.back().cycle << ", " << (int)ay_writes.back().reg << ", " << (int)ay_writes.back().value << std::endl;
-    };
-
-//    switch (current_register) {
-//        case CH_A_PERIOD_LOW:
-//        case CH_A_PERIOD_HIGH:
-//            tone_period[0] = ((registers[CH_A_PERIOD_HIGH] << 8) | registers[CH_A_PERIOD_LOW]) * 8;
-//            break;
-//        case CH_B_PERIOD_LOW:
-//        case CH_B_PERIOD_HIGH:
-//            tone_period[1] = ((registers[CH_B_PERIOD_HIGH] << 8) | registers[CH_B_PERIOD_LOW]) * 8;
-//            break;
-//        case CH_C_PERIOD_LOW:
-//        case CH_C_PERIOD_HIGH:
-//            tone_period[2] = ((registers[CH_C_PERIOD_HIGH] << 8) | registers[CH_C_PERIOD_LOW]) * 8;
-//            break;
-//
-//        case NOICE_PERIOD:
-//            noise_period = value;
-//            break;
-//
-//        case ENABLE:
-//            break;
-//
-//        case CH_A_AMPLITUDE:
+            registers[current_register] = value;
 //            volumes[0] = (value & 0x10) ? 0xffff : (((uint16_t)value & 0x0f) << 12);
-//            break;
-//        case CH_B_AMPLITUDE:
+            volumes[0] = ((uint16_t)value & 0x0f) << 12;
+            break;
+        case CH_B_AMPLITUDE:
+            registers[current_register] = value;
 //            volumes[1] = (value & 0x10) ? 0xffff : (((uint16_t)value & 0x0f) << 12);
-//            break;
-//        case CH_C_AMPLITUDE:
+            volumes[1] = ((uint16_t)value & 0x0f) << 12;
+            break;
+        case CH_C_AMPLITUDE:
+            registers[current_register] = value;
 //            volumes[2] = (value & 0x10) ? 0xffff : (((uint16_t)value & 0x0f) << 12);
-//            break;
-//    };
-
+            volumes[2] = ((uint16_t)value & 0x0f) << 12;
+            break;
+        case IO_PORT_A:
+            registers[current_register] = value;
+            break;
+    };
 }
 
 
@@ -231,24 +261,29 @@ void AY3_8912::set_bc2(Machine& machine, bool a_Value)
 }
 
 
-
-
 void AY3_8912::audio_callback(void* user_data, uint8_t* raw_buffer, int len)
 {
-    AY3_8912* f = (AY3_8912*)user_data;
-    Sint16* buffer = (Sint16*)raw_buffer;
+    AY3_8912* ay = (AY3_8912*)user_data;
+    uint16_t* buffer = (uint16_t*)raw_buffer;
 
-    std::cout << "audio_callback: "  << len << ", " << std::dec <<  (int) f->sound_frequency << ", " << (int) f->sound_high << std::endl;
+    uint16_t samples = len/2;
 
-    for (int i=0; i < (len / 2); ++i, ++f->sound_samples_played)
-    {
-        if ((f->sound_samples_played % f->sound_frequency) == 0) {
-            f->sound_high = !f->sound_high;
-        }
+    std::cout << "-- underrun? Want: " << std::dec << (int)samples << ", got: " <<  (int)ay->sound_buffer_index*2 << std::endl;
+//    if (samples > ay->sound_buffer_index*2) {
+//        std::cout << "-- underrun" << std::endl;
+//    }
 
-//        double time = (double)frontend->sound_samples_played / 44100.0;
-        buffer[i] = (Sint16)28000 * f->sound_high;
+//    if (len > 2048*2) { len = 2048*2; }
+    memcpy(buffer, ay->sound_buffer, len);
+
+//    if (ay->sound_buffer_index * 2 > len) {
+    int16_t rest_bytes = ay->sound_buffer_index * 2 - len;
+    if (rest_bytes > 0) {
+        memcpy(ay->sound_buffer, ay->sound_buffer + len, rest_bytes);
+        ay->sound_buffer_index -= samples;
     }
-
-    if (f->sound_frequency++ >= 100) f->sound_frequency = 30;
+    else {
+        ay->sound_buffer_index = 0;
+    }
+//    }
 }
