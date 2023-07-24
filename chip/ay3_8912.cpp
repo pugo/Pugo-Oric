@@ -170,11 +170,11 @@ void AY3_8912::set_bdir(bool value)
         }
 	}
 
-	std::cout << "AY3_8912 regs: " << std::hex <<
-  	  (int)registers[0] << " " << (int)registers[1] << " " << (int)registers[2] << " " << (int)registers[3] << " " <<
- 	  (int)registers[4] << " " << (int)registers[5] << " " << (int)registers[6] << " " << (int)registers[7] << " " <<
-	  (int)registers[8] << " " << (int)registers[9] << " " << (int)registers[10] << " " << (int)registers[11] << " " <<
-      (int)registers[12] << " " << (int)registers[13] << " " << (int)registers[14] << std::endl;
+//	std::cout << "AY3_8912 regs: " << std::hex <<
+//  	  (int)registers[0] << " " << (int)registers[1] << " " << (int)registers[2] << " " << (int)registers[3] << " " <<
+// 	  (int)registers[4] << " " << (int)registers[5] << " " << (int)registers[6] << " " << (int)registers[7] << " " <<
+//	  (int)registers[8] << " " << (int)registers[9] << " " << (int)registers[10] << " " << (int)registers[11] << " " <<
+//      (int)registers[12] << " " << (int)registers[13] << " " << (int)registers[14] << std::endl;
 }
 
 inline void AY3_8912::write_to_psg(uint8_t value)
@@ -268,7 +268,7 @@ void AY3_8912::audio_callback(void* user_data, uint8_t* raw_buffer, int len)
 
     uint16_t samples = len/2;
 
-    std::cout << "-- underrun? Want: " << std::dec << (int)samples << ", got: " <<  (int)ay->sound_buffer_index*2 << std::endl;
+//    std::cout << "-- underrun? Want: " << std::dec << (int)samples << ", got: " <<  (int)ay->sound_buffer_index*2 << std::endl;
 //    if (samples > ay->sound_buffer_index*2) {
 //        std::cout << "-- underrun" << std::endl;
 //    }

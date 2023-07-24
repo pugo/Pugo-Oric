@@ -89,8 +89,8 @@ void Machine::init(Frontend* frontend)
 
 //    tape = new TapeTap(*mos_6522, "taps/Xenon1.tap");
 //    tape = new TapeTap(*mos_6522, "taps/WIMPY.TAP");
-//    tape = new TapeTap(*mos_6522, "taps/HUNCHBACK");
-   tape = new TapeTap(*mos_6522, "taps/Oricium12.tap");
+    tape = new TapeTap(*mos_6522, "taps/HUNCHBACK");
+//   tape = new TapeTap(*mos_6522, "taps/Oricium12.tap");
 //    tape = new TapeTap(*mos_6522, "taps/SCUBA");
     if (!tape->init()) {
         exit(1);
