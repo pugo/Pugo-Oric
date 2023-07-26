@@ -53,6 +53,13 @@ static int32_t keytab[] = {
 	'y'        , 'h'        , 'g'        , 'e'        , 0          , 'a'        , 's'        , 'w'        ,
 	'8'        , 'l'        , '0'        , '/'        , SDLK_RSHIFT, SDLK_RETURN, 0          , SDLK_EQUALS };
 
+
+constexpr uint8_t cycles_per_raster = 64;
+constexpr uint16_t raster_max = 312;
+constexpr uint16_t raster_visible_lines = 224;
+constexpr uint16_t raster_visible_first = 65;
+constexpr uint16_t raster_visible_last = raster_visible_first + raster_visible_lines;
+
 	
 Machine::Machine(const Oric* oric) :
 	oric(oric),
@@ -137,87 +144,85 @@ void Machine::reset()
 void Machine::run(uint32_t steps, Oric* oric)
 {
 	uint32_t instructions = 0;
-
-	uint32_t now = SDL_GetTicks();
-	uint64_t next_frame = static_cast<uint64_t>(now) * 1000;
+	uint64_t next_frame = SDL_GetTicks64();
 	SDL_Event event;
 
 	break_exec = false;
 	while (! break_exec) {
-		int32_t cycles = cycles_per_raster;
+		int8_t cycles = cycles_per_raster;
 
-		while (cycles > 0) {
-			const uint8_t ran = cpu->exec_instruction(break_exec);
-			cycles -= ran;
+        while (cycles > 0) {
+            const uint8_t ran = cpu->exec_instruction(break_exec);
+            cycles -= ran;
 
-			tape->exec(ran);
-			mos_6522->exec(ran);
-			ay3->exec(ran);
+            update_key_output();
 
-			update_key_output();
+            tape->exec(ran);
+            mos_6522->exec(ran);
+            ay3->exec(ran);
 
-			if (steps > 0 && ++instructions == steps) {
-				return;
-			}
-		}
 
-		while (SDL_PollEvent(&event)) {
-			// We are only worried about SDL_KEYDOWN and SDL_KEYUP events.
-			switch (event.type)
-			{
-				case SDL_KEYDOWN:
-				case SDL_KEYUP:
-				{
-//					std::cout << "sym: " << event.key.keysym.sym << ", shifted: " << event.key.keysym.mod  << std::endl;
-					auto sym = event.key.keysym.sym;
-
-					if (event.key.keysym.sym == SDLK_F12 && event.type == SDL_KEYDOWN) {
-						warpmode_on = !warpmode_on;
-						std::cout << "Warp mode: " << (warpmode_on ? "on" : "off") << std::endl;
-						if (! warpmode_on) {
-							now = SDL_GetTicks();
-							next_frame = static_cast<uint64_t>(now) * 1000;
-						}
-					}
-
-				 	auto trans = key_translations.find(std::make_pair(sym, event.key.keysym.mod));
-					if (trans != key_translations.end()) {
-//						std::cout << "translated '" << trans->first.first << "' to '" << trans->second.first << "'" << std::endl;
-						sym = trans->second.first;
-					}
-
-					auto key = key_map.find(sym);
-					if (key != key_map.end()) {
-//						printf( "Key event detected: %d (%s): %d\n", event.key.keysym.sym, ((event.type == SDL_KEYDOWN) ? "down" : "up"), key->second);
-						key_press(key->second, event.type == SDL_KEYDOWN);
-					}
-					break;
-				}
-	 			default:
-			 		break;
-			}
-		}
+            if (steps > 0 && ++instructions == steps) {
+                return;
+            }
+        }
 
 		if (paint_raster(oric)) {
-			next_frame += 20000;
-			const uint32_t future = static_cast<uint32_t>(next_frame/1000);
-			now = SDL_GetTicks();
+            while (SDL_PollEvent(&event)) {
+                // We are only worried about SDL_KEYDOWN and SDL_KEYUP events.
+                switch (event.type)
+                {
+                    case SDL_KEYDOWN:
+                    case SDL_KEYUP:
+                    {
+//					std::cout << "sym: " << event.key.keysym.sym << ", shifted: " << event.key.keysym.mod  << std::endl;
+                        auto sym = event.key.keysym.sym;
+
+                        if (event.key.keysym.sym == SDLK_F12 && event.type == SDL_KEYDOWN) {
+                            warpmode_on = !warpmode_on;
+                            std::cout << "Warp mode: " << (warpmode_on ? "on" : "off") << std::endl;
+                            if (! warpmode_on) {
+                                next_frame = SDL_GetTicks64();
+                            }
+                        }
+
+                        auto trans = key_translations.find(std::make_pair(sym, event.key.keysym.mod));
+                        if (trans != key_translations.end()) {
+//						std::cout << "translated '" << trans->first.first << "' to '" << trans->second.first << "'" << std::endl;
+                            sym = trans->second.first;
+                        }
+
+                        auto key = key_map.find(sym);
+                        if (key != key_map.end()) {
+//						printf( "Key event detected: %d (%s): %d\n", event.key.keysym.sym, ((event.type == SDL_KEYDOWN) ? "down" : "up"), key->second);
+                            key_press(key->second, event.type == SDL_KEYDOWN);
+                        }
+                        break;
+                    }
+                    default:
+                        break;
+                }
+            }
+
+			next_frame += 20;
+			uint64_t now = SDL_GetTicks64();
 			
-			if (now > future) {
-				next_frame = static_cast<uint64_t>(now) * 1000;
+			if (now > next_frame) {
+				next_frame = now;
 			}
-			else {
+//			else {
 		 		if (! warpmode_on) {
-					SDL_Delay(future - now);
-			 	}
-			}
+//                    std::cout << "delay: " << (int)(next_frame - now) << std::endl;
+					SDL_Delay(next_frame - now);
+                }
+//			}
 		}
 	}
 }
 
-bool Machine::paint_raster(Oric* oric)
+inline bool Machine::paint_raster(Oric* oric)
 {
-	if (raster_current >= raster_visible_first && raster_current < raster_visible_last) {
+	if ((raster_current >= raster_visible_first) && (raster_current < raster_visible_last)) {
 		frontend->update_graphics(raster_current - raster_visible_first, memory.mem);
 	}
 	
@@ -232,17 +237,18 @@ bool Machine::paint_raster(Oric* oric)
 
 void Machine::key_press(uint8_t a_KeyBits, bool a_Down)
 {
-	std::cout << "key: " << (int)a_KeyBits << ", " << (a_Down ? "down" : "up") << std::endl;
+//	std::cout << "key: " << (int)a_KeyBits << ", " << (a_Down ? "down" : "up") << std::endl;
 	if (a_Down) {
 		key_rows[a_KeyBits >> 3] |= (1 << (a_KeyBits & 0x07));
 	}
 	else {
 		key_rows[a_KeyBits >> 3] &= ~(1 << (a_KeyBits & 0x07));
 	}
-	
-	if (current_key_row == (a_KeyBits >> 3)) {
-		update_key_output();
-	}
+
+    // ???
+//	if (current_key_row == (a_KeyBits >> 3)) {
+//		update_key_output();
+//	}
 }
 
 void Machine::update_key_output()
@@ -260,7 +266,10 @@ void Machine::update_key_output()
 
 void Machine::via_orb_changed(uint8_t a_Orb)
 {
-	tape->set_motor(a_Orb & 0x40);
+    bool motor_on = a_Orb & 0x40;
+    if (motor_on != tape->do_run_motor) {
+        tape->set_motor(motor_on);
+    }
 }
 
 
@@ -281,9 +290,6 @@ uint8_t inline Machine::read_byte_zp(Machine &a_Machine, uint8_t a_Address)
 
 uint16_t inline Machine::read_word(Machine &a_Machine, uint16_t a_Address)
 {
-// 	if (a_Address >= 0x300 && a_Address < 0x400) {
-// 		std::cout << "read word: " << std::hex << a_Address << std::endl;
-// 	}
 	return a_Machine.memory.mem[a_Address] | a_Machine.memory.mem[a_Address + 1] << 8;
 }
 

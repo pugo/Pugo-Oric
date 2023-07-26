@@ -76,7 +76,7 @@ public:
 	void PrintStat(uint16_t address);
 
 	bool exec_instruction_cycles(int16_t cycles);
-	short exec_instruction(bool& a_Brk);
+    uint8_t exec_instruction(bool& a_Brk);
 
 	// Registers
 	uint8_t A;
@@ -97,7 +97,8 @@ public:
 	bool C; // carry
 
 	void NMI();
-	void IRQ();
+	void irq();
+    void irq_clear();
 
 	int inline signed_byte_to_int(uint8_t b);
 

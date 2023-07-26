@@ -200,6 +200,7 @@ void TapeTap::set_motor(bool motor_on)
     if (motor_on == do_run_motor) {
         return;
     }
+    std::cout << "set motor: " << (motor_on ? "on" : "off") << std::endl;
 
 	do_run_motor = motor_on;
 

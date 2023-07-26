@@ -38,12 +38,17 @@
 
 // Direct assigning versions with page check
 #define PAGECHECK(n) (((addr + n) & 0xff00) != (addr & 0xff00))
+#define PAGECHECK2(a, b) ((a & 0xff00) != (b & 0xff00))
+
 #define PAGECHECKED_READ_ADDR_ABS_X  addr = READ_ADDR_ABS(); extra += PAGECHECK(X) ? 1 : 0; addr += X;
 #define PAGECHECKED_READ_ADDR_ABS_Y  addr = READ_ADDR_ABS(); extra += PAGECHECK(Y) ? 1 : 0; addr += Y;
 
+
 #define READ_ADDR_IND_X()   (memory_read_word_zp_handler(machine, READ_BYTE_IMM() + X))
 #define READ_ADDR_IND_Y()   (memory_read_word_zp_handler(machine, READ_BYTE_IMM()) + Y)
+
 #define PAGECHECKED_READ_ADDR_IND_Y  addr = memory_read_word_zp_handler(machine, READ_BYTE_IMM()); extra += PAGECHECK(Y) ? 1 : 0; addr += Y;
+#define PAGECHECK_JUMP extra += PAGECHECK2(PC, pc_initial) ? 1 : 0;
 
 #define READ_JUMP_ADDR()    (b1 = READ_BYTE_IMM(), b1 & 0x80 ? (PC - ((b1 ^ 0xff)+1)) : (PC + b1))
 
@@ -200,9 +205,14 @@ void MOS6502::NMI()
     I = true;
 }
 
-void MOS6502::IRQ()
+void MOS6502::irq()
 {
     irq_flag = true;
+}
+
+void MOS6502::irq_clear()
+{
+    irq_flag = false;
 }
 
 void MOS6502::handle_irq()
@@ -290,7 +300,7 @@ bool MOS6502::exec_instruction_cycles(int16_t cycles)
     return !brk;
 }
 
-short MOS6502::exec_instruction(bool& a_Brk)
+uint8_t MOS6502::exec_instruction(bool& a_Brk)
 {
     if (irq_flag) {
         handle_irq();
@@ -539,7 +549,7 @@ short MOS6502::exec_instruction(bool& a_Brk)
             SET_FLAG_NZ(A &= memory_read_byte_handler(machine, addr));
             break;
         case AND_ABS_Y:
-            PAGECHECKED_READ_ADDR_ABS_X;
+            PAGECHECKED_READ_ADDR_ABS_Y;
             SET_FLAG_NZ(A &= memory_read_byte_handler(machine, addr));
             break;
         case AND_IND_X:
@@ -736,54 +746,78 @@ short MOS6502::exec_instruction(bool& a_Brk)
 
         // Branches
         case BCC:
-            if (!C)
+            if (!C) {
                 PC = READ_JUMP_ADDR();
+                PAGECHECK_JUMP;
+                ++extra;
+            }
             else
                 ++PC;
             break;
         case BCS:
-            if (C)
+            if (C) {
                 PC = READ_JUMP_ADDR();
+                PAGECHECK_JUMP;
+                ++extra;
+            }
             else
                 ++PC;
             break;
         case BEQ:
-            if (Z)
+            if (Z) {
                 PC = READ_JUMP_ADDR();
+                PAGECHECK_JUMP;
+                ++extra;
+            }
             else
                 ++PC;
             break;
         case BNE:
-            if (!Z)
+            if (!Z) {
                 PC = READ_JUMP_ADDR();
+                PAGECHECK_JUMP;
+                ++extra;
+            }
             else
                 ++PC;
             break;
 
         case BMI:
-            if (N)
+            if (N) {
                 PC = READ_JUMP_ADDR();
+                PAGECHECK_JUMP;
+                ++extra;
+            }
             else
                 ++PC;
             break;
 
         case BPL:
-            if (!N)
+            if (!N) {
                 PC = READ_JUMP_ADDR();
+                PAGECHECK_JUMP;
+                ++extra;
+            }
             else
                 ++PC;
             break;
 
         case BVC:
-            if (!V)
+            if (!V) {
                 PC = READ_JUMP_ADDR();
+                PAGECHECK_JUMP;
+                ++extra;
+            }
             else
                 ++PC;
             break;
 
         case BVS:
-            if (V)
+            if (V) {
                 PC = READ_JUMP_ADDR();
+                PAGECHECK_JUMP;
+                ++extra;
+            }
             else
                 ++PC;
             break;
@@ -987,5 +1021,5 @@ short MOS6502::exec_instruction(bool& a_Brk)
         PrintStat(pc_initial);
     }
 
-    return opcode_cycles[instruction].cycles + extra; // This should include page boundary addition.
+    return opcode_cycles[instruction].cycles + extra;
 }

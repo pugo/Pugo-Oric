@@ -50,8 +50,9 @@ public:
 	void run(uint16_t address, long steps, Oric* oric) { cpu->set_pc(address); run(steps, oric); }
 	void stop() { break_exec = true; }
 
-	void irq() { cpu->IRQ(); }
-	
+	void irq() { cpu->irq(); }
+    void irq_clear() { cpu->irq_clear(); }
+
 	void key_press(uint8_t a_KeyBits, bool a_Down);
 	void update_key_output();
 	void via_orb_changed(uint8_t a_Orb);
@@ -67,12 +68,6 @@ public:
 
 	static uint8_t read_via_ora(Machine& a_Machine);
 	static uint8_t read_via_orb(Machine& a_Machine);
-	
-	static const uint8_t cycles_per_raster = 64;
-	static const uint16_t raster_max = 312;
-	static const uint16_t raster_visible_lines = 224;
-	static const uint16_t raster_visible_first = 65;
-	static const uint16_t raster_visible_last = raster_visible_first + raster_visible_lines;
 
 	MOS6502* cpu;
 	MOS6522* mos_6522;
@@ -82,7 +77,7 @@ public:
 	Frontend* frontend;
 
 protected:
-	bool paint_raster(Oric* oric);
+    inline bool paint_raster(Oric* oric);
 
 	const Oric* oric;
 

@@ -37,6 +37,8 @@ public:
 	void set_motor(bool motor_on);
 	short exec(uint8_t cycles);
 
+    bool do_run_motor;
+
 protected:
     bool read_header();
     uint8_t get_current_bit();
@@ -46,7 +48,6 @@ protected:
     size_t size;
     size_t body_start;
 
-    bool do_run_motor;
     int32_t delay;
     int32_t duplicate_bytes;
 
