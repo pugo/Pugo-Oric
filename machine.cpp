@@ -15,17 +15,14 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
-#include <unistd.h>
 #include <iostream>
 #include <sstream>
 #include <cstdlib>
 #include <vector>
-#include <string>
 #include <boost/assign.hpp>
 
 #include "machine.hpp"
 #include "oric.hpp"
-#include "memory.hpp"
 #include "frontend.hpp"
 
 // VIA Lines        Oric usage
@@ -96,9 +93,10 @@ void Machine::init(Frontend* frontend)
 
 //    tape = new TapeTap(*mos_6522, "taps/Xenon1.tap");
 //    tape = new TapeTap(*mos_6522, "taps/WIMPY.TAP");
-    tape = new TapeTap(*mos_6522, "taps/HUNCHBACK");
+//    tape = new TapeTap(*mos_6522, "taps/HUNCHBACK");
 //   tape = new TapeTap(*mos_6522, "taps/Oricium12.tap");
-//    tape = new TapeTap(*mos_6522, "taps/SCUBA");
+    tape = new TapeTap(*mos_6522, "taps/Scuba.tap");
+//    tape = new TapeTap(*mos_6522, "taps/pulsoids-uk.tap");
     if (!tape->init()) {
         exit(1);
     }

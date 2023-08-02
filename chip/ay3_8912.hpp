@@ -20,10 +20,62 @@
 
 #include <memory>
 #include <machine.hpp>
+#include <mutex>
+#include <boost/circular_buffer.hpp>
 
 
 typedef uint8_t (*f_read_data_handler)(Machine &oric);
 typedef uint8_t (*f_write_data_handler)(Machine &oric);
+
+
+class Channel
+{
+public:
+    Channel();
+
+    void reset();
+
+    uint16_t volume;
+    uint32_t tone_period;
+    uint32_t counter;
+    uint16_t value;
+    uint8_t disabled;
+    uint16_t noise_diabled;
+    bool use_envelope;
+};
+
+
+class Noise
+{
+public:
+    Noise();
+
+    void reset();
+
+    uint16_t period;
+    uint16_t counter;
+    uint8_t bit;
+    uint32_t rng;
+};
+
+
+class Envelope
+{
+public:
+    Envelope();
+
+    void reset();
+
+    uint32_t period;
+    uint32_t counter;
+
+    uint8_t shape;
+    uint8_t shape_counter;
+    uint8_t out_level;
+
+    bool hold;
+    bool holding;
+};
 
 
 class AY3_8912
@@ -70,7 +122,10 @@ public:
 	f_write_data_handler m_write_data_handler;
 
     uint32_t sound_buffer_index;
-    int16_t sound_buffer[16384];
+    uint32_t sound_buffer_next_play_index;
+    int16_t sound_buffer[32768];
+    std::mutex buffer_mutex;
+    bool start_play;
 
 private:
     inline void write_to_psg(uint8_t value);
@@ -84,16 +139,18 @@ private:
 	uint8_t current_register;
 	uint8_t registers[NUM_REGS];
 
-    uint16_t channel_tone_period[3];
-    uint16_t channel_counter[3];
-    uint16_t channel_value[3];
-    uint16_t channel_enabled[3];
+    Channel channels[3];
+    Noise noise;
+    Envelope envelope;
 
-    uint8_t noise_period;
-    uint16_t volumes[3];
+    uint32_t cycles_per_sample;
+    uint32_t cycle_count;
+    bool move_sound_data;
 
-    uint16_t cycle_count;
+    int16_t cycle_diff;
+    boost::circular_buffer<uint32_t> cycle_diffs_buffer;
+    uint32_t old_length;
+    uint8_t old_length_counter;
 };
-
 
 #endif // AY3_8912_H

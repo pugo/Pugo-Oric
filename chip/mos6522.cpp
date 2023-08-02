@@ -177,7 +177,7 @@ short MOS6522::exec(uint8_t a_Cycles)
             t2_reload = false;
         }
 
-        if (t2_run && todo_cycles > t2_counter) {
+        if (t2_run && (todo_cycles > t2_counter)) {
             std::cout << "Timer2 Interrupt!" << std::endl;
             irq_set(IRQ_T2);
             t2_run = false;

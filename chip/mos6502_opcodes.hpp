@@ -215,6 +215,8 @@
 #define TXS				0x9A
 #define TYA				0x98
 
-#define ILLEGAL_SLO_IZX 0x03
+#define ILL_SLO_IND_X 0x03
+
+#define ILL_RLA_IND_Y 0x33
 
 #endif // MOS6502_OPCODES_H

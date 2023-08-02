@@ -123,7 +123,7 @@ bool Frontend::init_sound()
                                                 0,
                                                 &audio_spec_want,
                                                 &audio_spec,
-                                                SDL_AUDIO_ALLOW_FORMAT_CHANGE);
+                                                0);
 
     if(!sound_audio_device_id)
     {
@@ -135,7 +135,14 @@ bool Frontend::init_sound()
         SDL_LogError(SDL_LOG_CATEGORY_AUDIO, "Failed to get the desired AudioSpec");
     }
 
-    SDL_Delay(100); // wait while sound is playing
+    std::cout << "Freq: " << std::dec << (int) audio_spec.freq << std::endl;
+    std::cout << "Silence: " << (int) audio_spec.silence << std::endl;
+    std::cout << "format: " << (int) audio_spec.format << std::endl;
+    std::cout << "channels: " << (int) audio_spec.channels << std::endl;
+    std::cout << "samples: " << (int) audio_spec.samples << std::endl;
+
+
+    SDL_Delay(50 ); // wait while sound is playing
     SDL_PauseAudioDevice(sound_audio_device_id, 0);
 //    SDL_Delay(2000); // wait while sound is playing
 //    SDL_PauseAudioDevice(sound_audio_device_id, 1);

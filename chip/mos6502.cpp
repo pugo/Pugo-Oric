@@ -60,6 +60,7 @@
 #define READ_BYTE_ABS()     memory_read_byte_handler(machine, READ_ADDR_ABS())
 
 #define READ_BYTE_IND_X()   memory_read_byte_handler(machine, READ_ADDR_IND_X())
+#define READ_BYTE_IND_Y()   memory_read_byte_handler(machine, READ_ADDR_IND_Y())
 
 #define PUSH_BYTE_STACK(b)  (memory.mem[STACK_BOTTOM | (SP--)] = (b))
 #define POP_BYTE_STACK()    (memory.mem[STACK_BOTTOM | (++SP)])
@@ -313,6 +314,13 @@ uint8_t MOS6502::exec_instruction(bool& a_Brk)
 
     uint16_t pc_initial = PC;
     uint8_t instruction = READ_BYTE_IMM();
+
+    if (instruction == 0x03) {
+        std::cout << "---- 0x03\n";
+    }
+    if (instruction == 0x33) {
+        std::cout << "---- 0x33\n";
+    }
 
     switch(instruction)
     {
@@ -1003,16 +1011,30 @@ uint8_t MOS6502::exec_instruction(bool& a_Brk)
             SET_FLAG_NZ(X = SP);
             break;
 
-        case ILLEGAL_SLO_IZX:
+        case ILL_SLO_IND_X:
+            std::cout << "---- ILL_SLO_IND_X ----" << std::endl;
             b1 = memory_read_byte_handler(machine, addr = READ_ADDR_IND_X());
-            C = b1 & 0x80;
-            memory_write_byte_handler(machine, addr, SET_FLAG_NZ(b1 <<= 1));
+            C = (b1 & 0x80) != 0;
+            b1 <<= 1;
+            memory_write_byte_handler(machine, addr, b1);
             SET_FLAG_NZ(A |= b1);
             break;
 
+        case ILL_RLA_IND_Y:
+            std::cout << "---- ILL_RLA_IND_Y ----" << std::endl;
+            b1 = memory_read_byte_handler(machine, addr = READ_ADDR_IND_Y());
+            b2 = b1 & 0x80;
+            b1 <<= 1;
+            if (C) { b1 |= 0x01; }
+            memory_write_byte_handler(machine, addr, b1);
+            C = b2 != 0;
+            SET_FLAG_NZ(A &= b1);
+            break;
+
         default:
+            std::cout << "ILLEGAL_SLO_IZX: " << std::hex << ILL_SLO_IND_X << std::endl;
             std::cout << "ILLEGAL OPCODE: " << std::hex << instruction << std::endl;
-            PrintStat();
+            PrintStat(pc_initial);
             a_Brk = true;
             break;
     };

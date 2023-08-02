@@ -7,7 +7,7 @@
 #include "oric.hpp"
 #include "memory.hpp"
 
-#define NUMBER_OPCODES 151
+#define NUMBER_OPCODES 152
 
 // The 6502's 13 addressing modes
 #define IMMED 0	// Immediate
@@ -44,13 +44,13 @@ typedef union
 	unsigned short W;
 } d_word;
 
-char name_table[56][4]={
+char name_table[57][8]={
 "ADC", "AND", "ASL", "BCC", "BCS", "BEQ", "BIT", "BMI", "BNE", "BPL",
 "BRK", "BVC", "BVS", "CLC", "CLD", "CLI", "CLV", "CMP", "CPX", "CPY",
 "DEC", "DEX", "DEY", "EOR", "INC", "INX", "INY", "JMP", "JSR", "LDA",
 "LDX", "LDY", "LSR", "NOP", "ORA", "PHA", "PHP", "PLA", "PLP", "ROL",
 "ROR", "RTI", "RTS", "SBC", "SEC", "SED", "SEI", "STA", "STX", "STY",
-"TAX", "TAY", "TSX", "TXA", "TXS", "TYA"};
+"TAX", "TAY", "TSX", "TXA", "TXS", "TYA", "ILL_RLA"};
 
 /* Opcode table */
 OPcode opcode_table[NUMBER_OPCODES] = {
@@ -259,7 +259,9 @@ OPcode opcode_table[NUMBER_OPCODES] = {
 
 	{0x9A, 54, IMPLI, 2, 0},   /* TXS */
 
-	{0x98, 55, IMPLI, 2, 0}    /* TYA */
+	{0x98, 55, IMPLI, 2, 0},   /* TYA */
+
+    {0x33, 56, ZEPIY, 8, 0}    /* ILL_RLA */
 };
 
 unsigned short org; /* Origin of addresses */
@@ -301,6 +303,7 @@ std::string MOS6502::disassemble(uint16_t a_Address)
 	int i, j, entry,found = 0;
 
 	opcode = memory.mem[a_Address];
+    printf("opcode: %d\n", opcode);
 	for (i = 0; i < NUMBER_OPCODES; i++) {
 		if (opcode == opcode_table[i].number) {
 			found = 1; /* Found the opcode */
