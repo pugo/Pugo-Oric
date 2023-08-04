@@ -83,6 +83,7 @@ protected:
 
 	TapeTap* tape;
 
+    int32_t cycle_count;
 	bool is_running;
 	bool warpmode_on;
 

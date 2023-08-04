@@ -76,6 +76,7 @@
 
 using namespace std;
 
+// Volume table from Oricutron.
 uint32_t voltab[] = {0, 513/4, 828/4, 1239/4, 1923/4, 3238/4, 4926/4, 9110/4, 10344/4, 17876/4, 24682/4, 30442/4, 38844/4, 47270/4, 56402/4, 65535/4};
 
 static const uint8_t _ay38910_shapes[16][32] = {
@@ -107,6 +108,8 @@ static const uint8_t _ay38910_shapes[16][32] = {
         // 1 1 1 1
         { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
 };
+
+constexpr uint8_t cycle_multiplier = 128;
 
 
 Channel::Channel() :
@@ -140,6 +143,7 @@ Envelope::Envelope() :
         period(0), counter(0), shape(0), shape_counter(0), out_level(0), hold(false), holding(false)
 {}
 
+
 void Envelope::reset()
 {
     period = 0;
@@ -161,10 +165,10 @@ AY3_8912::AY3_8912(Machine& machine) :
 	reset();
 }
 
+
 AY3_8912::~AY3_8912()
 {}
 
-#define FISK 128
 
 void AY3_8912::reset()
 {
@@ -178,11 +182,11 @@ void AY3_8912::reset()
     move_sound_data = false;
     start_play = false;
     cycle_diff = -25;
-    cycle_diffs_buffer.set_capacity(60);
+    cycle_diffs_buffer.set_capacity(40);
     old_length_counter = 0;
     old_length = 0;
 
-    cycles_per_sample = ((1000000 * FISK) / 44100);
+    cycles_per_sample = ((1000000 * cycle_multiplier) / 44100);
 
     // Reset all registers.
 	for (auto& i : registers) { i = 0; }
@@ -249,15 +253,14 @@ short AY3_8912::exec(uint8_t cycles)
 
                 cycle_diffs_buffer.push_back(len);
 
-                if (cycle_diffs_buffer.size() == 60) {
-                    int16_t avg = std::accumulate(cycle_diffs_buffer.begin(), cycle_diffs_buffer.end(), 0) / cycle_diffs_buffer.size();
-                    if (old_length == 0) {
-                        old_length = avg;
-                    }
+                if (old_length_counter++ == 100) {
+                    old_length_counter = 0;
 
-                    if (old_length_counter++ == 100) {
-//                        std::cout << "-- Average: " << std::dec << (int)avg << ", old len: " <<  (int)old_length << std::endl;
-                        old_length_counter = 0;
+                    if (cycle_diffs_buffer.size() == 40) {
+                        int16_t avg = std::accumulate(cycle_diffs_buffer.begin(), cycle_diffs_buffer.end(), 0) / cycle_diffs_buffer.size();
+                        if (old_length == 0) {
+                            old_length = avg;
+                        }
 
                         if (avg > old_length) {
                             cycle_diff_change = 1;
@@ -269,6 +272,7 @@ short AY3_8912::exec(uint8_t cycles)
                         old_length = avg;
                     }
                 }
+
                 buffer_mutex.unlock();
             }
 
@@ -288,7 +292,7 @@ short AY3_8912::exec(uint8_t cycles)
             cycle_count -= (cycles_per_sample + cycle_diff);
         }
         else {
-            cycle_count += FISK;
+            cycle_count += cycle_multiplier;
         }
 
         --cycles;
@@ -302,6 +306,7 @@ short AY3_8912::exec(uint8_t cycles)
 
 	return 0;
 }
+
 
 void AY3_8912::set_bdir(bool value)
 {
@@ -326,13 +331,8 @@ void AY3_8912::set_bdir(bool value)
             }
         }
 	}
-
-//	std::cout << "AY3_8912 regs: " << std::hex <<
-//  	  (int)registers[0] << " " << (int)registers[1] << " " << (int)registers[2] << " " << (int)registers[3] << " " <<
-// 	  (int)registers[4] << " " << (int)registers[5] << " " << (int)registers[6] << " " << (int)registers[7] << " " <<
-//	  (int)registers[8] << " " << (int)registers[9] << " " << (int)registers[10] << " " << (int)registers[11] << " " <<
-//      (int)registers[12] << " " << (int)registers[13] << " " << (int)registers[14] << std::endl;
 }
+
 
 inline void AY3_8912::write_to_psg(uint8_t value)
 {
@@ -409,7 +409,6 @@ inline void AY3_8912::write_to_psg(uint8_t value)
             break;
         case ENV_SHAPE:
             registers[current_register] = value;
-
             envelope.shape = value & 0x0f;
             envelope.holding = false;
             envelope.counter = 0;
@@ -425,7 +424,6 @@ inline void AY3_8912::write_to_psg(uint8_t value)
                     channels[channel].volume = voltab[_ay38910_shapes[envelope.shape][envelope.shape_counter]];
                 }
             }
-
             break;
         case IO_PORT_A:
             registers[current_register] = value;
@@ -458,14 +456,12 @@ void AY3_8912::set_bc2(Machine& machine, bool a_Value)
 	machine.ay3->set_bc2(a_Value);
 }
 
-
 void AY3_8912::audio_callback(void* user_data, uint8_t* raw_buffer, int len)
 {
     AY3_8912* ay = (AY3_8912*)user_data;
     uint16_t* buffer = (uint16_t*)raw_buffer;
 
     uint16_t samples = len/2;
-
 //    std::cout << "-- underrun? Want: " << std::dec << (int)samples << " samples, got: " <<  (int)ay->sound_buffer_index << std::endl;
 
     if (! ay->start_play) {

@@ -154,11 +154,11 @@ Oric::State Oric::handle_command(std::string& a_Cmd)
 		machine->cpu->PrintStat();
 	}
     else if (cmd == "d") { // info
-        if (parts.size() < 3) {
-            std::cout << "Use: d <start address> <length>" << std::endl;
-            return STATE_MON;
-        }
-        machine->memory.show(string_to_word(parts[1]), string_to_word(parts[2]));
+//        if (parts.size() < 3) {
+//            std::cout << "Use: d <start address> <length>" << std::endl;
+//            return STATE_MON;
+//        }
+//        machine->memory.show(string_to_word(parts[1]), string_to_word(parts[2]));
     }
 	else if (cmd == "v") { // info
 		machine->mos_6522->print_stat();
@@ -222,8 +222,9 @@ int main(int argc, char *argv[])
 
 	Oric& oric = Oric::get_instance();
 	oric.init();
+//	oric.get_machine().memory.load("ROMS/basic10.rom", 0xc000);
 	oric.get_machine().memory.load("ROMS/basic11b.rom", 0xc000);
-	oric.get_machine().memory.load("ROMS/font.rom", 0xb400);
+//	oric.get_machine().memory.load("ROMS/font.rom", 0xb400);
 	oric.get_machine().reset();
 
 	std::cout << std::endl;

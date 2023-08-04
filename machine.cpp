@@ -54,7 +54,8 @@ static int32_t keytab[] = {
 constexpr uint8_t cycles_per_raster = 64;
 constexpr uint16_t raster_max = 312;
 constexpr uint16_t raster_visible_lines = 224;
-constexpr uint16_t raster_visible_first = 65;
+//constexpr uint16_t raster_visible_first = 65;
+constexpr uint16_t raster_visible_first = 44;
 constexpr uint16_t raster_visible_last = raster_visible_first + raster_visible_lines;
 
 	
@@ -62,7 +63,8 @@ Machine::Machine(const Oric* oric) :
 	oric(oric),
 	memory(65535),
 	tape(nullptr),
-	is_running(false),
+    cycle_count(0),
+    is_running(false),
 	warpmode_on(false),
 	break_exec(false),
 	raster_current(0),
@@ -93,10 +95,14 @@ void Machine::init(Frontend* frontend)
 
 //    tape = new TapeTap(*mos_6522, "taps/Xenon1.tap");
 //    tape = new TapeTap(*mos_6522, "taps/WIMPY.TAP");
-//    tape = new TapeTap(*mos_6522, "taps/HUNCHBACK");
+    tape = new TapeTap(*mos_6522, "taps/HUNCHBACK");
 //   tape = new TapeTap(*mos_6522, "taps/Oricium12.tap");
-    tape = new TapeTap(*mos_6522, "taps/Scuba.tap");
+//    tape = new TapeTap(*mos_6522, "taps/Scuba.tap");
 //    tape = new TapeTap(*mos_6522, "taps/pulsoids-uk.tap");
+//    tape = new TapeTap(*mos_6522, "taps/Tetriskov.tap");
+//    tape = new TapeTap(*mos_6522, "taps/im10.tap");
+//    tape = new TapeTap(*mos_6522, "taps/SoundTracker.tap");
+
     if (!tape->init()) {
         exit(1);
     }
@@ -146,19 +152,20 @@ void Machine::run(uint32_t steps, Oric* oric)
 	SDL_Event event;
 
 	break_exec = false;
+    uint8_t ran = 0;
+
+    cycle_count += cycles_per_raster;
+
 	while (! break_exec) {
-		int8_t cycles = cycles_per_raster;
-
-        while (cycles > 0) {
-            const uint8_t ran = cpu->exec_instruction(break_exec);
-            cycles -= ran;
-
+        while (cycle_count > 0) {
+            ran = cpu->exec_instruction(break_exec);
             update_key_output();
 
             tape->exec(ran);
             mos_6522->exec(ran);
             ay3->exec(ran);
 
+            cycle_count -= ran;
 
             if (steps > 0 && ++instructions == steps) {
                 return;
@@ -173,7 +180,6 @@ void Machine::run(uint32_t steps, Oric* oric)
                     case SDL_KEYDOWN:
                     case SDL_KEYUP:
                     {
-//					std::cout << "sym: " << event.key.keysym.sym << ", shifted: " << event.key.keysym.mod  << std::endl;
                         auto sym = event.key.keysym.sym;
 
                         if (event.key.keysym.sym == SDLK_F12 && event.type == SDL_KEYDOWN) {
@@ -186,13 +192,11 @@ void Machine::run(uint32_t steps, Oric* oric)
 
                         auto trans = key_translations.find(std::make_pair(sym, event.key.keysym.mod));
                         if (trans != key_translations.end()) {
-//						std::cout << "translated '" << trans->first.first << "' to '" << trans->second.first << "'" << std::endl;
                             sym = trans->second.first;
                         }
 
                         auto key = key_map.find(sym);
                         if (key != key_map.end()) {
-//						printf( "Key event detected: %d (%s): %d\n", event.key.keysym.sym, ((event.type == SDL_KEYDOWN) ? "down" : "up"), key->second);
                             key_press(key->second, event.type == SDL_KEYDOWN);
                         }
                         break;
@@ -208,29 +212,31 @@ void Machine::run(uint32_t steps, Oric* oric)
 			if (now > next_frame) {
 				next_frame = now;
 			}
-//			else {
+			else {
 		 		if (! warpmode_on) {
-//                    std::cout << "delay: " << (int)(next_frame - now) << std::endl;
 					SDL_Delay(next_frame - now);
                 }
-//			}
+			}
 		}
+        cycle_count += cycles_per_raster;
 	}
 }
 
 inline bool Machine::paint_raster(Oric* oric)
 {
+    bool render_screen  = false;
+
+    if (++raster_current == raster_max) {
+        raster_current = 0;
+        render_screen = true;
+        frontend->render_graphics();
+    }
+
 	if ((raster_current >= raster_visible_first) && (raster_current < raster_visible_last)) {
 		frontend->update_graphics(raster_current - raster_visible_first, memory.mem);
 	}
 	
-	if (++raster_current == raster_max) {
-		raster_current = 0;
-		frontend->render_graphics();
-		return true;
-	}
-
-	return false;
+	return render_screen;
 }
 
 void Machine::key_press(uint8_t a_KeyBits, bool a_Down)
@@ -311,7 +317,7 @@ void inline Machine::write_byte(Machine &a_Machine, uint16_t a_Address, uint8_t 
 
 void inline Machine::write_byte_zp(Machine &a_Machine, uint8_t a_Address, uint8_t a_Val)
 {
-	if (a_Address >= 0x00ff) {
+	if (a_Address > 0x00ff) {
 		return;
 	}
 	a_Machine.memory.mem[a_Address] = a_Val;

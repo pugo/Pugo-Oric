@@ -121,7 +121,7 @@ short MOS6522::exec(uint8_t a_Cycles)
         if (cb2_changed_handler) { cb2_changed_handler(machine, cb2); }
     }
 
-    uint32_t todo_cycles;
+    int32_t todo_cycles;
 
     switch (acr & 0xc0)
     {
@@ -178,7 +178,7 @@ short MOS6522::exec(uint8_t a_Cycles)
         }
 
         if (t2_run && (todo_cycles > t2_counter)) {
-            std::cout << "Timer2 Interrupt!" << std::endl;
+//            std::cout << "Timer2 Interrupt!" << std::endl;
             irq_set(IRQ_T2);
             t2_run = false;
         }
@@ -188,27 +188,13 @@ short MOS6522::exec(uint8_t a_Cycles)
     switch (acr & 0x1c)
     {
         case 0x00:  // off
-            break;
         case 0x04:  // Shift in under T2 control (not implemented)
-            std::cout << "0x04: Shift in under T2 control" << std::endl;
-            break;
         case 0x08:  // Shift in under O2 control (not implemented)
-            std::cout << "0x08: Shift in under O2 control" << std::endl;
-            break;
         case 0x0c:  // Shift in under control of external clock (not implemented)
-            std::cout << "0x0c: Shift in under control of external clock" << std::endl;
-            break;
         case 0x1c:  // Shift out under control of external clock (not implemented)
-            std::cout << "0x1c: Shift out under control of external clock" << std::endl;
-            break;
         case 0x10:  // Shift out free-running at T2 rate
-            std::cout << "0x10: Shift out free-running at T2 rate" << std::endl;
-            break;
         case 0x14:  // Shift out under T2 control
-            std::cout << "0x14: Shift out under T2 control" << std::endl;
-            break;
         case 0x18:  // Shift out under O2 control
-            std::cout << "0x18: Shift out under O2 control" << std::endl;
             break;
     }
 
@@ -409,8 +395,11 @@ void MOS6522::write_byte(uint16_t a_Offset, uint8_t a_Value)
     case IFR:
         // Interrupt flag bits are cleared by writing 1:s for corresponding bit.
         ifr &= (~a_Value) & 0x7f;
-        if (ifr & ier) {
+        if ((ifr & ier) & 0x7f) {
             ifr |= 0x80;	// bit 7=1 if any IRQ is set.
+        }
+        else {
+            machine.irq_clear();
         }
         break;
     case IER:
@@ -452,7 +441,7 @@ void MOS6522::irq_check()
 void MOS6522::irq_set(uint8_t a_Bits)
 {
     ifr |= a_Bits;
-    if ((ifr & ier) & 0x7f) {
+    if (((ifr & ier) & 0x7f) != 0) {
         ifr |= 0x80;
     }
     if (a_Bits & ier) {

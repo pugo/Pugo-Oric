@@ -216,11 +216,11 @@ void MOS6502::irq_clear()
     irq_flag = false;
 }
 
-void MOS6502::handle_irq()
+bool MOS6502::handle_irq()
 {
     irq_flag = false;
     if (I) { // Interrupt disabled ?
-        return;
+        return false;
     }
 
     PUSH_BYTE_STACK(PC >> 8);
@@ -228,6 +228,8 @@ void MOS6502::handle_irq()
     PUSH_BYTE_STACK(get_p());
     I = true;
     PC = memory_read_word_handler(machine, IRQ_VECTOR_L);
+
+    return true;
 }
 
 int inline MOS6502::signed_byte_to_int(uint8_t b)
@@ -303,24 +305,20 @@ bool MOS6502::exec_instruction_cycles(int16_t cycles)
 
 uint8_t MOS6502::exec_instruction(bool& a_Brk)
 {
+    uint8_t extra = 0;
+
     if (irq_flag) {
-        handle_irq();
+        if (handle_irq()) {
+            extra += 7;
+        }
     }
 
     uint8_t b1, b2;
     uint16_t addr, w;
     int i;
-    uint8_t extra = 0;
 
     uint16_t pc_initial = PC;
     uint8_t instruction = READ_BYTE_IMM();
-
-    if (instruction == 0x03) {
-        std::cout << "---- 0x03\n";
-    }
-    if (instruction == 0x33) {
-        std::cout << "---- 0x33\n";
-    }
 
     switch(instruction)
     {
@@ -1012,7 +1010,6 @@ uint8_t MOS6502::exec_instruction(bool& a_Brk)
             break;
 
         case ILL_SLO_IND_X:
-            std::cout << "---- ILL_SLO_IND_X ----" << std::endl;
             b1 = memory_read_byte_handler(machine, addr = READ_ADDR_IND_X());
             C = (b1 & 0x80) != 0;
             b1 <<= 1;
@@ -1021,7 +1018,6 @@ uint8_t MOS6502::exec_instruction(bool& a_Brk)
             break;
 
         case ILL_RLA_IND_Y:
-            std::cout << "---- ILL_RLA_IND_Y ----" << std::endl;
             b1 = memory_read_byte_handler(machine, addr = READ_ADDR_IND_Y());
             b2 = b1 & 0x80;
             b1 <<= 1;
@@ -1032,9 +1028,8 @@ uint8_t MOS6502::exec_instruction(bool& a_Brk)
             break;
 
         default:
-            std::cout << "ILLEGAL_SLO_IZX: " << std::hex << ILL_SLO_IND_X << std::endl;
-            std::cout << "ILLEGAL OPCODE: " << std::hex << instruction << std::endl;
             PrintStat(pc_initial);
+
             a_Brk = true;
             break;
     };

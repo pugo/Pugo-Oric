@@ -118,7 +118,7 @@ public:
 	std::string disassemble(uint16_t a_Address);
 
 protected:
-	void handle_irq();
+	bool handle_irq();
 	
 	Machine& machine;
 	Memory& memory;

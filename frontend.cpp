@@ -164,12 +164,12 @@ void Frontend::close_sdl()
 
 
 // Return memory address corresponding to a raster line, for current video mode.
-inline uint16_t calcRowAddr(uint8_t a_RasterLine, uint8_t a_VideoAttrib)
+inline uint16_t calcRowAddr(uint8_t raster_line, uint8_t video_attrib)
 {
-    if (a_VideoAttrib & Frontend::VideoAttribs::HIRES && a_RasterLine < 200) {
-        return 0xa000 + a_RasterLine * 40;			// Hires: return address for hires data for line.
+    if (video_attrib & Frontend::VideoAttribs::HIRES && raster_line < 200) {
+        return 0xa000 + raster_line * 40;			// Hires: return address for hires data for line.
     }
-    return 0xbb80 + (a_RasterLine >> 3) * 40;		// Text (lores or > 200): return address to char data for line (>>3).
+    return 0xbb80 + (raster_line >> 3) * 40;		// Text (lores or > 200): return address to char data for line (>>3).
 }
 
 void Frontend::update_graphics(uint8_t raster_line, uint8_t* mem)
@@ -230,7 +230,9 @@ void Frontend::update_graphics(uint8_t raster_line, uint8_t* mem)
                 // get char pixel data for read char code. If hires > 200, charmem is at 0x9800.
                 uint8_t* char_mem = mem + ((video_attrib & VideoAttribs::HIRES) ? 0x9800 : 0xb400) +
                                           ((text_attrib & TextAttribs::ALTERNATE_CHARSET) ? 128 * 8 : 0);
-                chr_dat = char_mem[((ch & 0x7f) << 3) + (raster_line & 0x07)] & 0x3f;
+
+                uint8_t apan = (text_attrib & TextAttribs::DOUBLE_SIZE) ? ((raster_line >> 1) & 0x07) : (raster_line & 0x07);
+                chr_dat = char_mem[((ch & 0x7f) << 3) + apan] & 0x3f;
             }
         }
 

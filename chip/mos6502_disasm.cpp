@@ -303,7 +303,6 @@ std::string MOS6502::disassemble(uint16_t a_Address)
 	int i, j, entry,found = 0;
 
 	opcode = memory.mem[a_Address];
-    printf("opcode: %d\n", opcode);
 	for (i = 0; i < NUMBER_OPCODES; i++) {
 		if (opcode == opcode_table[i].number) {
 			found = 1; /* Found the opcode */
