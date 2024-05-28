@@ -205,78 +205,78 @@ uint8_t MOS6522::read_byte(uint16_t a_Offset)
 {
     switch(a_Offset & 0x000f)
     {
-    case ORB:
-        irq_clear(IRQ_CB1);
-        switch (pcr & PCR_MASK_CB2) {
-            case 0x00:
-            case 0x40:
-                irq_clear(IRQ_CB2);
-                break;
-            case 0x80:
-                // set CB2 to low on read/write of ORB if CB2-ctrl is 100.
-                cb2 = false;
-                if (cb2_changed_handler) { cb2_changed_handler(machine, cb2); }
-                break;
-            case 0xa0:
-                // pulse low for one cycle if CB2-ctrl is 101.
-                cb2 = false;
-                cb2_do_pulse = true;
-                if (cb2_changed_handler) { cb2_changed_handler(machine, cb2); }
-                break;
-        }
-        return (orb & ddrb) | (irb & ~ddrb);
-    case ORA:
-        irq_clear(IRQ_CA1);
-        switch (pcr & PCR_MASK_CA2) {
-            case 0x00:
-            case 0x04:
-                irq_clear(IRQ_CA2);
-                break;
-            case 0x08:
-                // set CA2 to low on read/write of ORA if CA2-ctrl is 100.
-                ca2 = false;
-                if (ca2_changed_handler) { ca2_changed_handler(machine, ca2); }
-                break;
-            case 0x0a:
-                // pulse low for one cycle if CA2-ctrl is 101.
-                ca2 = false;
-                ca2_do_pulse = true;
-                if (ca2_changed_handler) { ca2_changed_handler(machine, ca2); }
-                break;
-        }
-        return (ora & ddra) | (ira & ~ddra);
-    case DDRB:
-        return ddrb;
-    case DDRA:
-        return ddra;
-    case T1C_L:
-        irq_clear(IRQ_T1);
-        return t1_counter & 0x00ff;
-    case T1C_H:
-        return t1_counter >> 8;
-    case T1L_L:
-        return t1_latch_low;
-    case T1L_H:
-        return t1_latch_high;
-    case T2C_L:
-        irq_clear(IRQ_T2);
-        return t2_counter & 0x00ff;
-    case T2C_H:
-        return t2_counter >> 8;
-    case SR:
-        irq_clear(IRQ_SR);
-        std::cout << "  ===== READ SR TRIGGER =====" << std::endl;
-        return sr;
-    case ACR:
-        return acr;
-    case PCR:
-        return pcr;
-    case IFR:
-        return ifr;
-    case IER:
-        return ier | 0x80;
-    case IORA2:
-        return (ora & ddra) | (ira & ~ddra);
+        case ORB:
+            irq_clear(IRQ_CB1);
+            switch (pcr & PCR_MASK_CB2) {
+                case 0x00:
+                case 0x40:
+                    irq_clear(IRQ_CB2);
+                    break;
+                case 0x80:
+                    // set CB2 to low on read/write of ORB if CB2-ctrl is 100.
+                    cb2 = false;
+                    if (cb2_changed_handler) { cb2_changed_handler(machine, cb2); }
+                    break;
+                case 0xa0:
+                    // pulse low for one cycle if CB2-ctrl is 101.
+                    cb2 = false;
+                    cb2_do_pulse = true;
+                    if (cb2_changed_handler) { cb2_changed_handler(machine, cb2); }
+                    break;
+            }
+            return (orb & ddrb) | (irb & ~ddrb);
+        case ORA:
+            irq_clear(IRQ_CA1);
+            switch (pcr & PCR_MASK_CA2) {
+                case 0x00:
+                case 0x04:
+                    irq_clear(IRQ_CA2);
+                    break;
+                case 0x08:
+                    // set CA2 to low on read/write of ORA if CA2-ctrl is 100.
+                    ca2 = false;
+                    if (ca2_changed_handler) { ca2_changed_handler(machine, ca2); }
+                    break;
+                case 0x0a:
+                    // pulse low for one cycle if CA2-ctrl is 101.
+                    ca2 = false;
+                    ca2_do_pulse = true;
+                    if (ca2_changed_handler) { ca2_changed_handler(machine, ca2); }
+                    break;
+            }
+            return (ora & ddra) | (ira & ~ddra);
+        case DDRB:
+            return ddrb;
+        case DDRA:
+            return ddra;
+        case T1C_L:
+            irq_clear(IRQ_T1);
+            return t1_counter & 0x00ff;
+        case T1C_H:
+            return t1_counter >> 8;
+        case T1L_L:
+            return t1_latch_low;
+        case T1L_H:
+            return t1_latch_high;
+        case T2C_L:
+            irq_clear(IRQ_T2);
+            return t2_counter & 0x00ff;
+        case T2C_H:
+            return t2_counter >> 8;
+        case SR:
+            irq_clear(IRQ_SR);
+            std::cout << "  ===== READ SR TRIGGER =====" << std::endl;
+            return sr;
+        case ACR:
+            return acr;
+        case PCR:
+            return pcr;
+        case IFR:
+            return ifr;
+        case IER:
+            return ier | 0x80;
+        case IORA2:
+            return (ora & ddra) | (ira & ~ddra);
     }
     return 0;
 }
@@ -285,136 +285,136 @@ void MOS6522::write_byte(uint16_t a_Offset, uint8_t a_Value)
 {
     switch(a_Offset & 0x000f)
     {
-    case ORB:
+        case ORB:
 // 	cout << "Write " << m_RegisterNames[static_cast<Register>(a_Offset & 0x000f)] << ": " << static_cast<unsigned int>(a_Value) << endl;
-        orb = a_Value;
-        irq_clear(IRQ_CB1);
-        switch (pcr & PCR_MASK_CB2) {
-            case 0x00:
-            case 0x40:
-                irq_clear(IRQ_CB2);
-                break;
-            case 0x80:
-                // set CB2 to low on read/write of ORB if CB2-ctrl is 100.
-                cb2 = false;
-                if (cb2_changed_handler) { cb2_changed_handler(machine, cb2); }
-                break;
-            case 0xa0:
-                // pulse low for one cycle if CB2-ctrl is 101.
-                cb2 = false;
-                cb2_do_pulse = true;
-                if (cb2_changed_handler) { cb2_changed_handler(machine, cb2); }
-                break;
-        }
-        machine.update_key_output();
-        machine.via_orb_changed(orb);
-        break;
-    case ORA:
-        ora = a_Value;
-        irq_clear(IRQ_CA1);
-        switch (pcr & PCR_MASK_CA2) {
-            case 0x00:
-            case 0x04:
-                irq_clear(IRQ_CA2);
-                break;
-            case 0x08:
-                // set CA2 to low on read/write of ORA if CA2-ctrl is 100.
-                ca2 = false;
-                if (ca2_changed_handler) { ca2_changed_handler(machine, ca2); }
-                break;
-            case 0x0a:
-                // pulse low for one cycle if CA2-ctrl is 101.
-                ca2 = false;
-                ca2_do_pulse = true;
-                if (ca2_changed_handler) { ca2_changed_handler(machine, ca2); }
-                break;
-        }
-        break;
-    case DDRB:
-        ddrb = a_Value;
-        break;
-    case DDRA:
-        ddra = a_Value;
-        break;
-    case T1C_L:
-        t1_latch_low = a_Value;
-        break;
-    case T1C_H:
-        t1_latch_high = a_Value;
-        t1_counter = (t1_latch_high << 8) | t1_latch_low;
-        t1_reload = true;
-        t1_run = true;
-        irq_clear(IRQ_T1);
-        // If ORB7 pulse mode is set, prepare by setting ORB7 low.
-        if ((acr & 0xc0) == 0x80) {
-            orb &= 0x7f;
-        }
-        break;
-    case T1L_L:
-        t1_latch_low = a_Value;
-        break;
-    case T1L_H:
-        t1_latch_high = a_Value;
-        irq_clear(IRQ_T1);
-        break;
-    case T2C_L:
-        t2_latch_low = a_Value;
-        break;
-    case T2C_H:
-        t2_latch_high = a_Value;
-        t2_counter = (t2_latch_high << 8) | t2_latch_low;
-        t2_run = true;
-        t2_reload = true;
-        irq_clear(IRQ_T2);
-        break;
-    case SR:
-        sr = a_Value;
-        irq_clear(IRQ_SR);
-        break;
-    case ACR:
-        acr = a_Value;
-        break;
-    case PCR:
-        pcr = a_Value;
-        // Manual output modes
-        if ((pcr & 0x0c) == 0x0c) {
-            ca2 = !!(pcr & 0x02);
-            if (!ca2) {
-                ca2_do_pulse = false;
+            orb = a_Value;
+            irq_clear(IRQ_CB1);
+            switch (pcr & PCR_MASK_CB2) {
+                case 0x00:
+                case 0x40:
+                    irq_clear(IRQ_CB2);
+                    break;
+                case 0x80:
+                    // set CB2 to low on read/write of ORB if CB2-ctrl is 100.
+                    cb2 = false;
+                    if (cb2_changed_handler) { cb2_changed_handler(machine, cb2); }
+                    break;
+                case 0xa0:
+                    // pulse low for one cycle if CB2-ctrl is 101.
+                    cb2 = false;
+                    cb2_do_pulse = true;
+                    if (cb2_changed_handler) { cb2_changed_handler(machine, cb2); }
+                    break;
             }
-            if (ca2_changed_handler) { ca2_changed_handler(machine, ca2); }
-        }
-        if ((pcr & 0xc0) == 0xc0) {
-            cb2 = !!(pcr & 0x20);
-            if (!cb2) {
-                cb2_do_pulse = false;
+            machine.update_key_output();
+            machine.via_orb_changed(orb);
+            break;
+        case ORA:
+            ora = a_Value;
+            irq_clear(IRQ_CA1);
+            switch (pcr & PCR_MASK_CA2) {
+                case 0x00:
+                case 0x04:
+                    irq_clear(IRQ_CA2);
+                    break;
+                case 0x08:
+                    // set CA2 to low on read/write of ORA if CA2-ctrl is 100.
+                    ca2 = false;
+                    if (ca2_changed_handler) { ca2_changed_handler(machine, ca2); }
+                    break;
+                case 0x0a:
+                    // pulse low for one cycle if CA2-ctrl is 101.
+                    ca2 = false;
+                    ca2_do_pulse = true;
+                    if (ca2_changed_handler) { ca2_changed_handler(machine, ca2); }
+                    break;
             }
-            if (cb2_changed_handler) { cb2_changed_handler(machine, cb2); }
-        }
-        break;
-    case IFR:
-        // Interrupt flag bits are cleared by writing 1:s for corresponding bit.
-        ifr &= (~a_Value) & 0x7f;
-        if ((ifr & ier) & 0x7f) {
-            ifr |= 0x80;	// bit 7=1 if any IRQ is set.
-        }
-        else {
-            machine.irq_clear();
-        }
-        break;
-    case IER:
-        if (a_Value & 0x80) {
-            ier |= (a_Value & 0x7f);	// if bit 7=1: set given bits.
-        }
-        else {
-            ier &= ~(a_Value & 0x7f);	// if bit 7=0: clear given bits.
-        }
+            break;
+        case DDRB:
+            ddrb = a_Value;
+            break;
+        case DDRA:
+            ddra = a_Value;
+            break;
+        case T1C_L:
+            t1_latch_low = a_Value;
+            break;
+        case T1C_H:
+            t1_latch_high = a_Value;
+            t1_counter = (t1_latch_high << 8) | t1_latch_low;
+            t1_reload = true;
+            t1_run = true;
+            irq_clear(IRQ_T1);
+            // If ORB7 pulse mode is set, prepare by setting ORB7 low.
+            if ((acr & 0xc0) == 0x80) {
+                orb &= 0x7f;
+            }
+            break;
+        case T1L_L:
+            t1_latch_low = a_Value;
+            break;
+        case T1L_H:
+            t1_latch_high = a_Value;
+            irq_clear(IRQ_T1);
+            break;
+        case T2C_L:
+            t2_latch_low = a_Value;
+            break;
+        case T2C_H:
+            t2_latch_high = a_Value;
+            t2_counter = (t2_latch_high << 8) | t2_latch_low;
+            t2_run = true;
+            t2_reload = true;
+            irq_clear(IRQ_T2);
+            break;
+        case SR:
+            sr = a_Value;
+            irq_clear(IRQ_SR);
+            break;
+        case ACR:
+            acr = a_Value;
+            break;
+        case PCR:
+            pcr = a_Value;
+            // Manual output modes
+            if ((pcr & 0x0c) == 0x0c) {
+                ca2 = !!(pcr & 0x02);
+                if (!ca2) {
+                    ca2_do_pulse = false;
+                }
+                if (ca2_changed_handler) { ca2_changed_handler(machine, ca2); }
+            }
+            if ((pcr & 0xc0) == 0xc0) {
+                cb2 = !!(pcr & 0x20);
+                if (!cb2) {
+                    cb2_do_pulse = false;
+                }
+                if (cb2_changed_handler) { cb2_changed_handler(machine, cb2); }
+            }
+            break;
+        case IFR:
+            // Interrupt flag bits are cleared by writing 1:s for corresponding bit.
+            ifr &= (~a_Value) & 0x7f;
+            if ((ifr & ier) & 0x7f) {
+                ifr |= 0x80;	// bit 7=1 if any IRQ is set.
+            }
+            else {
+                machine.irq_clear();
+            }
+            break;
+        case IER:
+            if (a_Value & 0x80) {
+                ier |= (a_Value & 0x7f);	// if bit 7=1: set given bits.
+            }
+            else {
+                ier &= ~(a_Value & 0x7f);	// if bit 7=0: clear given bits.
+            }
 
-        irq_check();
-        break;
-    case IORA2:
-        ora = a_Value;
-        break;
+            irq_check();
+            break;
+        case IORA2:
+            ora = a_Value;
+            break;
     }
 }
 

@@ -335,18 +335,18 @@ uint8_t MOS6502::exec_instruction(bool& a_Brk)
             SET_FLAG_NZ(A = READ_BYTE_ABS());
             break;
         case LDA_ABS_X:
-            PAGECHECKED_READ_ADDR_ABS_X;
+        PAGECHECKED_READ_ADDR_ABS_X;
             SET_FLAG_NZ(A = memory_read_byte_handler(machine, addr));
             break;
         case LDA_ABS_Y:
-            PAGECHECKED_READ_ADDR_ABS_Y;
+        PAGECHECKED_READ_ADDR_ABS_Y;
             SET_FLAG_NZ(A = memory_read_byte_handler(machine, addr));
             break;
         case LDA_IND_X:
             SET_FLAG_NZ(A = READ_BYTE_IND_X());
             break;
         case LDA_IND_Y:
-            PAGECHECKED_READ_ADDR_IND_Y;
+        PAGECHECKED_READ_ADDR_IND_Y;
             SET_FLAG_NZ(A = memory_read_byte_handler(machine, addr));
             break;
 
@@ -363,7 +363,7 @@ uint8_t MOS6502::exec_instruction(bool& a_Brk)
             SET_FLAG_NZ(X = READ_BYTE_ABS());
             break;
         case LDX_ABS_Y:
-            PAGECHECKED_READ_ADDR_ABS_Y;
+        PAGECHECKED_READ_ADDR_ABS_Y;
             SET_FLAG_NZ(X = memory_read_byte_handler(machine, addr));
             break;
 
@@ -380,7 +380,7 @@ uint8_t MOS6502::exec_instruction(bool& a_Brk)
             SET_FLAG_NZ(Y = READ_BYTE_ABS());
             break;
         case LDY_ABS_X:
-            PAGECHECKED_READ_ADDR_ABS_X;
+        PAGECHECKED_READ_ADDR_ABS_X;
             SET_FLAG_NZ(Y = memory_read_byte_handler(machine, addr));
             break;
 
@@ -426,7 +426,7 @@ uint8_t MOS6502::exec_instruction(bool& a_Brk)
             memory_write_byte_handler(machine, READ_ADDR_ABS(), Y);
             break;
 
-        // ADD to accumulator with carry
+            // ADD to accumulator with carry
         case ADC_IMM:
             ADC(READ_BYTE_IMM());
             break;
@@ -440,22 +440,22 @@ uint8_t MOS6502::exec_instruction(bool& a_Brk)
             ADC(READ_BYTE_ABS());
             break;
         case ADC_ABS_X:
-            PAGECHECKED_READ_ADDR_ABS_X;
+        PAGECHECKED_READ_ADDR_ABS_X;
             ADC(memory_read_byte_handler(machine, addr));
             break;
         case ADC_ABS_Y:
-            PAGECHECKED_READ_ADDR_ABS_Y;
+        PAGECHECKED_READ_ADDR_ABS_Y;
             ADC(memory_read_byte_handler(machine, addr));
             break;
         case ADC_IND_X:
             ADC(READ_BYTE_IND_X());
             break;
         case ADC_IND_Y:
-            PAGECHECKED_READ_ADDR_IND_Y;
+        PAGECHECKED_READ_ADDR_IND_Y;
             ADC(memory_read_byte_handler(machine, addr));
             break;
 
-        // Subtract from accumulator with borrow
+            // Subtract from accumulator with borrow
         case SBC_IMM:
             SBC(READ_BYTE_IMM());
             break;
@@ -469,22 +469,22 @@ uint8_t MOS6502::exec_instruction(bool& a_Brk)
             SBC(READ_BYTE_ABS());
             break;
         case SBC_ABS_X:
-            PAGECHECKED_READ_ADDR_ABS_X;
+        PAGECHECKED_READ_ADDR_ABS_X;
             SBC(memory_read_byte_handler(machine, addr));
             break;
         case SBC_ABS_Y:
-            PAGECHECKED_READ_ADDR_ABS_Y;
+        PAGECHECKED_READ_ADDR_ABS_Y;
             SBC(memory_read_byte_handler(machine, addr));
             break;
         case SBC_IND_X:
             SBC(READ_BYTE_IND_X());
             break;
         case SBC_IND_Y:
-            PAGECHECKED_READ_ADDR_IND_Y;
+        PAGECHECKED_READ_ADDR_IND_Y;
             SBC(memory_read_byte_handler(machine, addr));
             break;
 
-        // Increment memory by one
+            // Increment memory by one
         case INC_ZP:
             addr = READ_ADDR_ZP();
             memory_write_byte_handler(machine, addr, SET_FLAG_NZ(memory_read_byte_handler(machine, addr) + 1));
@@ -502,7 +502,7 @@ uint8_t MOS6502::exec_instruction(bool& a_Brk)
             memory_write_byte_handler(machine, addr, SET_FLAG_NZ(memory_read_byte_handler(machine, addr) + 1));
             break;
 
-        // Decrease memory by one
+            // Decrease memory by one
         case DEC_ZP:
             addr = READ_ADDR_ZP();
             memory_write_byte_handler(machine, addr, SET_FLAG_NZ(memory_read_byte_handler(machine, addr) - 1));
@@ -520,24 +520,24 @@ uint8_t MOS6502::exec_instruction(bool& a_Brk)
             memory_write_byte_handler(machine, addr, SET_FLAG_NZ(memory_read_byte_handler(machine, addr) - 1));
             break;
 
-        // Increase X by one
+            // Increase X by one
         case INX:
             SET_FLAG_NZ(++X);
             break;
-        // Decrease X by one
+            // Decrease X by one
         case DEX:
             SET_FLAG_NZ(--X);
             break;
-        // Increase Y by one
+            // Increase Y by one
         case INY:
             SET_FLAG_NZ(++Y);
             break;
-        // Decrease Y by one
+            // Decrease Y by one
         case DEY:
             SET_FLAG_NZ(--Y);
             break;
 
-        // And accumulator with memory
+            // And accumulator with memory
         case AND_IMM:
             SET_FLAG_NZ(A &= READ_BYTE_IMM());
             break;
@@ -551,22 +551,22 @@ uint8_t MOS6502::exec_instruction(bool& a_Brk)
             SET_FLAG_NZ(A &= READ_BYTE_ABS());
             break;
         case AND_ABS_X:
-            PAGECHECKED_READ_ADDR_ABS_X;
+        PAGECHECKED_READ_ADDR_ABS_X;
             SET_FLAG_NZ(A &= memory_read_byte_handler(machine, addr));
             break;
         case AND_ABS_Y:
-            PAGECHECKED_READ_ADDR_ABS_Y;
+        PAGECHECKED_READ_ADDR_ABS_Y;
             SET_FLAG_NZ(A &= memory_read_byte_handler(machine, addr));
             break;
         case AND_IND_X:
             SET_FLAG_NZ(A &= READ_BYTE_IND_X());
             break;
         case AND_IND_Y :
-            PAGECHECKED_READ_ADDR_IND_Y;
+        PAGECHECKED_READ_ADDR_IND_Y;
             SET_FLAG_NZ(A &= memory_read_byte_handler(machine, addr));
             break;
 
-        // Or accumulator with memory
+            // Or accumulator with memory
         case ORA_IMM:
             SET_FLAG_NZ(A |= READ_BYTE_IMM());
             break;
@@ -580,22 +580,22 @@ uint8_t MOS6502::exec_instruction(bool& a_Brk)
             SET_FLAG_NZ(A |= READ_BYTE_ABS());
             break;
         case ORA_ABS_X:
-            PAGECHECKED_READ_ADDR_ABS_X;
+        PAGECHECKED_READ_ADDR_ABS_X;
             SET_FLAG_NZ(A |= memory_read_byte_handler(machine, addr));
             break;
         case ORA_ABS_Y:
-            PAGECHECKED_READ_ADDR_ABS_Y;
+        PAGECHECKED_READ_ADDR_ABS_Y;
             SET_FLAG_NZ(A |= memory_read_byte_handler(machine, addr));
             break;
         case ORA_IND_X:
             SET_FLAG_NZ(A |= READ_BYTE_IND_X());
             break;
         case ORA_IND_Y:
-            PAGECHECKED_READ_ADDR_IND_Y;
+        PAGECHECKED_READ_ADDR_IND_Y;
             SET_FLAG_NZ(A |= memory_read_byte_handler(machine, addr));
             break;
 
-        // Exclusive or accumulator with memory
+            // Exclusive or accumulator with memory
         case EOR_IMM:
             SET_FLAG_NZ(A ^= READ_BYTE_IMM());
             break;
@@ -609,18 +609,18 @@ uint8_t MOS6502::exec_instruction(bool& a_Brk)
             SET_FLAG_NZ(A ^= READ_BYTE_ABS());
             break;
         case EOR_ABS_X:
-            PAGECHECKED_READ_ADDR_ABS_X;
+        PAGECHECKED_READ_ADDR_ABS_X;
             SET_FLAG_NZ(A ^= memory_read_byte_handler(machine, addr));
             break;
         case EOR_ABS_Y:
-            PAGECHECKED_READ_ADDR_ABS_Y;
+        PAGECHECKED_READ_ADDR_ABS_Y;
             SET_FLAG_NZ(A ^= memory_read_byte_handler(machine, addr));
             break;
         case EOR_IND_X:
             SET_FLAG_NZ(A ^= READ_BYTE_IND_X());
             break;
         case EOR_IND_Y:
-            PAGECHECKED_READ_ADDR_IND_Y;
+        PAGECHECKED_READ_ADDR_IND_Y;
             SET_FLAG_NZ(A ^= memory_read_byte_handler(machine, addr));
             break;
 
@@ -750,7 +750,7 @@ uint8_t MOS6502::exec_instruction(bool& a_Brk)
             C = b2;
             break;
 
-        // Branches
+            // Branches
         case BCC:
             if (!C) {
                 PC = READ_JUMP_ADDR();
@@ -886,13 +886,13 @@ uint8_t MOS6502::exec_instruction(bool& a_Brk)
             SET_FLAG_NZ((uint8_t)i);
             break;
         case CMP_ABS_X:
-            PAGECHECKED_READ_ADDR_ABS_X;
+        PAGECHECKED_READ_ADDR_ABS_X;
             i = A - memory_read_byte_handler(machine, addr);
             C = i >= 0;
             SET_FLAG_NZ((uint8_t)i);
             break;
         case CMP_ABS_Y:
-            PAGECHECKED_READ_ADDR_ABS_Y;
+        PAGECHECKED_READ_ADDR_ABS_Y;
             i = A - memory_read_byte_handler(machine, addr);
             C = i >= 0;
             SET_FLAG_NZ((uint8_t)i);
@@ -903,7 +903,7 @@ uint8_t MOS6502::exec_instruction(bool& a_Brk)
             SET_FLAG_NZ((uint8_t)i);
             break;
         case CMP_IND_Y:
-            PAGECHECKED_READ_ADDR_IND_Y;
+        PAGECHECKED_READ_ADDR_IND_Y;
             i = A - memory_read_byte_handler(machine, addr);
             C = i >= 0;
             SET_FLAG_NZ((uint8_t)i);

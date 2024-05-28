@@ -33,83 +33,83 @@
 
 
 Memory::Memory(uint32_t a_Size) :
-	mem(NULL),
-	size(a_Size),
-	mempos(0)
+    mem(NULL),
+    size(a_Size),
+    mempos(0)
 {
-	mem = new uint8_t[a_Size];
-	memset(mem, 0, a_Size);
+    mem = new uint8_t[a_Size];
+    memset(mem, 0, a_Size);
 }
 
 Memory::~Memory()
 {
-	delete[] mem;
+    delete[] mem;
 }
 
 void error_exit(std::string a_Description)
 {
-	std::cout << std::endl << "!!! Error: " << a_Description << std::endl << std::endl;
-	exit(1);
+    std::cout << std::endl << "!!! Error: " << a_Description << std::endl << std::endl;
+    exit(1);
 }
 
 void Memory::load(const std::string& path, uint32_t address)
 {
-	std::cout << "Memory: loading " << path << " -> $" << std::hex << address << std::endl;
-	// stat to check existance and size
-	struct stat file_info;
-	if (stat(path.c_str(), &file_info)) {
-		error_exit("no such file: " + path);
-	}
+    std::cout << "Memory: loading " << path << " -> $" << std::hex << address << std::endl;
+    // stat to check existance and size
+    struct stat file_info;
+    if (stat(path.c_str(), &file_info)) {
+        error_exit("no such file: " + path);
+    }
 
-	int file_size = file_info.st_size;
+    int file_size = file_info.st_size;
 
-	int fd = open(path.c_str(), O_RDONLY);
-	if (fd < 0) {
-		error_exit("could not open file: " + path);
-	}
+    int fd = open(path.c_str(), O_RDONLY);
+    if (fd < 0) {
+        error_exit("could not open file: " + path);
+    }
 
-	ssize_t count = 0;
-	int pos = address;
-	uint8_t* buff = (uint8_t*)malloc(1);
-	while (file_size - count > 0) {
-		ssize_t result = read(fd, buff, 1);
+    ssize_t count = 0;
+    int pos = address;
+    uint8_t* buff = (uint8_t*)malloc(1);
+    while (file_size - count > 0) {
+        ssize_t result = read(fd, buff, 1);
 
-		if (result == 0) {
-			break;
-		}
-		if (result == -1) {
-			error_exit("error reading file: " + path);
-		}
+        if (result == 0) {
+            break;
+        }
+        if (result == -1) {
+            error_exit("error reading file: " + path);
+        }
 
-		mem[pos] = *buff;
-		pos += result;
-		count += result;
-	}
+        mem[pos] = *buff;
+        pos += result;
+        count += result;
+    }
 
-	free(buff);
-	return;
+    free(buff);
+    return;
 }
 
 void Memory::show(uint32_t a_Pos, uint32_t a_Length)
 {
-	std::cout << "Showing 0x" << a_Length << " bytes from " << std::hex << a_Pos << std::endl;
-	std::ostringstream chars;
+    std::cout << "Showing 0x" << a_Length << " bytes from " << std::hex << a_Pos << std::endl;
+    std::ostringstream chars;
 
-	for (uint32_t i=0; i < a_Length; i++) {
-		if ((i % 16) == 0) {
-			std::cout << "    " << chars.str() << std::endl << "[" << a_Pos + i << "] " << std::hex;
-			chars.str("");
-		}
+    for (uint32_t i=0; i < a_Length; i++) {
+        if ((i % 16) == 0) {
+            std::cout << "    " << chars.str() << std::endl << "[" << a_Pos + i << "] " << std::hex;
+            chars.str("");
+        }
 
-		std::cout << std::setw(2) << std::setfill('0') << (unsigned int)mem[a_Pos + i] << " ";
-		if ((mem[a_Pos + i] & 0x7f) >= 32) {
-			chars << (char)(mem[a_Pos + i] & 0x7f) << " ";
-		}
-		else {
-			chars << "  ";
-		}
-	}
-	std::cout << std::endl;
+        std::cout << std::setw(2) << std::setfill('0') << (unsigned int)mem[a_Pos + i] << " ";
+        if ((mem[a_Pos + i] & 0x7f) >= 32) {
+            chars << (char)(mem[a_Pos + i] & 0x7f) << " ";
+        }
+        else {
+            chars << "  ";
+        }
+    }
+    std::cout << std::endl;
 }
 
 

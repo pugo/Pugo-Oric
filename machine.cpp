@@ -41,14 +41,14 @@
 
 
 static int32_t keytab[] = {
-	'7'        , 'n'        , '5'        , 'v'        , 0 ,          '1'        , 'x'        , '3'        ,     // 7
-	'j'        , 't'        , 'r'        , 'f'        , 0          , SDLK_ESCAPE, 'q'        , 'd'        ,     // 15
-	'm'        , '6'        , 'b'        , '4'        , SDLK_LCTRL , 'z'        , '2'        , 'c'        ,     // 23
-	'k'        , '9'        , ';'        , '-'        , 0          , 0          , '\\'       , '\''       ,     // 31
-	SDLK_SPACE , ','        , '.'        , SDLK_UP    , SDLK_LSHIFT, SDLK_LEFT  , SDLK_DOWN  , SDLK_RIGHT ,     //
-	'u'        , 'i'        , 'o'        , 'p'        , SDLK_LALT  , SDLK_BACKSPACE, ']'     , '['        ,
-	'y'        , 'h'        , 'g'        , 'e'        , 0          , 'a'        , 's'        , 'w'        ,
-	'8'        , 'l'        , '0'        , '/'        , SDLK_RSHIFT, SDLK_RETURN, 0          , SDLK_EQUALS };
+    '7'        , 'n'        , '5'        , 'v'        , 0 ,          '1'        , 'x'        , '3'        ,     // 7
+    'j'        , 't'        , 'r'        , 'f'        , 0          , SDLK_ESCAPE, 'q'        , 'd'        ,     // 15
+    'm'        , '6'        , 'b'        , '4'        , SDLK_LCTRL , 'z'        , '2'        , 'c'        ,     // 23
+    'k'        , '9'        , ';'        , '-'        , 0          , 0          , '\\'       , '\''       ,     // 31
+    SDLK_SPACE , ','        , '.'        , SDLK_UP    , SDLK_LSHIFT, SDLK_LEFT  , SDLK_DOWN  , SDLK_RIGHT ,     //
+    'u'        , 'i'        , 'o'        , 'p'        , SDLK_LALT  , SDLK_BACKSPACE, ']'     , '['        ,
+    'y'        , 'h'        , 'g'        , 'e'        , 0          , 'a'        , 's'        , 'w'        ,
+    '8'        , 'l'        , '0'        , '/'        , SDLK_RSHIFT, SDLK_RETURN, 0          , SDLK_EQUALS };
 
 
 constexpr uint8_t cycles_per_raster = 64;
@@ -58,29 +58,29 @@ constexpr uint16_t raster_visible_lines = 224;
 constexpr uint16_t raster_visible_first = 44;
 constexpr uint16_t raster_visible_last = raster_visible_first + raster_visible_lines;
 
-	
+
 Machine::Machine(const Oric* oric) :
-	oric(oric),
-	memory(65535),
-	tape(nullptr),
+    oric(oric),
+    memory(65535),
+    tape(nullptr),
     cycle_count(0),
     is_running(false),
-	warpmode_on(false),
-	break_exec(false),
-	raster_current(0),
-	current_key_row(0)
+    warpmode_on(false),
+    break_exec(false),
+    raster_current(0),
+    current_key_row(0)
 {
-	for (uint8_t i=0; i < 8; i++) {
-		key_rows[i] = 0;
-	}
+    for (uint8_t i=0; i < 8; i++) {
+        key_rows[i] = 0;
+    }
 
-	boost::assign::insert(key_translations)
-		(std::make_pair(0xe4, false), std::make_pair('/', false))
-		(std::make_pair(0xe4, true), std::make_pair('/', false))
-		(std::make_pair(0xf6, false), std::make_pair(';', false))
-		(std::make_pair(0xf6, true), std::make_pair(';', false))
-		(std::make_pair(0x2b, false), std::make_pair('=', false))
-		(std::make_pair(0x2b, true), std::make_pair('=', false));
+    boost::assign::insert(key_translations)
+        (std::make_pair(0xe4, false), std::make_pair('/', false))
+        (std::make_pair(0xe4, true), std::make_pair('/', false))
+        (std::make_pair(0xf6, false), std::make_pair(';', false))
+        (std::make_pair(0xf6, true), std::make_pair(';', false))
+        (std::make_pair(0x2b, false), std::make_pair('=', false))
+        (std::make_pair(0x2b, true), std::make_pair('=', false));
 }
 
 Machine::~Machine()
@@ -88,10 +88,10 @@ Machine::~Machine()
 
 void Machine::init(Frontend* frontend)
 {
-	this->frontend = frontend;
-	cpu = new MOS6502(*this);
-	mos_6522 = new MOS6522(*this);
-	ay3 = new AY3_8912(*this);
+    this->frontend = frontend;
+    cpu = new MOS6502(*this);
+    mos_6522 = new MOS6522(*this);
+    ay3 = new AY3_8912(*this);
 
 //    tape = new TapeTap(*mos_6522, "taps/Xenon1.tap");
 //    tape = new TapeTap(*mos_6522, "taps/WIMPY.TAP");
@@ -107,38 +107,38 @@ void Machine::init(Frontend* frontend)
         exit(1);
     }
 
-	cpu->memory_read_byte_handler = read_byte;
-	cpu->memory_read_byte_zp_handler = read_byte_zp;
-	cpu->memory_read_word_handler = read_word;
-	cpu->memory_read_word_zp_handler = read_word_zp;
-	cpu->memory_write_byte_handler = write_byte;
-	cpu->memory_write_byte_zp_handler = write_byte_zp;
+    cpu->memory_read_byte_handler = read_byte;
+    cpu->memory_read_byte_zp_handler = read_byte_zp;
+    cpu->memory_read_word_handler = read_word;
+    cpu->memory_read_word_zp_handler = read_word_zp;
+    cpu->memory_write_byte_handler = write_byte;
+    cpu->memory_write_byte_zp_handler = write_byte_zp;
 
     // AY data bus reads from VIA ORA (Output Register A).
-	ay3->m_read_data_handler = read_via_ora;
+    ay3->m_read_data_handler = read_via_ora;
     //	ay3->m_write_data_handler = write_vi
 
     // CA1 is connected to printer ACK line.
     // -- printer not supported.
 
     // CA2 is connected to AY BC1 line.
-	mos_6522->ca2_changed_handler = AY3_8912::set_bc1;
+    mos_6522->ca2_changed_handler = AY3_8912::set_bc1;
 
     // CB1 is connected to tape connector input, tape_tap.cpp writes directly to CB1.
 
     // CB2 is connected to AY BDIR line.
-	mos_6522->cb2_changed_handler = AY3_8912::set_bdir;
-	
-	for (uint8_t i=0; i < 64; ++i) {
-      if (keytab[i] != 0) {
-			key_map[keytab[i]] = i;
-      }
-	}
+    mos_6522->cb2_changed_handler = AY3_8912::set_bdir;
+
+    for (uint8_t i=0; i < 64; ++i) {
+        if (keytab[i] != 0) {
+            key_map[keytab[i]] = i;
+        }
+    }
 }
 
 void Machine::reset()
 {
-	cpu->Reset();
+    cpu->Reset();
 }
 
 /**
@@ -147,16 +147,16 @@ void Machine::reset()
  */
 void Machine::run(uint32_t steps, Oric* oric)
 {
-	uint32_t instructions = 0;
-	uint64_t next_frame = SDL_GetTicks64();
-	SDL_Event event;
+    uint32_t instructions = 0;
+    uint64_t next_frame = SDL_GetTicks64();
+    SDL_Event event;
 
-	break_exec = false;
+    break_exec = false;
     uint8_t ran = 0;
 
     cycle_count += cycles_per_raster;
 
-	while (! break_exec) {
+    while (! break_exec) {
         while (cycle_count > 0) {
             ran = cpu->exec_instruction(break_exec);
             update_key_output();
@@ -172,7 +172,7 @@ void Machine::run(uint32_t steps, Oric* oric)
             }
         }
 
-		if (paint_raster(oric)) {
+        if (paint_raster(oric)) {
             while (SDL_PollEvent(&event)) {
                 // We are only worried about SDL_KEYDOWN and SDL_KEYUP events.
                 switch (event.type)
@@ -206,20 +206,20 @@ void Machine::run(uint32_t steps, Oric* oric)
                 }
             }
 
-			next_frame += 20;
-			uint64_t now = SDL_GetTicks64();
-			
-			if (now > next_frame) {
-				next_frame = now;
-			}
-			else {
-		 		if (! warpmode_on) {
-					SDL_Delay(next_frame - now);
+            next_frame += 20;
+            uint64_t now = SDL_GetTicks64();
+
+            if (now > next_frame) {
+                next_frame = now;
+            }
+            else {
+                if (! warpmode_on) {
+                    SDL_Delay(next_frame - now);
                 }
-			}
-		}
+            }
+        }
         cycle_count += cycles_per_raster;
-	}
+    }
 }
 
 inline bool Machine::paint_raster(Oric* oric)
@@ -232,22 +232,22 @@ inline bool Machine::paint_raster(Oric* oric)
         frontend->render_graphics();
     }
 
-	if ((raster_current >= raster_visible_first) && (raster_current < raster_visible_last)) {
-		frontend->update_graphics(raster_current - raster_visible_first, memory.mem);
-	}
-	
-	return render_screen;
+    if ((raster_current >= raster_visible_first) && (raster_current < raster_visible_last)) {
+        frontend->update_graphics(raster_current - raster_visible_first, memory.mem);
+    }
+
+    return render_screen;
 }
 
 void Machine::key_press(uint8_t a_KeyBits, bool a_Down)
 {
 //	std::cout << "key: " << (int)a_KeyBits << ", " << (a_Down ? "down" : "up") << std::endl;
-	if (a_Down) {
-		key_rows[a_KeyBits >> 3] |= (1 << (a_KeyBits & 0x07));
-	}
-	else {
-		key_rows[a_KeyBits >> 3] &= ~(1 << (a_KeyBits & 0x07));
-	}
+    if (a_Down) {
+        key_rows[a_KeyBits >> 3] |= (1 << (a_KeyBits & 0x07));
+    }
+    else {
+        key_rows[a_KeyBits >> 3] &= ~(1 << (a_KeyBits & 0x07));
+    }
 
     // ???
 //	if (current_key_row == (a_KeyBits >> 3)) {
@@ -257,14 +257,14 @@ void Machine::key_press(uint8_t a_KeyBits, bool a_Down)
 
 void Machine::update_key_output()
 {
-	current_key_row = mos_6522->read_orb() & 0x07;
+    current_key_row = mos_6522->read_orb() & 0x07;
 
-	if (key_rows[current_key_row] & (ay3->get_register(AY3_8912::IO_PORT_A) ^ 0xff)) {
-		mos_6522->set_irb_bit(3, true);
-	}
-	else {
-		mos_6522->set_irb_bit(3, false);
-	}
+    if (key_rows[current_key_row] & (ay3->get_register(AY3_8912::IO_PORT_A) ^ 0xff)) {
+        mos_6522->set_irb_bit(3, true);
+    }
+    else {
+        mos_6522->set_irb_bit(3, false);
+    }
 }
 
 
@@ -281,55 +281,55 @@ void Machine::via_orb_changed(uint8_t a_Orb)
 
 uint8_t inline Machine::read_byte(Machine& a_Machine, uint16_t a_Address)
 {
-	if (a_Address >= 0x300 && a_Address < 0x400) {
-		return a_Machine.mos_6522->read_byte(a_Address);
-	}
-	return a_Machine.memory.mem[a_Address];
+    if (a_Address >= 0x300 && a_Address < 0x400) {
+        return a_Machine.mos_6522->read_byte(a_Address);
+    }
+    return a_Machine.memory.mem[a_Address];
 }
 
 uint8_t inline Machine::read_byte_zp(Machine &a_Machine, uint8_t a_Address)
 {
-	return a_Machine.memory.mem[a_Address];
+    return a_Machine.memory.mem[a_Address];
 }
 
 uint16_t inline Machine::read_word(Machine &a_Machine, uint16_t a_Address)
 {
-	return a_Machine.memory.mem[a_Address] | a_Machine.memory.mem[a_Address + 1] << 8;
+    return a_Machine.memory.mem[a_Address] | a_Machine.memory.mem[a_Address + 1] << 8;
 }
 
 uint16_t inline Machine::read_word_zp(Machine &a_Machine, uint8_t a_Address)
 {
-	return a_Machine.memory.mem[a_Address] | a_Machine.memory.mem[a_Address + 1 & 0xff] << 8;
+    return a_Machine.memory.mem[a_Address] | a_Machine.memory.mem[a_Address + 1 & 0xff] << 8;
 }
 
 void inline Machine::write_byte(Machine &a_Machine, uint16_t a_Address, uint8_t a_Val)
 {
-	if (a_Address >= 0xc000) {
-		return;
-	}
+    if (a_Address >= 0xc000) {
+        return;
+    }
 
-	if (a_Address >= 0x300 && a_Address < 0x400) {
-		a_Machine.mos_6522->write_byte(a_Address, a_Val);
-	}
+    if (a_Address >= 0x300 && a_Address < 0x400) {
+        a_Machine.mos_6522->write_byte(a_Address, a_Val);
+    }
 
-	a_Machine.memory.mem[a_Address] = a_Val;
+    a_Machine.memory.mem[a_Address] = a_Val;
 }
 
 void inline Machine::write_byte_zp(Machine &a_Machine, uint8_t a_Address, uint8_t a_Val)
 {
-	if (a_Address > 0x00ff) {
-		return;
-	}
-	a_Machine.memory.mem[a_Address] = a_Val;
+    if (a_Address > 0x00ff) {
+        return;
+    }
+    a_Machine.memory.mem[a_Address] = a_Val;
 }
 
 
 uint8_t inline Machine::read_via_ora(Machine& a_Machine)
 {
-	return a_Machine.mos_6522->read_ora();
+    return a_Machine.mos_6522->read_ora();
 }
 
 uint8_t inline Machine::read_via_orb(Machine& a_Machine)
 {
-	return a_Machine.mos_6522->read_orb();
+    return a_Machine.mos_6522->read_orb();
 }

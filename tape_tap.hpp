@@ -26,16 +26,16 @@
 class TapeTap
 {
 public:
-	TapeTap(MOS6522& via, const std::string& path);
-	virtual ~TapeTap();
+    TapeTap(MOS6522& via, const std::string& path);
+    virtual ~TapeTap();
 
-	bool init();
-	void reset();
+    bool init();
+    void reset();
 
-	void print_stat();
+    void print_stat();
 
-	void set_motor(bool motor_on);
-	short exec(uint8_t cycles);
+    void set_motor(bool motor_on);
+    short exec(uint8_t cycles);
 
     bool do_run_motor;
 

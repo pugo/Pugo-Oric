@@ -19,8 +19,6 @@
 #include "chip/ay3_8912.hpp"
 #include "oric.hpp"
 
-#include <SDL_image.h>
-
 
 Frontend::Frontend(Oric* oric) :
     oric(oric),
@@ -192,23 +190,23 @@ void Frontend::update_graphics(uint8_t raster_line, uint8_t* mem)
             ctrl_char = true;
             switch(ch & 0x18)
             {
-            case 0x00:
-                // Ink color.
-                fg_col = colors[ch & 7];
-                break;
-            case 0x08:
-                // Text attributes.
-                text_attrib = ch & 7;
-                break;
-            case 0x10:
-                // Paper color.
-                bg_col = colors[ch & 7];
-                break;
-            case 0x18:
-                // Video control attrs.
-                video_attrib = ch & 0x07;
-                row = calcRowAddr(raster_line, video_attrib);
-                break;
+                case 0x00:
+                    // Ink color.
+                    fg_col = colors[ch & 7];
+                    break;
+                case 0x08:
+                    // Text attributes.
+                    text_attrib = ch & 7;
+                    break;
+                case 0x10:
+                    // Paper color.
+                    bg_col = colors[ch & 7];
+                    break;
+                case 0x18:
+                    // Video control attrs.
+                    video_attrib = ch & 0x07;
+                    row = calcRowAddr(raster_line, video_attrib);
+                    break;
             }
         }
 
@@ -229,7 +227,7 @@ void Frontend::update_graphics(uint8_t raster_line, uint8_t* mem)
             else {
                 // get char pixel data for read char code. If hires > 200, charmem is at 0x9800.
                 uint8_t* char_mem = mem + ((video_attrib & VideoAttribs::HIRES) ? 0x9800 : 0xb400) +
-                                          ((text_attrib & TextAttribs::ALTERNATE_CHARSET) ? 128 * 8 : 0);
+                                    ((text_attrib & TextAttribs::ALTERNATE_CHARSET) ? 128 * 8 : 0);
 
                 uint8_t apan = (text_attrib & TextAttribs::DOUBLE_SIZE) ? ((raster_line >> 1) & 0x07) : (raster_line & 0x07);
                 chr_dat = char_mem[((ch & 0x7f) << 3) + apan] & 0x3f;

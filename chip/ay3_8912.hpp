@@ -81,45 +81,45 @@ public:
 class AY3_8912
 {
 public:
-	enum Register
-	{
-		CH_A_PERIOD_LOW = 0,
-		CH_A_PERIOD_HIGH,
-		CH_B_PERIOD_LOW,
-		CH_B_PERIOD_HIGH,
-		CH_C_PERIOD_LOW,
-		CH_C_PERIOD_HIGH,
-		NOICE_PERIOD,
-		ENABLE,
-		CH_A_AMPLITUDE,
-		CH_B_AMPLITUDE,
-		CH_C_AMPLITUDE,
-		ENV_DURATION_LOW,
-		ENV_DURATION_HIGH,
-		ENV_SHAPE,
-		IO_PORT_A,
-		NUM_REGS
-	};
+    enum Register
+    {
+        CH_A_PERIOD_LOW = 0,
+        CH_A_PERIOD_HIGH,
+        CH_B_PERIOD_LOW,
+        CH_B_PERIOD_HIGH,
+        CH_C_PERIOD_LOW,
+        CH_C_PERIOD_HIGH,
+        NOICE_PERIOD,
+        ENABLE,
+        CH_A_AMPLITUDE,
+        CH_B_AMPLITUDE,
+        CH_C_AMPLITUDE,
+        ENV_DURATION_LOW,
+        ENV_DURATION_HIGH,
+        ENV_SHAPE,
+        IO_PORT_A,
+        NUM_REGS
+    };
 
-	AY3_8912(Machine& machine);
-	~AY3_8912();
+    AY3_8912(Machine& machine);
+    ~AY3_8912();
 
-	void reset();
-	short exec(uint8_t cycles);
-	
-	void set_bdir(bool value);
-	void set_bc1(bool value);
-	void set_bc2(bool value);
+    void reset();
+    short exec(uint8_t cycles);
 
-	uint8_t get_register(Register a_Register) { return registers[a_Register]; }
+    void set_bdir(bool value);
+    void set_bc1(bool value);
+    void set_bc2(bool value);
 
-	static void set_bdir(Machine& machine, bool a_Value);
-	static void set_bc1(Machine& machine, bool a_Value);
-	static void set_bc2(Machine& machine, bool a_Value);
+    uint8_t get_register(Register a_Register) { return registers[a_Register]; }
+
+    static void set_bdir(Machine& machine, bool a_Value);
+    static void set_bc1(Machine& machine, bool a_Value);
+    static void set_bc2(Machine& machine, bool a_Value);
     static void audio_callback(void* user_data, uint8_t* raw_buffer, int len);
 
     f_read_data_handler m_read_data_handler;
-	f_write_data_handler m_write_data_handler;
+    f_write_data_handler m_write_data_handler;
 
     uint32_t sound_buffer_index;
     uint32_t sound_buffer_next_play_index;
@@ -130,14 +130,14 @@ public:
 private:
     inline void write_to_psg(uint8_t value);
 
-	Machine& machine;
+    Machine& machine;
 
-	bool bdir;
-	bool bc1;
-	bool bc2;
+    bool bdir;
+    bool bc1;
+    bool bc2;
 
-	uint8_t current_register;
-	uint8_t registers[NUM_REGS];
+    uint8_t current_register;
+    uint8_t registers[NUM_REGS];
 
     Channel channels[3];
     Noise noise;

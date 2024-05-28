@@ -27,19 +27,19 @@
 
 
 TapeTap::TapeTap(MOS6522& via, const std::string& path) :
-	via(via),
-	path(path),
-	size(0),
-	body_start(0),
-	do_run_motor(false),
-	delay(0),
-	duplicate_bytes(0),
-	tape_pos(0),
-	bit_count(0),
-	current_bit(0),
-	parity(1),
-	tape_cycles_counter(2),
-	tape_pulse(0)
+    via(via),
+    path(path),
+    size(0),
+    body_start(0),
+    do_run_motor(false),
+    delay(0),
+    duplicate_bytes(0),
+    tape_pos(0),
+    bit_count(0),
+    current_bit(0),
+    parity(1),
+    tape_cycles_counter(2),
+    tape_pulse(0)
 {
 }
 
@@ -52,28 +52,28 @@ TapeTap::~TapeTap()
 
 void TapeTap::reset()
 {
-	do_run_motor = false;
-	delay = 0;
-	duplicate_bytes = 0;
-	tape_pos = 0;
-	bit_count = 0;
-	current_bit = 0;
-	tape_cycles_counter = 2;
-	tape_pulse = 0;
-	parity = 1;
+    do_run_motor = false;
+    delay = 0;
+    duplicate_bytes = 0;
+    tape_pos = 0;
+    bit_count = 0;
+    current_bit = 0;
+    tape_cycles_counter = 2;
+    tape_pulse = 0;
+    parity = 1;
 }
 
 
 bool TapeTap::init()
 {
-	reset();
+    reset();
     std::cout << "Reading TAP file '" << path << "':" << std::endl;
 
     std::ifstream file (path, std::ios::in | std::ios::binary | std::ios::ate);
     if (file.is_open())
     {
-		 size = file.tellg();
-		 data = new uint8_t[size];
+        size = file.tellg();
+        data = new uint8_t[size];
         file.seekg (0, std::ios::beg);
         file.read (reinterpret_cast<char*>(data), size);
         file.close();
@@ -183,7 +183,7 @@ bool TapeTap::read_header()
     body_start = i + 1;
     std::cout << "Tape: Body starts at: " << (int)body_start << std::endl;
 
-	duplicate_bytes = 80;
+    duplicate_bytes = 80;
 
     return true;
 }
@@ -202,18 +202,18 @@ void TapeTap::set_motor(bool motor_on)
     }
     std::cout << "set motor: " << (motor_on ? "on" : "off") << std::endl;
 
-	do_run_motor = motor_on;
+    do_run_motor = motor_on;
 
     if (!do_run_motor)
     {
         if (bit_count > 0) {
             tape_pos++;
-			  bit_count = 0;
+            bit_count = 0;
         }
     }
 
     else {
-		 read_header();
+        read_header();
     }
 }
 
@@ -229,35 +229,35 @@ short TapeTap::exec(uint8_t cycles)
     }
 
     if (tape_cycles_counter > cycles) {
-		 tape_cycles_counter -= cycles;
+        tape_cycles_counter -= cycles;
 
         if (delay > 0) {
-			  delay -= cycles;
+            delay -= cycles;
             if (delay < 0) {
-					delay = 1;
+                delay = 1;
             }
             std::cout << "Delay: " << delay << std::endl;
         }
         return cycles;
     }
 
-	tape_pulse ^= 0x01;
-	via.write_cb1(tape_pulse);
+    tape_pulse ^= 0x01;
+    via.write_cb1(tape_pulse);
 
     if (delay > 0) {
-		 delay -= cycles;
+        delay -= cycles;
 
         if(delay <= 0)
         {
             if (tape_pulse) {
-					delay = 1;
+                delay = 1;
             }
             else {
-					delay = 0;
+                delay = 0;
             }
         }
 
-		 tape_cycles_counter = Pulse_1;
+        tape_cycles_counter = Pulse_1;
         return cycles;
     }
 
@@ -290,7 +290,7 @@ uint8_t TapeTap::get_current_bit()
 //            std::cout << "****** [" << m_TapePos << "] Start bit (0)" << std::endl;
             // Start bit (always 0).
             result = 0;
-			 parity = 1;
+            parity = 1;
             bit_count++;
             break;
         case 2:
@@ -302,7 +302,7 @@ uint8_t TapeTap::get_current_bit()
         case 8:
         case 9:
             result = (current_byte & (0x01 << bit_count - 2)) ? 1 : 0;
-			 parity ^= result;
+            parity ^= result;
 //            std::cout << "****** [" << m_TapePos << "] Data bit " << m_BitCount - 2 << " : bit = " << (int)result << ", parity = " << (int)m_Parity << std::endl;
             bit_count++;
             break;

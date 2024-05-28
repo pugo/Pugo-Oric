@@ -28,38 +28,38 @@ class Frontend;
 class Oric
 {
 public:
-	enum State
-	{
-		STATE_RUN,
-		STATE_MON,
-		STATE_QUIT
-	};
+    enum State
+    {
+        STATE_RUN,
+        STATE_MON,
+        STATE_QUIT
+    };
 
-	static Oric& get_instance()
-	{
-		static Oric instance;
-		return instance;
-	}
-	
-	Oric();
-	~Oric();
+    static Oric& get_instance()
+    {
+        static Oric instance;
+        return instance;
+    }
 
-	void init();
+    Oric();
+    ~Oric();
 
-	Machine& get_machine() { return *machine; }
-	Frontend& get_frontend() { return *frontend; }
+    void init();
 
-	void run();
-	void do_break();
+    Machine& get_machine() { return *machine; }
+    Frontend& get_frontend() { return *frontend; }
+
+    void run();
+    void do_break();
 
 protected:
-	State handle_command(std::string& a_Cmd);
-	uint16_t string_to_word(std::string& a_Addr);
+    State handle_command(std::string& a_Cmd);
+    uint16_t string_to_word(std::string& a_Addr);
 
-	State state;
-	Frontend* frontend;
-	Machine* machine;
-	std::string last_command;
+    State state;
+    Frontend* frontend;
+    Machine* machine;
+    std::string last_command;
 };
 
 #endif // ORIC_H

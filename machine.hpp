@@ -40,60 +40,60 @@ typedef std::map<KeyPress_t, KeyPress_t> KeyTranslation_t;
 class Machine
 {
 public:
-	Machine(const Oric* oric);
-	virtual ~Machine();
+    Machine(const Oric* oric);
+    virtual ~Machine();
 
-	void init(Frontend* frontend);
-	
-	void reset();
-	void run(uint32_t steps, Oric* oric);
-	void run(uint16_t address, long steps, Oric* oric) { cpu->set_pc(address); run(steps, oric); }
-	void stop() { break_exec = true; }
+    void init(Frontend* frontend);
 
-	void irq() { cpu->irq(); }
+    void reset();
+    void run(uint32_t steps, Oric* oric);
+    void run(uint16_t address, long steps, Oric* oric) { cpu->set_pc(address); run(steps, oric); }
+    void stop() { break_exec = true; }
+
+    void irq() { cpu->irq(); }
     void irq_clear() { cpu->irq_clear(); }
 
-	void key_press(uint8_t a_KeyBits, bool a_Down);
-	void update_key_output();
-	void via_orb_changed(uint8_t a_Orb);
+    void key_press(uint8_t a_KeyBits, bool a_Down);
+    void update_key_output();
+    void via_orb_changed(uint8_t a_Orb);
 
-	static uint8_t read_byte(Machine& a_machine, uint16_t a_Address);
-	static uint8_t read_byte_zp(Machine& a_Machine, uint8_t a_Address);
+    static uint8_t read_byte(Machine& a_machine, uint16_t a_Address);
+    static uint8_t read_byte_zp(Machine& a_Machine, uint8_t a_Address);
 
-	static uint16_t read_word(Machine& a_Machine, uint16_t a_Address);
-	static uint16_t read_word_zp(Machine& a_Machine, uint8_t a_Address);
+    static uint16_t read_word(Machine& a_Machine, uint16_t a_Address);
+    static uint16_t read_word_zp(Machine& a_Machine, uint8_t a_Address);
 
-	static void write_byte(Machine& a_Machine, uint16_t a_Address, uint8_t a_Val);
-	static void write_byte_zp(Machine& a_Machine, uint8_t a_Address, uint8_t a_Val);
+    static void write_byte(Machine& a_Machine, uint16_t a_Address, uint8_t a_Val);
+    static void write_byte_zp(Machine& a_Machine, uint8_t a_Address, uint8_t a_Val);
 
-	static uint8_t read_via_ora(Machine& a_Machine);
-	static uint8_t read_via_orb(Machine& a_Machine);
+    static uint8_t read_via_ora(Machine& a_Machine);
+    static uint8_t read_via_orb(Machine& a_Machine);
 
-	MOS6502* cpu;
-	MOS6522* mos_6522;
-	AY3_8912* ay3;
-	bool break_exec;
-	Memory memory;
-	Frontend* frontend;
+    MOS6502* cpu;
+    MOS6522* mos_6522;
+    AY3_8912* ay3;
+    bool break_exec;
+    Memory memory;
+    Frontend* frontend;
 
 protected:
     inline bool paint_raster(Oric* oric);
 
-	const Oric* oric;
+    const Oric* oric;
 
-	TapeTap* tape;
+    TapeTap* tape;
 
     int32_t cycle_count;
-	bool is_running;
-	bool warpmode_on;
+    bool is_running;
+    bool warpmode_on;
 
-	uint16_t raster_current;
+    uint16_t raster_current;
 
-	KeyMap_t key_map;
-	KeyTranslation_t key_translations;
+    KeyMap_t key_map;
+    KeyTranslation_t key_translations;
 
-	uint8_t current_key_row;
-	uint8_t key_rows[8];
+    uint8_t current_key_row;
+    uint8_t key_rows[8];
 };
 
 #endif // MACHINE_H
