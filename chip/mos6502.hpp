@@ -64,6 +64,8 @@ public:
     MOS6502(Machine& a_Machine);
     ~MOS6502();
 
+    Monitor& get_monitor() { return monitor; }
+
     void set_pc(uint16_t pc) { PC = pc; }
     uint16_t get_pc() { return PC; }
     uint8_t get_sp() { return SP; }

@@ -42,7 +42,8 @@ class Monitor
 public:
     Monitor(Memory& memory);
 
-    std::string disassemble(uint16_t address);
+    uint16_t disassemble(uint16_t address);
+    void disassemble(uint16_t address, size_t bytes);
 
 private:
     Memory& memory;

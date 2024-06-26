@@ -119,6 +119,8 @@ Oric::State Oric::handle_command(std::string& a_Cmd)
         std::cout << "s [n]          : step one or possible n steps" << std::endl;
         std::cout << "i              : print machine info" << std::endl;
         std::cout << "v              : print VIA (6522) info" << std::endl;
+        std::cout << "d              : disassemble from PC" << std::endl;
+        std::cout << "d <address> <n>: disassemble from address and n bytes ahead" << std::endl;
         std::cout << "m <address> <n>: dump memory from address and n bytes ahead" << std::endl;
         std::cout << "quiet          : prevent debug output at run time" << std::endl;
         std::cout << "debug          : show debug output at run time" << std::endl;
@@ -154,11 +156,15 @@ Oric::State Oric::handle_command(std::string& a_Cmd)
         machine->cpu->PrintStat();
     }
     else if (cmd == "d") { // info
+        if (parts.size() == 1) {
+            machine->cpu->get_monitor().disassemble(machine->cpu->get_pc(), 20);
+            return STATE_MON;
+        }
         if (parts.size() < 3) {
             std::cout << "Use: d <start address> <length>" << std::endl;
             return STATE_MON;
         }
-        machine->memory.show(string_to_word(parts[1]), string_to_word(parts[2]));
+        machine->cpu->get_monitor().disassemble(string_to_word(parts[1]), string_to_word(parts[2]));
     }
     else if (cmd == "v") { // info
         machine->mos_6522->print_stat();
