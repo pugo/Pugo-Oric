@@ -28,6 +28,7 @@
 #define MOS6502_H
 
 #include "mos6502_opcodes.hpp"
+#include "monitor.hpp"
 
 #include <memory>
 
@@ -127,6 +128,8 @@ protected:
     uint8_t SP;
     bool quiet;
     bool irq_flag;
+
+    Monitor monitor;
 };
 
 #endif // MOS6502_H

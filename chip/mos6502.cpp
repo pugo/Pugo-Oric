@@ -129,7 +129,8 @@ MOS6502::MOS6502(Machine& a_Machine) :
     memory_read_word_zp_handler(nullptr),
     memory_write_byte_handler(nullptr),
     memory_write_byte_zp_handler(nullptr),
-    memory(a_Machine.memory)
+    memory(a_Machine.memory),
+    monitor(memory)
 {
 }
 
@@ -162,8 +163,8 @@ void MOS6502::PrintStat()
 
 void MOS6502::PrintStat(uint16_t address)
 {
-    std::cout << disassemble(address) << " ";
-    printf("SP: %02X  |  A: %02X, X: %02X, Y: %02X  |  N: %d, Z: %d, C: %d, V: %d --- (%02X)\n", SP, A, X, Y, N, Z, C, V, address);
+    std::cout << monitor.disassemble(address) << " ";
+    printf("A: %02X, X: %02X, Y: %02X  |  N: %d, Z: %d, C: %d, V: %d  |  SP: %02X\n", A, X, Y, N, Z, C, V, SP);
 }
 
 //   7                           0
