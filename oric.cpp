@@ -31,7 +31,8 @@
 
 Oric::Oric() :
     state(STATE_RUN),
-    last_command("")
+    last_command(""),
+    last_address(0)
 {
 }
 
@@ -67,7 +68,11 @@ void Oric::run()
             {
                 std::string cmd;
                 std::cout << ">> " << std::flush;
-                getline(std::cin, cmd);
+
+                if (! getline(std::cin, cmd)) {
+                    state = STATE_QUIT;
+                    break;
+                }
 
                 state = handle_command(cmd);
                 break;
@@ -81,6 +86,8 @@ void Oric::run()
 
 void Oric::do_break()
 {
+    last_command = "";
+    last_address = 0;
     state = STATE_MON;
 }
 
@@ -150,6 +157,7 @@ Oric::State Oric::handle_command(std::string& a_Cmd)
                 std::cout << "Instruction BRK executed." << std::endl;
             }
         }
+        machine->cpu->PrintStat();
     }
     else if (cmd == "i") { // info
         std::cout << "PC: " << machine->cpu->get_pc() << std::endl;
@@ -157,14 +165,15 @@ Oric::State Oric::handle_command(std::string& a_Cmd)
     }
     else if (cmd == "d") { // info
         if (parts.size() == 1) {
-            machine->cpu->get_monitor().disassemble(machine->cpu->get_pc(), 20);
+            uint16_t addr = (last_address == 0) ? machine->cpu->get_pc() : last_address;
+            last_address = machine->cpu->get_monitor().disassemble(addr, 30);
             return STATE_MON;
         }
         if (parts.size() < 3) {
             std::cout << "Use: d <start address> <length>" << std::endl;
             return STATE_MON;
         }
-        machine->cpu->get_monitor().disassemble(string_to_word(parts[1]), string_to_word(parts[2]));
+        last_address = machine->cpu->get_monitor().disassemble(string_to_word(parts[1]), string_to_word(parts[2]));
     }
     else if (cmd == "v") { // info
         machine->mos_6522->print_stat();

@@ -43,7 +43,7 @@ public:
     Monitor(Memory& memory);
 
     uint16_t disassemble(uint16_t address);
-    void disassemble(uint16_t address, size_t bytes);
+    uint16_t disassemble(uint16_t address, size_t bytes);
 
 private:
     Memory& memory;

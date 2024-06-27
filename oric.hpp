@@ -60,6 +60,7 @@ protected:
     Frontend* frontend;
     Machine* machine;
     std::string last_command;
+    uint16_t last_address;
 };
 
 #endif // ORIC_H

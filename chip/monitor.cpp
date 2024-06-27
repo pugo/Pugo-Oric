@@ -234,7 +234,7 @@ Monitor::Monitor(Memory& memory) :
 
 }
 
-void Monitor::disassemble(uint16_t address, size_t bytes)
+uint16_t Monitor::disassemble(uint16_t address, size_t bytes)
 {
     uint16_t orig_address = address;
 
@@ -242,6 +242,8 @@ void Monitor::disassemble(uint16_t address, size_t bytes)
         address = disassemble(address);
         std::cout << std::endl;
     }
+
+    return address;
 }
 
 
