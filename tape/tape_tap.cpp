@@ -31,7 +31,6 @@ TapeTap::TapeTap(MOS6522& via, const std::string& path) :
     path(path),
     size(0),
     body_start(0),
-    do_run_motor(false),
     delay(0),
     duplicate_bytes(0),
     tape_pos(0),
@@ -301,7 +300,7 @@ uint8_t TapeTap::get_current_bit()
         case 7:
         case 8:
         case 9:
-            result = (current_byte & (0x01 << bit_count - 2)) ? 1 : 0;
+            result = (current_byte & (0x01 << (bit_count - 2))) ? 1 : 0;
             parity ^= result;
 //            std::cout << "****** [" << m_TapePos << "] Data bit " << m_BitCount - 2 << " : bit = " << (int)result << ", parity = " << (int)m_Parity << std::endl;
             bit_count++;

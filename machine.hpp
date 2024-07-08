@@ -26,7 +26,9 @@
 #include "chip/mos6522.hpp"
 #include "chip/ay3_8912.hpp"
 #include "memory.hpp"
-#include "tape_tap.hpp"
+
+#include "tape/tape_tap.hpp"
+#include "tape/tape_blank.hpp"
 
 class Oric;
 class Frontend;
@@ -40,7 +42,7 @@ typedef std::map<KeyPress_t, KeyPress_t> KeyTranslation_t;
 class Machine
 {
 public:
-    Machine(const Oric* oric);
+    Machine(Oric* oric);
     virtual ~Machine();
 
     void init(Frontend* frontend);
@@ -79,9 +81,9 @@ public:
 protected:
     inline bool paint_raster(Oric* oric);
 
-    const Oric* oric;
+    Oric* oric;
 
-    TapeTap* tape;
+    Tape* tape;
 
     int32_t cycle_count;
     bool is_running;

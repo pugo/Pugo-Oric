@@ -15,57 +15,56 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
-#ifndef ORIC_H
-#define ORIC_H
+#ifndef TAPE_TAP_H
+#define TAPE_TAP_H
 
 #include <iostream>
 #include <memory>
-#include <filesystem>
+#include <map>
 
-#include "machine.hpp"
+#include "chip/mos6522.hpp"
+#include "tape.hpp"
 
-class Frontend;
 
-class Oric
+class TapeTap : public Tape
 {
 public:
-    enum State
-    {
-        STATE_RUN,
-        STATE_MON,
-        STATE_QUIT
-    };
+    TapeTap(MOS6522& via, const std::string& path);
+    virtual ~TapeTap();
 
-    static Oric& get_instance()
-    {
-        static Oric instance;
-        return instance;
-    }
+    bool init() override;
+    void reset() override;
 
-    Oric();
-    ~Oric();
+    void print_stat() override;
 
-    bool parse_config(int argc, char **argv);
-    void init();
+    void set_motor(bool motor_on) override;
+    short exec(uint8_t cycles) override;
 
-    Machine& get_machine() { return *machine; }
-    Frontend& get_frontend() { return *frontend; }
-    std::filesystem::path& get_tape_path() { return tape_path; }
-
-    void run();
-    void do_break();
 
 protected:
-    State handle_command(std::string& a_Cmd);
-    uint16_t string_to_word(std::string& a_Addr);
+    bool read_header();
+    uint8_t get_current_bit();
 
-    State state;
-    Frontend* frontend;
-    Machine* machine;
-    std::string last_command;
-    uint16_t last_address;
+    std::string path;
+    MOS6522& via;
+    size_t size;
+    size_t body_start;
 
-    std::filesystem::path tape_path;
+    int32_t delay;
+    int32_t duplicate_bytes;
+
+    uint32_t tape_pos;
+    uint8_t bit_count;
+    uint8_t current_bit;
+    uint8_t parity;
+
+    int16_t tape_cycles_counter;
+    uint8_t tape_pulse;
+
+    uint8_t* data;
+
+    static const int Pulse_1 = 208;
+    static const int Pulse_0 = 416;
 };
 
-#endif // ORIC_H
+#endif // TAPE_TAP_H

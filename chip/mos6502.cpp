@@ -174,7 +174,6 @@ void MOS6502::PrintStat(uint16_t address)
 uint8_t MOS6502::get_p()
 {
     uint8_t result = 0;
-    //printf("getP: before: N=%d, V=%d, B=%d, D=%d, I=%d, Z=%d, C=%d\n", N, V, B, D, I, Z, C);
     result |= N ? FLAG_N : 0;
     result |= V ? FLAG_V : 0;
     result |= B ? FLAG_B : 0;
@@ -194,7 +193,6 @@ void MOS6502::set_p(uint8_t p)
     I = !! (p & FLAG_I);
     Z_INTERN = (p & FLAG_Z) ? 0 : 1;
     C = !! (p & FLAG_C);
-    //printf("setP: results: N=%d, V=%d, B=%d, D=%d, I=%d, Z=%d, C=%d\n", IS_NEGATIVE, V, B, D, I, IN_ZERO, C);
 }
 
 void MOS6502::NMI()

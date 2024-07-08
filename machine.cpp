@@ -59,7 +59,7 @@ constexpr uint16_t raster_visible_first = 44;
 constexpr uint16_t raster_visible_last = raster_visible_first + raster_visible_lines;
 
 
-Machine::Machine(const Oric* oric) :
+Machine::Machine(Oric* oric) :
     oric(oric),
     memory(65535),
     tape(nullptr),
@@ -93,18 +93,15 @@ void Machine::init(Frontend* frontend)
     mos_6522 = new MOS6522(*this);
     ay3 = new AY3_8912(*this);
 
-//    tape = new TapeTap(*mos_6522, "taps/Xenon1.tap");
-//    tape = new TapeTap(*mos_6522, "taps/WIMPY.TAP");
-    tape = new TapeTap(*mos_6522, "taps/HUNCHBACK");
-//   tape = new TapeTap(*mos_6522, "taps/Oricium12.tap");
-//    tape = new TapeTap(*mos_6522, "taps/Scuba.tap");
-//    tape = new TapeTap(*mos_6522, "taps/pulsoids-uk.tap");
-//    tape = new TapeTap(*mos_6522, "taps/Tetriskov.tap");
-//    tape = new TapeTap(*mos_6522, "taps/im10.tap");
-//    tape = new TapeTap(*mos_6522, "taps/SoundTracker.tap");
-
-    if (!tape->init()) {
-        exit(1);
+    if (! oric->get_tape_path().empty()) {
+        tape = new TapeTap(*mos_6522, oric->get_tape_path());
+        if (!tape->init()) {
+            exit(1);
+        }
+    }
+    else {
+        std::cout << "No tape specified." << std::endl;
+        tape = new TapeBlank();
     }
 
     cpu->memory_read_byte_handler = read_byte;

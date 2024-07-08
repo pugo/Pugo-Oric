@@ -15,54 +15,48 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
-#ifndef TAPE_TAP_H
-#define TAPE_TAP_H
-
 #include <iostream>
-#include <memory>
-#include <map>
-#include "chip/mos6522.hpp"
+#include <cstdlib>
+#include <vector>
 
-class TapeTap
+#include "tape_blank.hpp"
+
+
+TapeBlank::TapeBlank()
 {
-public:
-    TapeTap(MOS6522& via, const std::string& path);
-    virtual ~TapeTap();
+}
 
-    bool init();
-    void reset();
 
-    void print_stat();
+TapeBlank::~TapeBlank()
+{
+}
 
-    void set_motor(bool motor_on);
-    short exec(uint8_t cycles);
 
-    bool do_run_motor;
+void TapeBlank::reset()
+{
+}
 
-protected:
-    bool read_header();
-    uint8_t get_current_bit();
 
-    std::string path;
-    MOS6522& via;
-    size_t size;
-    size_t body_start;
+bool TapeBlank::init()
+{
+    return true;
+}
 
-    int32_t delay;
-    int32_t duplicate_bytes;
 
-    uint32_t tape_pos;
-    uint8_t bit_count;
-    uint8_t current_bit;
-    uint8_t parity;
+void TapeBlank::print_stat()
+{
+    std::cout << "Blank Tape." << std::endl;
+}
 
-    int16_t tape_cycles_counter;
-    uint8_t tape_pulse;
 
-    uint8_t* data;
+void TapeBlank::set_motor(bool motor_on)
+{
+    do_run_motor = motor_on;
+}
 
-    static const int Pulse_1 = 208;
-    static const int Pulse_0 = 416;
-};
 
-#endif // TAPE_TAP_H
+short TapeBlank::exec(uint8_t cycles)
+{
+    return 0;
+}
+

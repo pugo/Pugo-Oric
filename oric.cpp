@@ -22,11 +22,15 @@
 #include <cstdlib>
 #include <vector>
 #include <string>
+
+#include <boost/program_options.hpp>
 #include <boost/algorithm/string.hpp>
 
 #include "oric.hpp"
 #include "memory.hpp"
 #include "frontend.hpp"
+
+namespace po = boost::program_options;
 
 
 Oric::Oric() :
@@ -35,6 +39,34 @@ Oric::Oric() :
     last_address(0)
 {
 }
+
+
+bool Oric::parse_config(int argc, char **argv)
+{
+    try {
+        po::options_description desc("Allowed options");
+        desc.add_options()
+            ("help,?", "produce help message")
+            ("tape,t", po::value<std::filesystem::path>(&tape_path), "Tape file to use");
+
+        po::variables_map vm;
+        po::store(po::command_line_parser(argc, argv).options(desc).run(), vm);
+
+        if (vm.count("help")) {
+            std::cout << "Usage: oric [options]" << std::endl << desc;
+            return false;
+        }
+
+        po::notify(vm);
+    }
+    catch(std::exception& e)
+    {
+        std::cout << e.what() << std::endl;
+        return false;
+    }
+    return true;
+}
+
 
 
 void Oric::init()
@@ -236,9 +268,14 @@ int main(int argc, char *argv[])
     init_signals();
 
     Oric& oric = Oric::get_instance();
+
+    if (! oric.parse_config(argc, argv)) {
+        return 0;
+    }
+
     oric.init();
-//	oric.get_machine().memory.load("ROMS/basic10.rom", 0xc000);
-    oric.get_machine().memory.load("ROMS/basic11b.rom", 0xc000);
+	oric.get_machine().memory.load("ROMS/basic10.rom", 0xc000);
+//    oric.get_machine().memory.load("ROMS/basic11b.rom", 0xc000);
 //	oric.get_machine().memory.load("ROMS/font.rom", 0xb400);
     oric.get_machine().reset();
 
