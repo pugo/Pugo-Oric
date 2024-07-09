@@ -1,7 +1,3 @@
-// The code in this file is mostly borrowed, but I have forgotten the origin.
-
-#include <stdio.h>
-#include <string.h>
 #include <iostream>
 #include <iomanip>
 

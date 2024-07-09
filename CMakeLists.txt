@@ -20,7 +20,7 @@ project(oric)
 find_package(Boost 1.71.0 COMPONENTS program_options log)
 find_package(SDL2 REQUIRED)
 
-set(ORIC_SOURCES oric.cpp memory.cpp machine.cpp frontend.cpp
+set(ORIC_SOURCES oric.cpp memory.cpp machine.cpp frontend.cpp monitor.cpp
         oric.hpp)
 
 if(Boost_FOUND)
