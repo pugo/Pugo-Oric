@@ -91,6 +91,9 @@ protected:
 
     uint16_t raster_current;
 
+    bool sound_paused;
+    uint32_t sound_pause_counter;
+
     KeyMap_t key_map;
     KeyTranslation_t key_translations;
 

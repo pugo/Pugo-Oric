@@ -58,6 +58,8 @@ constexpr uint16_t raster_visible_lines = 224;
 constexpr uint16_t raster_visible_first = 44;
 constexpr uint16_t raster_visible_last = raster_visible_first + raster_visible_lines;
 
+constexpr uint32_t sound_pause_target = 1000;
+
 
 Machine::Machine(Oric* oric) :
     oric(oric),
@@ -68,6 +70,8 @@ Machine::Machine(Oric* oric) :
     warpmode_on(false),
     break_exec(false),
     raster_current(0),
+    sound_paused(true),
+    sound_pause_counter(0),
     current_key_row(0)
 {
     for (uint8_t i=0; i < 8; i++) {
@@ -154,6 +158,15 @@ void Machine::run(uint32_t steps, Oric* oric)
     cycle_count += cycles_per_raster;
 
     while (! break_exec) {
+        if (sound_paused) {
+            sound_pause_counter += 1;
+
+            if (sound_pause_counter > sound_pause_target) {
+                sound_paused = false;
+                frontend->pause_sound(false);
+            }
+        }
+
         while (cycle_count > 0) {
             ran = cpu->exec_instruction(break_exec);
             update_key_output();

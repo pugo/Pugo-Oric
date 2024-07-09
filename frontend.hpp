@@ -52,6 +52,7 @@ public:
     void close_graphics();
 
     bool init_sound();
+    void pause_sound(bool pause_on);
     void close_sound();
 
     void close_sdl();

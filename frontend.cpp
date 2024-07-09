@@ -139,13 +139,17 @@ bool Frontend::init_sound()
     std::cout << "channels: " << (int) audio_spec.channels << std::endl;
     std::cout << "samples: " << (int) audio_spec.samples << std::endl;
 
-
-    SDL_Delay(50 ); // wait while sound is playing
-    SDL_PauseAudioDevice(sound_audio_device_id, 0);
+    SDL_PauseAudioDevice(sound_audio_device_id, 1);
 //    SDL_Delay(2000); // wait while sound is playing
 //    SDL_PauseAudioDevice(sound_audio_device_id, 1);
 
     return true;
+}
+
+
+void Frontend::pause_sound(bool pause_on)
+{
+    SDL_PauseAudioDevice(sound_audio_device_id, pause_on ? 1 : 0);
 }
 
 

@@ -187,6 +187,10 @@ void AY3_8912::reset()
 
     cycles_per_sample = ((1000000 * cycle_multiplier) / 44100);
 
+    for (uint32_t i = 0; i < 32768; i++) {
+        sound_buffer[i] = 0;
+    }
+
     // Reset all registers.
     for (auto& i : registers) { i = 0; }
 

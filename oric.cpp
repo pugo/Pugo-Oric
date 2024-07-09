@@ -276,7 +276,6 @@ int main(int argc, char *argv[])
     oric.init();
 	oric.get_machine().memory.load("ROMS/basic10.rom", 0xc000);
 //    oric.get_machine().memory.load("ROMS/basic11b.rom", 0xc000);
-//	oric.get_machine().memory.load("ROMS/font.rom", 0xb400);
     oric.get_machine().reset();
 
     std::cout << std::endl;
