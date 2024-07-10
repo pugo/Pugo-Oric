@@ -168,51 +168,42 @@ void Machine::run(uint32_t steps, Oric* oric)
         }
 
         while (cycle_count > 0) {
-            ran = cpu->exec_instruction(break_exec);
+            uint8_t cycles = cpu->time_instruction();
+
+            tape->exec(cycles);
+            mos_6522->exec(cycles);
+            ay3->exec(cycles);
+
+            cpu->exec_instruction(break_exec);
             update_key_output();
 
-            tape->exec(ran);
-            mos_6522->exec(ran);
-            ay3->exec(ran);
-
-            cycle_count -= ran;
-
-            if (steps > 0 && ++instructions == steps) {
-                return;
-            }
+            cycle_count -= cycles;
         }
 
         if (paint_raster(oric)) {
             while (SDL_PollEvent(&event)) {
-                // We are only worried about SDL_KEYDOWN and SDL_KEYUP events.
-                switch (event.type)
+                if (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP)
                 {
-                    case SDL_KEYDOWN:
-                    case SDL_KEYUP:
-                    {
-                        auto sym = event.key.keysym.sym;
+                    auto sym = event.key.keysym.sym;
 
-                        if (event.key.keysym.sym == SDLK_F12 && event.type == SDL_KEYDOWN) {
-                            warpmode_on = !warpmode_on;
-                            std::cout << "Warp mode: " << (warpmode_on ? "on" : "off") << std::endl;
-                            if (! warpmode_on) {
-                                next_frame = SDL_GetTicks64();
-                            }
+                    if (event.key.keysym.sym == SDLK_F12 && event.type == SDL_KEYDOWN) {
+                        warpmode_on = !warpmode_on;
+                        std::cout << "Warp mode: " << (warpmode_on ? "on" : "off") << std::endl;
+                        if (! warpmode_on) {
+                            next_frame = SDL_GetTicks64();
                         }
-
-                        auto trans = key_translations.find(std::make_pair(sym, event.key.keysym.mod));
-                        if (trans != key_translations.end()) {
-                            sym = trans->second.first;
-                        }
-
-                        auto key = key_map.find(sym);
-                        if (key != key_map.end()) {
-                            key_press(key->second, event.type == SDL_KEYDOWN);
-                        }
-                        break;
                     }
-                    default:
-                        break;
+
+                    auto trans = key_translations.find(std::make_pair(sym, event.key.keysym.mod));
+                    if (trans != key_translations.end()) {
+                        sym = trans->second.first;
+                    }
+
+                    auto key = key_map.find(sym);
+                    if (key != key_map.end()) {
+                        key_press(key->second, event.type == SDL_KEYDOWN);
+                    }
+                    break;
                 }
             }
 
@@ -234,7 +225,7 @@ void Machine::run(uint32_t steps, Oric* oric)
 
 inline bool Machine::paint_raster(Oric* oric)
 {
-    bool render_screen  = false;
+    bool render_screen = false;
 
     if (++raster_current == raster_max) {
         raster_current = 0;

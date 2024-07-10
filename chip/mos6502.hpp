@@ -78,8 +78,8 @@ public:
     void PrintStat();
     void PrintStat(uint16_t address);
 
-    bool exec_instruction_cycles(int16_t cycles);
-    uint8_t exec_instruction(bool& a_Brk);
+    uint8_t time_instruction();
+    void exec_instruction(bool& a_Brk);
 
     // Registers
     uint8_t A;

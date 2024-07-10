@@ -40,17 +40,11 @@
 #define PAGECHECK(n) (((addr + n) & 0xff00) != (addr & 0xff00))
 #define PAGECHECK2(a, b) ((a & 0xff00) != (b & 0xff00))
 
-#define PAGECHECKED_READ_ADDR_ABS_X  addr = READ_ADDR_ABS(); extra += PAGECHECK(X) ? 1 : 0; addr += X;
-#define PAGECHECKED_READ_ADDR_ABS_Y  addr = READ_ADDR_ABS(); extra += PAGECHECK(Y) ? 1 : 0; addr += Y;
-
-
 #define READ_ADDR_IND_X()   (memory_read_word_zp_handler(machine, READ_BYTE_IMM() + X))
 #define READ_ADDR_IND_Y()   (memory_read_word_zp_handler(machine, READ_BYTE_IMM()) + Y)
 
-#define PAGECHECKED_READ_ADDR_IND_Y  addr = memory_read_word_zp_handler(machine, READ_BYTE_IMM()); extra += PAGECHECK(Y) ? 1 : 0; addr += Y;
-#define PAGECHECK_JUMP extra += PAGECHECK2(PC, pc_initial) ? 1 : 0;
-
 #define READ_JUMP_ADDR()    (b1 = READ_BYTE_IMM(), b1 & 0x80 ? (PC - ((b1 ^ 0xff)+1)) : (PC + b1))
+#define PEEK_JUMP_ADDR()    (b1 = memory_read_byte_handler(machine, PC), b1 & 0x80 ? (PC - ((b1 ^ 0xff)+1)) : (PC + b1))
 
 // Read data
 #define READ_BYTE_ZP()      memory_read_byte_zp_handler(machine, READ_ADDR_ZP())
@@ -293,16 +287,11 @@ void MOS6502::SBC(uint8_t a_Val)
     //std::cout << "A now: " << hex << A << std::std::endl;
 }
 
-bool MOS6502::exec_instruction_cycles(int16_t cycles)
-{
-    bool brk = false;
-    while (!brk && cycles >= 0) {
-        cycles -= exec_instruction(brk);
-    }
-    return !brk;
-}
 
-uint8_t MOS6502::exec_instruction(bool& a_Brk)
+#define PEEK_ADDR_ABS()     (memory_read_byte_handler(machine, PC + 1) | memory_read_byte_handler(machine, PC + 2) << 8)
+
+
+uint8_t MOS6502::time_instruction()
 {
     uint8_t extra = 0;
 
@@ -310,6 +299,122 @@ uint8_t MOS6502::exec_instruction(bool& a_Brk)
         if (handle_irq()) {
             extra += 7;
         }
+    }
+
+    uint8_t b1, b2;
+    uint16_t addr;
+    uint8_t instruction = memory_read_byte_handler(machine, PC);
+
+    switch(instruction)
+    {
+        case LDA_ABS_X:
+        case LDY_ABS_X:
+        case ADC_ABS_X:
+        case SBC_ABS_X:
+        case AND_ABS_X:
+        case ORA_ABS_X:
+        case EOR_ABS_X:
+        case CMP_ABS_X:
+            addr = PEEK_ADDR_ABS();
+            extra += PAGECHECK(X) ? 1 : 0;
+            break;
+
+        case LDA_ABS_Y:
+        case LDX_ABS_Y:
+        case ADC_ABS_Y:
+        case SBC_ABS_Y:
+        case AND_ABS_Y:
+        case ORA_ABS_Y:
+        case EOR_ABS_Y:
+        case CMP_ABS_Y:
+            addr = PEEK_ADDR_ABS();
+            extra += PAGECHECK(Y) ? 1 : 0;
+            break;
+
+        case LDA_IND_Y:
+        case ADC_IND_Y:
+        case SBC_IND_Y:
+        case AND_IND_Y :
+        case ORA_IND_Y:
+        case EOR_IND_Y:
+        case CMP_IND_Y:
+            addr = memory_read_word_zp_handler(machine, memory_read_byte_handler(machine, PC + 1));
+            extra += PAGECHECK(Y) ? 1 : 0;
+            break;
+
+
+        case BCC:
+            if (!C) {
+                addr = PEEK_JUMP_ADDR();
+                extra += PAGECHECK2(addr, PC) ? 1 : 0;
+                ++extra;
+            }
+            break;
+        case BCS:
+            if (C) {
+                addr = PEEK_JUMP_ADDR();
+                extra += PAGECHECK2(addr, PC) ? 1 : 0;
+                ++extra;
+            }
+            break;
+        case BEQ:
+            if (Z) {
+                addr = PEEK_JUMP_ADDR();
+                extra += PAGECHECK2(addr, PC) ? 1 : 0;
+                ++extra;
+            }
+            break;
+        case BNE:
+            if (!Z) {
+                addr = PEEK_JUMP_ADDR();
+                extra += PAGECHECK2(addr, PC) ? 1 : 0;
+                ++extra;
+            }
+            break;
+
+        case BMI:
+            if (N) {
+                addr = PEEK_JUMP_ADDR();
+                extra += PAGECHECK2(addr, PC) ? 1 : 0;
+                ++extra;
+            }
+            break;
+
+        case BPL:
+            if (!N) {
+                addr = PEEK_JUMP_ADDR();
+                extra += PAGECHECK2(addr, PC) ? 1 : 0;
+                ++extra;
+            }
+            break;
+
+        case BVC:
+            if (!V) {
+                addr = PEEK_JUMP_ADDR();
+                extra += PAGECHECK2(addr, PC) ? 1 : 0;
+                ++extra;
+            }
+            break;
+
+        case BVS:
+            if (V) {
+                addr = PEEK_JUMP_ADDR();
+                extra += PAGECHECK2(addr, PC) ? 1 : 0;
+                ++extra;
+            }
+            break;
+
+        default:
+    }
+
+    return opcode_cycles[instruction].cycles + extra;
+}
+
+
+void MOS6502::exec_instruction(bool& a_Brk)
+{
+    if (irq_flag) {
+        handle_irq();
     }
 
     uint8_t b1, b2;
@@ -334,18 +439,18 @@ uint8_t MOS6502::exec_instruction(bool& a_Brk)
             SET_FLAG_NZ(A = READ_BYTE_ABS());
             break;
         case LDA_ABS_X:
-            PAGECHECKED_READ_ADDR_ABS_X;
+            addr = READ_ADDR_ABS_X();
             SET_FLAG_NZ(A = memory_read_byte_handler(machine, addr));
             break;
         case LDA_ABS_Y:
-            PAGECHECKED_READ_ADDR_ABS_Y;
+            addr = READ_ADDR_ABS_Y();
             SET_FLAG_NZ(A = memory_read_byte_handler(machine, addr));
             break;
         case LDA_IND_X:
             SET_FLAG_NZ(A = READ_BYTE_IND_X());
             break;
         case LDA_IND_Y:
-            PAGECHECKED_READ_ADDR_IND_Y;
+            addr = READ_ADDR_IND_Y();
             SET_FLAG_NZ(A = memory_read_byte_handler(machine, addr));
             break;
 
@@ -362,7 +467,7 @@ uint8_t MOS6502::exec_instruction(bool& a_Brk)
             SET_FLAG_NZ(X = READ_BYTE_ABS());
             break;
         case LDX_ABS_Y:
-            PAGECHECKED_READ_ADDR_ABS_Y;
+            addr = READ_ADDR_ABS_Y();
             SET_FLAG_NZ(X = memory_read_byte_handler(machine, addr));
             break;
 
@@ -380,7 +485,7 @@ uint8_t MOS6502::exec_instruction(bool& a_Brk)
             SET_FLAG_NZ(Y = READ_BYTE_ABS());
             break;
         case LDY_ABS_X:
-            PAGECHECKED_READ_ADDR_ABS_X;
+            addr = READ_ADDR_ABS_X();
             SET_FLAG_NZ(Y = memory_read_byte_handler(machine, addr));
             break;
 
@@ -440,18 +545,18 @@ uint8_t MOS6502::exec_instruction(bool& a_Brk)
             ADC(READ_BYTE_ABS());
             break;
         case ADC_ABS_X:
-            PAGECHECKED_READ_ADDR_ABS_X;
+            addr = READ_ADDR_ABS_X();
             ADC(memory_read_byte_handler(machine, addr));
             break;
         case ADC_ABS_Y:
-            PAGECHECKED_READ_ADDR_ABS_Y;
+            addr = READ_ADDR_ABS_Y();
             ADC(memory_read_byte_handler(machine, addr));
             break;
         case ADC_IND_X:
             ADC(READ_BYTE_IND_X());
             break;
         case ADC_IND_Y:
-            PAGECHECKED_READ_ADDR_IND_Y;
+            addr = READ_ADDR_IND_Y();
             ADC(memory_read_byte_handler(machine, addr));
             break;
 
@@ -469,18 +574,18 @@ uint8_t MOS6502::exec_instruction(bool& a_Brk)
             SBC(READ_BYTE_ABS());
             break;
         case SBC_ABS_X:
-            PAGECHECKED_READ_ADDR_ABS_X;
+            addr = READ_ADDR_ABS_X();
             SBC(memory_read_byte_handler(machine, addr));
             break;
         case SBC_ABS_Y:
-            PAGECHECKED_READ_ADDR_ABS_Y;
+            addr = READ_ADDR_ABS_Y();
             SBC(memory_read_byte_handler(machine, addr));
             break;
         case SBC_IND_X:
             SBC(READ_BYTE_IND_X());
             break;
         case SBC_IND_Y:
-            PAGECHECKED_READ_ADDR_IND_Y;
+            addr = READ_ADDR_IND_Y();
             SBC(memory_read_byte_handler(machine, addr));
             break;
 
@@ -551,18 +656,18 @@ uint8_t MOS6502::exec_instruction(bool& a_Brk)
             SET_FLAG_NZ(A &= READ_BYTE_ABS());
             break;
         case AND_ABS_X:
-            PAGECHECKED_READ_ADDR_ABS_X;
+            addr = READ_ADDR_ABS_X();
             SET_FLAG_NZ(A &= memory_read_byte_handler(machine, addr));
             break;
         case AND_ABS_Y:
-            PAGECHECKED_READ_ADDR_ABS_Y;
+            addr = READ_ADDR_ABS_Y();
             SET_FLAG_NZ(A &= memory_read_byte_handler(machine, addr));
             break;
         case AND_IND_X:
             SET_FLAG_NZ(A &= READ_BYTE_IND_X());
             break;
         case AND_IND_Y :
-            PAGECHECKED_READ_ADDR_IND_Y;
+            addr = READ_ADDR_IND_Y();
             SET_FLAG_NZ(A &= memory_read_byte_handler(machine, addr));
             break;
 
@@ -580,18 +685,18 @@ uint8_t MOS6502::exec_instruction(bool& a_Brk)
             SET_FLAG_NZ(A |= READ_BYTE_ABS());
             break;
         case ORA_ABS_X:
-            PAGECHECKED_READ_ADDR_ABS_X;
+            addr = READ_ADDR_ABS_X();
             SET_FLAG_NZ(A |= memory_read_byte_handler(machine, addr));
             break;
         case ORA_ABS_Y:
-            PAGECHECKED_READ_ADDR_ABS_Y;
+            addr = READ_ADDR_ABS_Y();
             SET_FLAG_NZ(A |= memory_read_byte_handler(machine, addr));
             break;
         case ORA_IND_X:
             SET_FLAG_NZ(A |= READ_BYTE_IND_X());
             break;
         case ORA_IND_Y:
-            PAGECHECKED_READ_ADDR_IND_Y;
+            addr = READ_ADDR_IND_Y();
             SET_FLAG_NZ(A |= memory_read_byte_handler(machine, addr));
             break;
 
@@ -609,18 +714,18 @@ uint8_t MOS6502::exec_instruction(bool& a_Brk)
             SET_FLAG_NZ(A ^= READ_BYTE_ABS());
             break;
         case EOR_ABS_X:
-            PAGECHECKED_READ_ADDR_ABS_X;
+            addr = READ_ADDR_ABS_X();
             SET_FLAG_NZ(A ^= memory_read_byte_handler(machine, addr));
             break;
         case EOR_ABS_Y:
-            PAGECHECKED_READ_ADDR_ABS_Y;
+            addr = READ_ADDR_ABS_Y();
             SET_FLAG_NZ(A ^= memory_read_byte_handler(machine, addr));
             break;
         case EOR_IND_X:
             SET_FLAG_NZ(A ^= READ_BYTE_IND_X());
             break;
         case EOR_IND_Y:
-            PAGECHECKED_READ_ADDR_IND_Y;
+            addr = READ_ADDR_IND_Y();
             SET_FLAG_NZ(A ^= memory_read_byte_handler(machine, addr));
             break;
 
@@ -754,8 +859,6 @@ uint8_t MOS6502::exec_instruction(bool& a_Brk)
         case BCC:
             if (!C) {
                 PC = READ_JUMP_ADDR();
-                PAGECHECK_JUMP;
-                ++extra;
             }
             else
                 ++PC;
@@ -763,8 +866,6 @@ uint8_t MOS6502::exec_instruction(bool& a_Brk)
         case BCS:
             if (C) {
                 PC = READ_JUMP_ADDR();
-                PAGECHECK_JUMP;
-                ++extra;
             }
             else
                 ++PC;
@@ -772,8 +873,6 @@ uint8_t MOS6502::exec_instruction(bool& a_Brk)
         case BEQ:
             if (Z) {
                 PC = READ_JUMP_ADDR();
-                PAGECHECK_JUMP;
-                ++extra;
             }
             else
                 ++PC;
@@ -781,8 +880,6 @@ uint8_t MOS6502::exec_instruction(bool& a_Brk)
         case BNE:
             if (!Z) {
                 PC = READ_JUMP_ADDR();
-                PAGECHECK_JUMP;
-                ++extra;
             }
             else
                 ++PC;
@@ -791,8 +888,6 @@ uint8_t MOS6502::exec_instruction(bool& a_Brk)
         case BMI:
             if (N) {
                 PC = READ_JUMP_ADDR();
-                PAGECHECK_JUMP;
-                ++extra;
             }
             else
                 ++PC;
@@ -801,8 +896,6 @@ uint8_t MOS6502::exec_instruction(bool& a_Brk)
         case BPL:
             if (!N) {
                 PC = READ_JUMP_ADDR();
-                PAGECHECK_JUMP;
-                ++extra;
             }
             else
                 ++PC;
@@ -811,8 +904,6 @@ uint8_t MOS6502::exec_instruction(bool& a_Brk)
         case BVC:
             if (!V) {
                 PC = READ_JUMP_ADDR();
-                PAGECHECK_JUMP;
-                ++extra;
             }
             else
                 ++PC;
@@ -821,8 +912,6 @@ uint8_t MOS6502::exec_instruction(bool& a_Brk)
         case BVS:
             if (V) {
                 PC = READ_JUMP_ADDR();
-                PAGECHECK_JUMP;
-                ++extra;
             }
             else
                 ++PC;
@@ -886,13 +975,13 @@ uint8_t MOS6502::exec_instruction(bool& a_Brk)
             SET_FLAG_NZ((uint8_t)i);
             break;
         case CMP_ABS_X:
-            PAGECHECKED_READ_ADDR_ABS_X;
+            addr = READ_ADDR_ABS_X();
             i = A - memory_read_byte_handler(machine, addr);
             C = i >= 0;
             SET_FLAG_NZ((uint8_t)i);
             break;
         case CMP_ABS_Y:
-            PAGECHECKED_READ_ADDR_ABS_Y;
+            addr = READ_ADDR_ABS_Y();
             i = A - memory_read_byte_handler(machine, addr);
             C = i >= 0;
             SET_FLAG_NZ((uint8_t)i);
@@ -903,7 +992,7 @@ uint8_t MOS6502::exec_instruction(bool& a_Brk)
             SET_FLAG_NZ((uint8_t)i);
             break;
         case CMP_IND_Y:
-            PAGECHECKED_READ_ADDR_IND_Y;
+            addr = READ_ADDR_IND_Y();
             i = A - memory_read_byte_handler(machine, addr);
             C = i >= 0;
             SET_FLAG_NZ((uint8_t)i);
@@ -1037,6 +1126,4 @@ uint8_t MOS6502::exec_instruction(bool& a_Brk)
     if (! quiet) {
         PrintStat(pc_initial);
     }
-
-    return opcode_cycles[instruction].cycles + extra;
 }
