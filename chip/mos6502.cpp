@@ -44,7 +44,7 @@
 #define READ_ADDR_IND_Y()   (memory_read_word_zp_handler(machine, READ_BYTE_IMM()) + Y)
 
 #define READ_JUMP_ADDR()    (b1 = READ_BYTE_IMM(), b1 & 0x80 ? (PC - ((b1 ^ 0xff)+1)) : (PC + b1))
-#define PEEK_JUMP_ADDR()    (b1 = memory_read_byte_handler(machine, PC), b1 & 0x80 ? (PC - ((b1 ^ 0xff)+1)) : (PC + b1))
+#define PEEK_JUMP_ADDR(pc)    (b1 = memory_read_byte_handler(machine, pc+1), b1 & 0x80 ? (pc + 2 - ((b1 ^ 0xff)+1)) : (pc + 2 + b1))
 
 // Read data
 #define READ_BYTE_ZP()      memory_read_byte_zp_handler(machine, READ_ADDR_ZP())
@@ -65,41 +65,6 @@
 #define Z	(!Z_INTERN)
 #define N	(!!(N_INTERN & 0x80))
 
-
-const char * opcodenames[256] = {
-    "BRK",     "ORA_IND_X", "(none)",  "(none)", "(none)",    "ORA_ZP",    "ASL_ZP",    "(none)",  // 00
-    "PHP",     "ORA_IMM",   "ASL_ACC", "(none)", "(none)",    "ORA_ABS",   "ASL_ABS",   "(none)",
-    "BPL",     "ORA_IND_Y", "(none)",  "(none)", "(none)",    "ORA_ZP_X",  "ASL_ZP_X",  "(none)",  // 10
-    "CLC",     "ORA_ABS_Y", "(none)",  "(none)", "(none)",    "ORA_ABS_X", "ASL_ABS_X", "(none)",
-    "JSR",     "AND_IND_X", "(none)",  "(none)", "BIT_ZP",    "AND_ZP",    "ROL_ZP",    "(none)",  // 20
-    "PLP",     "AND_IMM",   "ROL_ACC", "(none)", "BIT_ABS",   "AND_ABS",   "ROL_ABS",   "(none)",
-    "BMI ",    "AND_IND_Y", "(none)",  "(none)", "(none)",    "AND_ZP_X",  "ROL_ZP_X",  "(none)",  // 30
-    "SEC",     "AND_ABS_Y", "(none)",  "(none)", "(none)",    "AND_ABS_X", "ROL_ABS_X", "(none)",
-    "RTI",     "EOR_IND_X", "(none)",  "(none)", "(none)",    "EOR_ZP",    "LSR_ZP",    "(none)",  // 40
-    "PHA",     "EOR_IMM",   "LSR_ACC", "(none)", "JMP_ABS",   "EOR_ABS",   "LSR_ABS",   "(none)",
-    "BVC",     "EOR_IND_Y", "(none)",  "(none)", "(none)",    "EOR_ZP_X",  "LSR_ZP_X",  "(none)",  // 50
-    "CLI",     "EOR_ABS_Y", "(none)",  "(none)", "(none)",    "EOR_ABS_X", "LSR_ABS_X", "(none)",
-    "RTS",     "ADC_IND_X", "(none)",  "(none)", "(none)",    "ADC_ZP",    "ROR_ZP",    "(none)",  // 60
-    "PLA",     "ADC_IMM",   "ROR_ACC", "(none)", "JMP_IND",   "ADC_ABS",   "ROR_ABS",   "(none)",
-    "BVS",     "ADC_IND_Y", "(none)",  "(none)", "(none)",    "ADC_ZP_X",  "ROR_ZP_X",  "(none)",  // 70
-    "SEI",     "ADC_ABS_Y", "(none)",  "(none)", "(none)",    "ADC_ABS_X", "ROR_ABS_X", "(none)",
-    "(none)",  "STA_IND_X", "(none)",  "(none)", "STY_ZP",    "STA_ZP",    "STX_ZP",    "(none)",  // 80
-    "DEY",     "(none)",    "TXA",     "(none)", "STY_ABS",   "STA_ABS",   "STX_ABS",   "(none)",
-    "BCC",     "STA_IND_Y", "(none)",  "(none)", "STY_ZP_X",  "STA_ZP_X",  "STX_ZP_Y",  "(none)",  // 90
-    "TYA",     "STA_ABS_Y", "TXS",     "(none)", "(none)",    "STA_ABS_X", "(none)",    "(none)",
-    "LDY_IMM", "LDA_IND_X", "LDX_IMM", "(none)", "LDY_ZP",    "LDA_ZP",    "LDX_ZP",    "(none)",  // a0
-    "TAY",     "LDA_IMM",   "TAX",     "(none)", "LDY_ABS",   "LDA_ABS",   "LDX_ABS",   "(none)",
-    "BCS",     "LDA_IND_Y", "(none)",  "(none)", "LDY_ZP_X",  "LDA_ZP_X",  "LDX_ZP_Y",  "(none)",  // b0
-    "CLV",     "LDA_ABS_Y", "TSX",     "(none)", "LDY_ABS_X", "LDA_ABS_X", "LDX_ABS_Y", "(none)",
-    "CPY_IMM", "CMP_IND_X", "(none)",  "(none)", "CPY_ZP",    "CMP_ZP",    "DEC_ZP",    "(none)",  // c0
-    "INY",     "CMP_IMM",   "DEX",     "(none)", "CPY_ABS",   "CMP_ABS",   "DEC_ABS",   "(none)",
-    "BNE",     "CMP_IND_Y", "(none)",  "(none)", "(none)",    "CMP_ZP_X",  "DEC_ZP_X",  "(none)",  // d0
-    "CLD",     "CMP_ABS_Y", "(none)",  "(none)", "(none)",    "CMP_ABS_X", "DEC_ABS_X", "(none)",
-    "CPX_IMM", "SBC_IND_X", "(none)",  "(none)", "CPX_ZP",    "SBC_ZP",    "INC_ZP",    "(none)",  // e0
-    "INX",     "SBC_IMM",   "NOP",     "(none)", "CPX_ABS",   "SBC_ABS",   "INC_ABS",   "(none)",
-    "BEQ",     "SBC_IND_Y", "(none)",  "(none)", "(none)",    "SBC_ZP_X",  "INC_ZP_X",  "(none)",  // f0
-    "SED",     "SBC_ABS_Y", "(none)",  "(none)", "(none)",    "SBC_ABS_X", "INC_ABS_X", "(none)",
-};
 
 MOS6502::MOS6502(Machine& a_Machine) :
     A(0),
@@ -288,22 +253,22 @@ void MOS6502::SBC(uint8_t a_Val)
 }
 
 
-#define PEEK_ADDR_ABS()     (memory_read_byte_handler(machine, PC + 1) | memory_read_byte_handler(machine, PC + 2) << 8)
+#define PEEK_ADDR_ABS()     (memory_read_byte_handler(machine, _pc + 1) | memory_read_byte_handler(machine, _pc + 2) << 8)
 
 
 uint8_t MOS6502::time_instruction()
 {
+    uint16_t _pc = PC;
     uint8_t extra = 0;
 
-    if (irq_flag) {
-        if (handle_irq()) {
-            extra += 7;
-        }
+    if (irq_flag && !I) {
+        _pc = memory_read_word_handler(machine, IRQ_VECTOR_L);
+        extra += 7;
     }
 
-    uint8_t b1, b2;
+    uint8_t b1;
     uint16_t addr;
-    uint8_t instruction = memory_read_byte_handler(machine, PC);
+    uint8_t instruction = memory_read_byte_handler(machine, _pc);
 
     switch(instruction)
     {
@@ -334,73 +299,65 @@ uint8_t MOS6502::time_instruction()
         case LDA_IND_Y:
         case ADC_IND_Y:
         case SBC_IND_Y:
-        case AND_IND_Y :
+        case AND_IND_Y:
         case ORA_IND_Y:
         case EOR_IND_Y:
         case CMP_IND_Y:
-            addr = memory_read_word_zp_handler(machine, memory_read_byte_handler(machine, PC + 1));
+            addr = memory_read_word_zp_handler(machine, memory_read_byte_handler(machine, _pc + 1));
             extra += PAGECHECK(Y) ? 1 : 0;
             break;
 
 
         case BCC:
             if (!C) {
-                addr = PEEK_JUMP_ADDR();
-                extra += PAGECHECK2(addr, PC) ? 1 : 0;
-                ++extra;
+                addr = PEEK_JUMP_ADDR(_pc);
+                extra += PAGECHECK2(addr, _pc) ? 2 : 1;
             }
             break;
         case BCS:
             if (C) {
-                addr = PEEK_JUMP_ADDR();
-                extra += PAGECHECK2(addr, PC) ? 1 : 0;
-                ++extra;
+                addr = PEEK_JUMP_ADDR(_pc);
+                extra += PAGECHECK2(addr, _pc) ? 2 : 1;
             }
             break;
         case BEQ:
             if (Z) {
-                addr = PEEK_JUMP_ADDR();
-                extra += PAGECHECK2(addr, PC) ? 1 : 0;
-                ++extra;
+                addr = PEEK_JUMP_ADDR(_pc);
+                extra += PAGECHECK2(addr, _pc) ? 2 : 1;
             }
             break;
         case BNE:
             if (!Z) {
-                addr = PEEK_JUMP_ADDR();
-                extra += PAGECHECK2(addr, PC) ? 1 : 0;
-                ++extra;
+                addr = PEEK_JUMP_ADDR(_pc);
+                extra += PAGECHECK2(addr, _pc) ? 2 : 1;
             }
             break;
 
         case BMI:
             if (N) {
-                addr = PEEK_JUMP_ADDR();
-                extra += PAGECHECK2(addr, PC) ? 1 : 0;
-                ++extra;
+                addr = PEEK_JUMP_ADDR(_pc);
+                extra += PAGECHECK2(addr, _pc) ? 2 : 1;
             }
             break;
 
         case BPL:
             if (!N) {
-                addr = PEEK_JUMP_ADDR();
-                extra += PAGECHECK2(addr, PC) ? 1 : 0;
-                ++extra;
+                addr = PEEK_JUMP_ADDR(_pc);
+                extra += PAGECHECK2(addr, _pc) ? 2 : 1;
             }
             break;
 
         case BVC:
             if (!V) {
-                addr = PEEK_JUMP_ADDR();
-                extra += PAGECHECK2(addr, PC) ? 1 : 0;
-                ++extra;
+                addr = PEEK_JUMP_ADDR(_pc);
+                extra += PAGECHECK2(addr, _pc) ? 2 : 1;
             }
             break;
 
         case BVS:
             if (V) {
-                addr = PEEK_JUMP_ADDR();
-                extra += PAGECHECK2(addr, PC) ? 1 : 0;
-                ++extra;
+                addr = PEEK_JUMP_ADDR(_pc);
+                extra += PAGECHECK2(addr, _pc) ? 2 : 1;
             }
             break;
 
