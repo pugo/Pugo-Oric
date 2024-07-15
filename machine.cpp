@@ -173,14 +173,15 @@ void Machine::run(uint32_t steps, Oric* oric)
             tape->exec(cycles);
             mos_6522->exec(cycles);
             ay3->exec(cycles);
-
-            cpu->exec_instruction(break_exec);
             update_key_output();
 
             cycle_count -= cycles;
+            cpu->exec_instruction(break_exec);
         }
 
         if (paint_raster(oric)) {
+            next_frame += 20;
+
             while (SDL_PollEvent(&event)) {
                 if (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP)
                 {
@@ -207,7 +208,6 @@ void Machine::run(uint32_t steps, Oric* oric)
                 }
             }
 
-            next_frame += 20;
             uint64_t now = SDL_GetTicks64();
 
             if (now > next_frame) {
@@ -215,6 +215,7 @@ void Machine::run(uint32_t steps, Oric* oric)
             }
             else {
                 if (! warpmode_on) {
+//                    std::cout << "delay: " << (int) (next_frame - now) << std::endl;
                     SDL_Delay(next_frame - now);
                 }
             }
@@ -233,10 +234,11 @@ inline bool Machine::paint_raster(Oric* oric)
         frontend->render_graphics();
     }
 
-    if ((raster_current >= raster_visible_first) && (raster_current < raster_visible_last)) {
-        frontend->update_graphics(raster_current - raster_visible_first, memory.mem);
+    if ((raster_current < raster_visible_first) || (raster_current >= raster_visible_last)) {
+        return render_screen;
     }
 
+    frontend->update_graphics(raster_current - raster_visible_first, memory.mem);
     return render_screen;
 }
 

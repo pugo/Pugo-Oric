@@ -76,13 +76,13 @@ void MOS6522::reset()
     cb2 = false;
     cb2_do_pulse = false;
 
-    ira = 0;   // input register A
-    ora = 0;   // output register A
-    ddra = 0;  // data direction register A
+    ira = 0xff;   // input register A
+    ora = 0;      // output register A
+    ddra = 0;     // data direction register A
 
-    irb = 0;   // input register B
-    orb = 0;   // output register B
-    ddrb = 0;  // data direction register B
+    irb = 0xff;   // input register B
+    orb = 0;      // output register B
+    ddrb = 0;     // data direction register B
 
     t1_latch_low = 0;
     t1_latch_high = 0;
@@ -128,9 +128,11 @@ short MOS6522::exec(uint8_t a_Cycles)
         case 0x00:
         case 0x80:
             // T1 - One shot
-            if (t1_run && a_Cycles >  t1_counter) {
+            if (t1_run && a_Cycles > t1_counter) {
                 irq_set(IRQ_T1);
-                orb |= (acr & 0x80);    // Output 1 on PB7 if ACR7 is set.
+                if (acr & 0x80) {
+                    orb |= 0x80;    // Output 1 on PB7 if ACR7 is set.
+                }
                 t1_run = false;
             }
             t1_counter -= a_Cycles;
@@ -142,10 +144,11 @@ short MOS6522::exec(uint8_t a_Cycles)
 
             if (t1_reload) {
                 --todo_cycles;
-                t1_counter = ((t1_latch_high << 8) | t1_latch_low); // +2: compensate for boundary time and load time.
+                t1_counter = (t1_latch_high << 8) | t1_latch_low; // +2: compensate for boundary time and load time.
                 t1_reload = false;
             }
 
+//            std::cout << "todo_cycles: " << (int) todo_cycles << "; t1_counter: " << (int) t1_counter << std::endl;
             while (todo_cycles > t1_counter) {
                 todo_cycles -= (t1_counter + 1);
                 t1_counter = 0xffff;
@@ -162,6 +165,7 @@ short MOS6522::exec(uint8_t a_Cycles)
 
                 --todo_cycles;
                 t1_counter = ((t1_latch_high << 8) | t1_latch_low); // +2: compensate for boundary time and load time.
+//                std::cout << " - todo_cycles: " << (int) todo_cycles << std::endl;
             }
 
             t1_counter -= todo_cycles;
@@ -188,13 +192,27 @@ short MOS6522::exec(uint8_t a_Cycles)
     switch (acr & 0x1c)
     {
         case 0x00:  // off
+            break;
         case 0x04:  // Shift in under T2 control (not implemented)
+            std::cout << "shift: 0x04" << std::endl;
+            break;
         case 0x08:  // Shift in under O2 control (not implemented)
+            std::cout << "shift: 0x08" << std::endl;
+            break;
         case 0x0c:  // Shift in under control of external clock (not implemented)
+            std::cout << "shift: 0x0c" << std::endl;
+            break;
         case 0x1c:  // Shift out under control of external clock (not implemented)
+            std::cout << "shift: 0x1c" << std::endl;
+            break;
         case 0x10:  // Shift out free-running at T2 rate
+            std::cout << "shift: 0x10" << std::endl;
+            break;
         case 0x14:  // Shift out under T2 control
+            std::cout << "shift: 0x14" << std::endl;
+            break;
         case 0x18:  // Shift out under O2 control
+            std::cout << "shift: 0x18" << std::endl;
             break;
     }
 
@@ -441,7 +459,7 @@ void MOS6522::irq_check()
 void MOS6522::irq_set(uint8_t a_Bits)
 {
     ifr |= a_Bits;
-    if (((ifr & ier) & 0x7f) != 0) {
+    if ((ifr & ier) & 0x7f) {
         ifr |= 0x80;
     }
     if (a_Bits & ier) {
@@ -481,7 +499,7 @@ void MOS6522::write_ca2(bool a_Value)
     if (ca2 != a_Value) {
         ca2 = a_Value;
         // Set interrupt on pos/neg transition if 0 or 4 in pcr.
-        if ((ca2 && ((pcr & 0x0C) == 0x04)) || (!ca2 && ((pcr & 0x0C) == 0x00))) {
+        if ((ca2 && ((pcr & 0x0C) == 0x04 || (pcr & 0x0C) == 0x06)) || (!ca2 && ((pcr & 0x0C) == 0x00) || (pcr & 0x0C) == 0x02)) {
             irq_set(IRQ_CA2);
         }
 

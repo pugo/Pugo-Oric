@@ -311,57 +311,55 @@ uint8_t MOS6502::time_instruction()
         case BCC:
             if (!C) {
                 addr = PEEK_JUMP_ADDR(_pc);
-                extra += PAGECHECK2(addr, _pc) ? 2 : 1;
+                extra += PAGECHECK2(addr, (_pc + 2)) ? 2 : 1;
             }
             break;
         case BCS:
             if (C) {
                 addr = PEEK_JUMP_ADDR(_pc);
-                extra += PAGECHECK2(addr, _pc) ? 2 : 1;
+                extra += PAGECHECK2(addr, (_pc + 2)) ? 2 : 1;
             }
             break;
         case BEQ:
             if (Z) {
                 addr = PEEK_JUMP_ADDR(_pc);
-                extra += PAGECHECK2(addr, _pc) ? 2 : 1;
+                extra += PAGECHECK2(addr, (_pc + 2)) ? 2 : 1;
             }
             break;
         case BNE:
             if (!Z) {
                 addr = PEEK_JUMP_ADDR(_pc);
-                extra += PAGECHECK2(addr, _pc) ? 2 : 1;
+                extra += PAGECHECK2(addr, (_pc + 2)) ? 2 : 1;
             }
             break;
 
         case BMI:
             if (N) {
                 addr = PEEK_JUMP_ADDR(_pc);
-                extra += PAGECHECK2(addr, _pc) ? 2 : 1;
+                extra += PAGECHECK2(addr, (_pc + 2)) ? 2 : 1;
             }
             break;
 
         case BPL:
             if (!N) {
                 addr = PEEK_JUMP_ADDR(_pc);
-                extra += PAGECHECK2(addr, _pc) ? 2 : 1;
+                extra += PAGECHECK2(addr, (_pc + 2)) ? 2 : 1;
             }
             break;
 
         case BVC:
             if (!V) {
                 addr = PEEK_JUMP_ADDR(_pc);
-                extra += PAGECHECK2(addr, _pc) ? 2 : 1;
+                extra += PAGECHECK2(addr, (_pc + 2)) ? 2 : 1;
             }
             break;
 
         case BVS:
             if (V) {
                 addr = PEEK_JUMP_ADDR(_pc);
-                extra += PAGECHECK2(addr, _pc) ? 2 : 1;
+                extra += PAGECHECK2(addr, (_pc + 2)) ? 2 : 1;
             }
             break;
-
-        default:
     }
 
     return opcode_cycles[instruction].cycles + extra;
@@ -1039,7 +1037,7 @@ void MOS6502::exec_instruction(bool& a_Brk)
         case TAX:  // Transfer A to X
             SET_FLAG_NZ(X = A);
             break;
-        case TXA:  // Transfer A to A
+        case TXA:  // Transfer X to A
             SET_FLAG_NZ(A = X);
             break;
         case TAY:  // Transfer A to Y
