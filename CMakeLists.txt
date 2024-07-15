@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.5)
 
 set(CMAKE_BUILD_TYPE Debug)
 
@@ -11,7 +11,8 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-set(CMAKE_CXX_FLAGS "-O3 -Wno-unsequenced")
+#set(CMAKE_CXX_FLAGS "-O3 -Wno-unsequenced")
+set(CMAKE_CXX_FLAGS "-O3 -pg")
 
 add_definitions(-DBOOST_LOG_DYN_LINK -DBOOST_SPIRIT_DEBUG -DBOOST_SPIRIT_DEBUG_ -DBOOST_SPIRIT_DEBUG_FLAGS_TREES)
 

@@ -59,16 +59,50 @@ public:
     void update_key_output();
     void via_orb_changed(uint8_t a_Orb);
 
-    static uint8_t read_byte(Machine& a_machine, uint16_t a_Address);
+//    static uint8_t read_byte(Machine& a_machine, uint16_t a_Address);
+
+    static uint8_t inline read_byte(Machine& a_Machine, uint16_t a_Address)
+    {
+        if (a_Address >= 0x300 && a_Address < 0x400) {
+            return a_Machine.mos_6522->read_byte(a_Address);
+        }
+        return a_Machine.memory.mem[a_Address];
+    }
+
+
+
     static uint8_t read_byte_zp(Machine& a_Machine, uint8_t a_Address);
 
-    static uint16_t read_word(Machine& a_Machine, uint16_t a_Address);
-    static uint16_t read_word_zp(Machine& a_Machine, uint8_t a_Address);
+//    static uint16_t read_word(Machine& a_Machine, uint16_t a_Address);
+    static uint16_t inline read_word(Machine &a_Machine, uint16_t a_Address)
+    {
+        return a_Machine.memory.mem[a_Address] | a_Machine.memory.mem[a_Address + 1] << 8;
+    }
+
+//    static uint16_t read_word_zp(Machine& a_Machine, uint8_t a_Address);
+    static uint16_t inline read_word_zp(Machine &a_Machine, uint8_t a_Address)
+    {
+        return a_Machine.memory.mem[a_Address] | a_Machine.memory.mem[a_Address + 1 & 0xff] << 8;
+    }
 
     static void write_byte(Machine& a_Machine, uint16_t a_Address, uint8_t a_Val);
-    static void write_byte_zp(Machine& a_Machine, uint8_t a_Address, uint8_t a_Val);
+//    static void write_byte_zp(Machine& a_Machine, uint8_t a_Address, uint8_t a_Val);
 
-    static uint8_t read_via_ora(Machine& a_Machine);
+    static void inline write_byte_zp(Machine &a_Machine, uint8_t a_Address, uint8_t a_Val)
+    {
+        if (a_Address > 0x00ff) {
+            return;
+        }
+        a_Machine.memory.mem[a_Address] = a_Val;
+    }
+
+//    static uint8_t read_via_ora(Machine& a_Machine);
+
+    static uint8_t inline read_via_ora(Machine& a_Machine)
+    {
+        return a_Machine.mos_6522->read_ora();
+    }
+
     static uint8_t read_via_orb(Machine& a_Machine);
 
     MOS6502* cpu;

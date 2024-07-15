@@ -362,14 +362,21 @@ uint8_t MOS6502::time_instruction()
             break;
     }
 
-    return opcode_cycles[instruction].cycles + extra;
+    return opcode_cycles[instruction] + extra;
 }
 
 
 void MOS6502::exec_instruction(bool& a_Brk)
 {
     if (irq_flag) {
-        handle_irq();
+        irq_flag = false;
+        if (!I) { // Interrupt disabled ?
+            PUSH_BYTE_STACK(PC >> 8);
+            PUSH_BYTE_STACK(PC & 0xff);
+            PUSH_BYTE_STACK(get_p());
+            I = true;
+            PC = memory_read_word_handler(machine, IRQ_VECTOR_L);
+        }
     }
 
     uint8_t b1, b2;
