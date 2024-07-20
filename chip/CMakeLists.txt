@@ -1,4 +1,3 @@
-cmake_minimum_required(VERSION 3.0)
 
 set(ORIC_SOURCES ${ORIC_SOURCES}
    chip/mos6502.cpp

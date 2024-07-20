@@ -245,7 +245,7 @@ short AY3_8912::exec(uint8_t cycles)
 
         if (cycle_count >= (cycles_per_sample + cycle_diff)) {
             if (move_sound_data) {
-                buffer_mutex.lock();
+//                buffer_mutex.lock();
                 uint32_t len = sound_buffer_index - sound_buffer_next_play_index;
 //    std::cout << "-- sound_buffer_index: " << std::dec << (int)sound_buffer_index << ", sound_buffer_next_play_index: " <<  (int)sound_buffer_next_play_index << ", len: " << (int)len << std::endl;
 
@@ -276,7 +276,7 @@ short AY3_8912::exec(uint8_t cycles)
                     }
                 }
 
-                buffer_mutex.unlock();
+//                buffer_mutex.unlock();
             }
 
             uint32_t out = 0;
@@ -473,7 +473,7 @@ void AY3_8912::audio_callback(void* user_data, uint8_t* raw_buffer, int len)
 
     bool underrun = false;
 
-    ay->buffer_mutex.lock();
+//    ay->buffer_mutex.lock();
     uint32_t first = ay->sound_buffer_next_play_index;
     if (ay->sound_buffer_index - first < samples) {
         underrun = true;
@@ -488,5 +488,5 @@ void AY3_8912::audio_callback(void* user_data, uint8_t* raw_buffer, int len)
         ay->move_sound_data = true;
     }
 
-    ay->buffer_mutex.unlock();
+//    ay->buffer_mutex.unlock();
 }

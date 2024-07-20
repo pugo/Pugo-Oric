@@ -20,6 +20,7 @@
 
 #include <iostream>
 #include <ostream>
+#include <cstdint>
 
 class Memory
 {

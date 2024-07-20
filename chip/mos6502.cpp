@@ -82,6 +82,7 @@ MOS6502::MOS6502(Machine& a_Machine) :
     quiet(false),
     machine(a_Machine),
     irq_flag(false),
+    do_interrupt(false),
     memory_read_byte_handler(nullptr),
     memory_read_byte_zp_handler(nullptr),
     memory_read_word_handler(nullptr),
@@ -113,6 +114,7 @@ void MOS6502::Reset()
     PC = memory_read_byte_handler(machine, RESET_VECTOR_L) + (memory_read_byte_handler(machine, RESET_VECTOR_H) << 8);
     SP = 0xff;
     irq_flag = false;
+    do_interrupt = false;
 }
 
 void MOS6502::PrintStat()
@@ -264,6 +266,7 @@ uint8_t MOS6502::time_instruction()
     if (irq_flag && !I) {
         _pc = memory_read_word_handler(machine, IRQ_VECTOR_L);
         extra += 7;
+        do_interrupt = true;
     }
 
     uint8_t b1;
@@ -362,14 +365,21 @@ uint8_t MOS6502::time_instruction()
             break;
     }
 
-    return opcode_cycles[instruction].cycles + extra;
+    return opcode_cycles[instruction] + extra;
 }
 
 
 void MOS6502::exec_instruction(bool& a_Brk)
 {
-    if (irq_flag) {
-        handle_irq();
+    if (do_interrupt) {
+        do_interrupt = false;
+        irq_flag = false;
+
+        PUSH_BYTE_STACK(PC >> 8);
+        PUSH_BYTE_STACK(PC & 0xff);
+        PUSH_BYTE_STACK(get_p());
+        I = true;
+        PC = memory_read_word_handler(machine, IRQ_VECTOR_L);
     }
 
     uint8_t b1, b2;

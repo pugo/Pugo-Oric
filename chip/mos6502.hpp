@@ -130,6 +130,7 @@ protected:
     uint8_t SP;
     bool quiet;
     bool irq_flag;
+    bool do_interrupt;
 
     Monitor monitor;
 };

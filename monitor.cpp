@@ -268,6 +268,8 @@ uint16_t Monitor::disassemble(uint16_t address)
 
     uint8_t op = memory.mem[address++];
 
+    std::cout << "$" << std::setw(2) << (int)op << "\t";
+
     if (auto it = opcodes.find(op); it != opcodes.end())
     {
         std::cout << it->second.name;
