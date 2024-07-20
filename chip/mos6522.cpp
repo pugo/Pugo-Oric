@@ -76,11 +76,11 @@ void MOS6522::reset()
     cb2 = false;
     cb2_do_pulse = false;
 
-    ira = 0xff;   // input register A
+    ira = 0x00;   // input register A
     ora = 0;      // output register A
     ddra = 0;     // data direction register A
 
-    irb = 0xff;   // input register B
+    irb = 0x00;   // input register B
     orb = 0;      // output register B
     ddrb = 0;     // data direction register B
 
@@ -105,6 +105,7 @@ void MOS6522::reset()
 
 short MOS6522::exec(uint8_t a_Cycles)
 {
+//    std::cout << " -- MOS6522::exec: " << (int)a_Cycles << " --" << std::endl;
     if (a_Cycles == 0) {
         return 0;
     }
@@ -128,7 +129,7 @@ short MOS6522::exec(uint8_t a_Cycles)
         case 0x00:
         case 0x80:
             // T1 - One shot
-            if (t1_run && a_Cycles > t1_counter) {
+            if (t1_run && a_Cycles >= t1_counter) {
                 irq_set(IRQ_T1);
                 if (acr & 0x80) {
                     orb |= 0x80;    // Output 1 on PB7 if ACR7 is set.
@@ -141,34 +142,34 @@ short MOS6522::exec(uint8_t a_Cycles)
         case 0xC0:
             // T1 - Continuous
             todo_cycles = a_Cycles;
+//            std::cout << "cont t1: " << (int)t1_counter << std::endl;
 
             if (t1_reload) {
-                --todo_cycles;
-                t1_counter = (t1_latch_high << 8) | t1_latch_low; // +2: compensate for boundary time and load time.
+//                todo_cycles -= 2;
+//                t1_counter = (t1_latch_high << 8) | t1_latch_low; // +2: compensate for boundary time and load time.
                 t1_reload = false;
             }
 
 //            std::cout << "todo_cycles: " << (int) todo_cycles << "; t1_counter: " << (int) t1_counter << std::endl;
-            while (todo_cycles > t1_counter) {
-                todo_cycles -= (t1_counter + 1);
-                t1_counter = 0xffff;
+            if (todo_cycles >= t1_counter) {
+//                todo_cycles -= (t1_counter + 1);
                 irq_set(IRQ_T1);
 
                 if (acr & 0x80) {
                     orb ^= 0x80;    // Output squarewave on PB7 if ACR7 is set.
                 }
 
-                if (!todo_cycles) {
-                    t1_reload = true;
-                    break;
-                }
+//                if (!todo_cycles) {
+//                    t1_reload = true;
+//                    break;
+//                }
 
-                --todo_cycles;
-                t1_counter = ((t1_latch_high << 8) | t1_latch_low); // +2: compensate for boundary time and load time.
+//                --todo_cycles;
+                t1_counter = ((t1_latch_high << 8) | t1_latch_low) + 2; // +2: compensate for boundary time and load time.
 //                std::cout << " - todo_cycles: " << (int) todo_cycles << std::endl;
             }
-
-            t1_counter -= todo_cycles;
+            else
+                t1_counter -= todo_cycles;
             break;
     }
 
@@ -181,7 +182,7 @@ short MOS6522::exec(uint8_t a_Cycles)
             t2_reload = false;
         }
 
-        if (t2_run && (todo_cycles > t2_counter)) {
+        if (t2_run && (todo_cycles >= t2_counter)) {
 //            std::cout << "Timer2 Interrupt!" << std::endl;
             irq_set(IRQ_T2);
             t2_run = false;
@@ -391,6 +392,9 @@ void MOS6522::write_byte(uint16_t a_Offset, uint8_t a_Value)
             break;
         case ACR:
             acr = a_Value;
+            if( ( ( a_Value & 0xc0 ) != 0x40 ) &&
+                ( ( a_Value & 0xc0 ) != 0xc0 ) )
+                t1_reload = false;
             break;
         case PCR:
             pcr = a_Value;
@@ -402,6 +406,7 @@ void MOS6522::write_byte(uint16_t a_Offset, uint8_t a_Value)
                 }
                 if (ca2_changed_handler) { ca2_changed_handler(machine, ca2); }
             }
+
             if ((pcr & 0xc0) == 0xc0) {
                 cb2 = !!(pcr & 0x20);
                 if (!cb2) {
@@ -440,6 +445,17 @@ void MOS6522::set_irb_bit(const uint8_t a_Bit, const bool a_Value)
 {
     uint8_t b = 1 << a_Bit;
     irb = (irb & ~b) | (a_Value ? b : 0);
+
+    if (acr & 0x20) {
+        if (a_Bit == 5 && (irb & 0x40) && !a_Value) {
+            t2_counter--;
+
+            if (t2_run && (t2_counter == 0)) {
+                irq_set(IRQ_T2);
+                t2_run = false;
+            }
+        }
+    }
 }
 
 void MOS6522::irq_check()
