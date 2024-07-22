@@ -15,8 +15,6 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
-#include <unistd.h>
-#include <signal.h>
 
 #include <sstream>
 #include <cstdlib>
@@ -33,40 +31,16 @@
 namespace po = boost::program_options;
 
 
-Oric::Oric() :
+Oric::Oric(Config& config) :
+    config(config),
     state(STATE_RUN),
     last_command(""),
     last_address(0)
 {
-}
-
-
-bool Oric::parse_config(int argc, char **argv)
-{
-    try {
-        po::options_description desc("Allowed options");
-        desc.add_options()
-            ("help,?", "produce help message")
-            ("tape,t", po::value<std::filesystem::path>(&tape_path), "Tape file to use");
-
-        po::variables_map vm;
-        po::store(po::command_line_parser(argc, argv).options(desc).run(), vm);
-
-        if (vm.count("help")) {
-            std::cout << "Usage: oric [options]" << std::endl << desc;
-            return false;
-        }
-
-        po::notify(vm);
+    if (config.start_in_monitor()) {
+        state = STATE_MON;
     }
-    catch(std::exception& e)
-    {
-        std::cout << e.what() << std::endl;
-        return false;
-    }
-    return true;
 }
-
 
 
 void Oric::init()
@@ -79,6 +53,13 @@ void Oric::init()
     frontend->init_sound();
 
     machine->cpu->set_quiet(true);
+
+    if (config.use_atmos_rom()) {
+        machine->memory.load("ROMS/basic11b.rom", 0xc000);
+    }
+    else {
+    	machine->memory.load("ROMS/basic10.rom", 0xc000);
+    }
 }
 
 
@@ -232,54 +213,4 @@ Oric::State Oric::handle_command(std::string& a_Cmd)
     }
 
     return STATE_MON;
-}
-
-
-static void signal_handler(int);
-void init_signals(void);
-
-struct sigaction sigact;
-
-static void signal_handler(int a_Sig)
-{
-    std::cout << "Signal: " << a_Sig << std::endl;
-    if (a_Sig == SIGINT) {
-        Oric::get_instance().get_machine().stop();
-        Oric::get_instance().do_break();
-    }
-}
-
-
-void init_signals()
-{
-    sigact.sa_handler = signal_handler;
-    sigemptyset(&sigact.sa_mask);
-    sigact.sa_flags = 0;
-    sigaction(SIGINT, &sigact, (struct sigaction *)NULL);
-}
-
-
-int main(int argc, char *argv[])
-{
-    char pwd[1024];
-    getcwd(pwd, 1024);
-    std::cout << "pwd: " << pwd << std::endl;
-
-    init_signals();
-
-    Oric& oric = Oric::get_instance();
-
-    if (! oric.parse_config(argc, argv)) {
-        return 0;
-    }
-
-    oric.init();
-	oric.get_machine().memory.load("ROMS/basic10.rom", 0xc000);
-//    oric.get_machine().memory.load("ROMS/basic11b.rom", 0xc000);
-    oric.get_machine().reset();
-
-    std::cout << std::endl;
-    oric.run();
-
-    return 0;
 }

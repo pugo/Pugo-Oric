@@ -15,50 +15,31 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
-#ifndef ORIC_H
-#define ORIC_H
+#ifndef CONFIG_H
+#define CONFIG_H
 
 #include <iostream>
 #include <memory>
 #include <filesystem>
 
 #include "machine.hpp"
-#include "config.hpp"
 
-class Frontend;
 
-class Oric
+class Config
 {
 public:
-    enum State
-    {
-        STATE_RUN,
-        STATE_MON,
-        STATE_QUIT
-    };
+    Config();
 
-    Oric(Config& config);
-    ~Oric();
+    bool parse(int argc, char **argv);
 
-    void init();
-
-    Config& get_config() { return config; }
-    Machine& get_machine() { return *machine; }
-    Frontend& get_frontend() { return *frontend; }
-
-    void run();
-    void do_break();
+    std::filesystem::path& tape_path() { return _tape_path; }
+    bool start_in_monitor() { return _start_in_monitor; }
+    bool use_atmos_rom() { return _use_atmos_rom; }
 
 protected:
-    State handle_command(std::string& a_Cmd);
-    uint16_t string_to_word(std::string& a_Addr);
-
-    Config& config;
-    State state;
-    Frontend* frontend;
-    Machine* machine;
-    std::string last_command;
-    uint16_t last_address;
+    bool _start_in_monitor;
+    bool _use_atmos_rom;
+    std::filesystem::path _tape_path;
 };
 
-#endif // ORIC_H
+#endif // CONFIG_H

@@ -97,8 +97,8 @@ void Machine::init(Frontend* frontend)
     mos_6522 = new MOS6522(*this);
     ay3 = new AY3_8912(*this);
 
-    if (! oric->get_tape_path().empty()) {
-        tape = new TapeTap(*mos_6522, oric->get_tape_path());
+    if (! oric->get_config().tape_path().empty()) {
+        tape = new TapeTap(*mos_6522, oric->get_config().tape_path());
         if (!tape->init()) {
             exit(1);
         }

@@ -116,7 +116,6 @@ protected:
     inline bool paint_raster(Oric* oric);
 
     Oric* oric;
-
     Tape* tape;
 
     int32_t cycle_count;

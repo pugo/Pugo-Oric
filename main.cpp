@@ -15,50 +15,58 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
-#ifndef ORIC_H
-#define ORIC_H
+#include <signal.h>
 
-#include <iostream>
-#include <memory>
-#include <filesystem>
+#include <sstream>
+#include <string>
 
-#include "machine.hpp"
-#include "config.hpp"
+#include <boost/program_options.hpp>
+#include <boost/algorithm/string.hpp>
 
-class Frontend;
+#include "oric.hpp"
+#include "frontend.hpp"
 
-class Oric
+
+Oric* oric = nullptr;
+
+
+static void signal_handler(int);
+void init_signals();
+
+struct sigaction sigact;
+
+static void signal_handler(int a_Sig)
 {
-public:
-    enum State
-    {
-        STATE_RUN,
-        STATE_MON,
-        STATE_QUIT
-    };
+    if (a_Sig == SIGINT) {
+        oric->get_machine().stop();
+        oric->do_break();
+    }
+}
 
-    Oric(Config& config);
-    ~Oric();
 
-    void init();
+void init_signals()
+{
+    sigact.sa_handler = signal_handler;
+    sigemptyset(&sigact.sa_mask);
+    sigact.sa_flags = 0;
+    sigaction(SIGINT, &sigact, (struct sigaction *)NULL);
+}
 
-    Config& get_config() { return config; }
-    Machine& get_machine() { return *machine; }
-    Frontend& get_frontend() { return *frontend; }
 
-    void run();
-    void do_break();
+int main(int argc, char *argv[])
+{
+    Config config;
+    if (! config.parse(argc, argv)) {
+        return 0;
+    }
 
-protected:
-    State handle_command(std::string& a_Cmd);
-    uint16_t string_to_word(std::string& a_Addr);
+    oric = new Oric(config);
+    init_signals();
 
-    Config& config;
-    State state;
-    Frontend* frontend;
-    Machine* machine;
-    std::string last_command;
-    uint16_t last_address;
-};
+    oric->init();
+    oric->get_machine().reset();
 
-#endif // ORIC_H
+    oric->run();
+
+    return 0;
+}
