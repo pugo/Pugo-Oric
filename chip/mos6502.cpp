@@ -19,10 +19,9 @@
 #include "mos6502_opcodes.hpp"
 #include "mos6502_cycles.hpp"
 #include <machine.hpp>
-#include <memory.hpp>
 
 #include <iostream>
-#include "stdio.h"
+#include <cstdio>
 
 // Macros for addressing modes
 #define READ_BYTE_IMM()     memory_read_byte_handler(machine, PC++)
@@ -32,9 +31,9 @@
 #define READ_ADDR_ZP_X()    ((READ_BYTE_IMM() + X) & 0xff)
 #define READ_ADDR_ZP_Y()    ((READ_BYTE_IMM() + Y) & 0xff)
 
-#define READ_ADDR_ABS()     (READ_BYTE_IMM() | READ_BYTE_IMM()<<8)
-#define READ_ADDR_ABS_X()   (READ_ADDR_ABS() + X)
-#define READ_ADDR_ABS_Y()   (READ_ADDR_ABS() + Y)
+#define READ_ADDR_ABS()    addr = READ_BYTE_IMM(); addr += READ_BYTE_IMM() << 8
+#define READ_ADDR_ABS_X()   READ_ADDR_ABS(); addr += X
+#define READ_ADDR_ABS_Y()   READ_ADDR_ABS(); addr += Y
 
 // Direct assigning versions with page check
 #define PAGECHECK(n) (((addr + n) & 0xff00) != (addr & 0xff00))
@@ -51,7 +50,7 @@
 #define READ_BYTE_ZP_X()    memory_read_byte_zp_handler(machine, READ_ADDR_ZP_X())
 #define READ_BYTE_ZP_Y()    memory_read_byte_zp_handler(machine, READ_ADDR_ZP_Y())
 
-#define READ_BYTE_ABS()     memory_read_byte_handler(machine, READ_ADDR_ABS())
+#define READ_BYTE_ABS(b)   READ_ADDR_ABS(); b = memory_read_byte_handler(machine, addr)
 
 #define READ_BYTE_IND_X()   memory_read_byte_handler(machine, READ_ADDR_IND_X())
 #define READ_BYTE_IND_Y()   memory_read_byte_handler(machine, READ_ADDR_IND_Y())
@@ -94,9 +93,6 @@ MOS6502::MOS6502(Machine& a_Machine) :
 {
 }
 
-MOS6502::~MOS6502()
-{
-}
 
 void MOS6502::Reset()
 {
@@ -363,6 +359,8 @@ uint8_t MOS6502::time_instruction()
                 extra += PAGECHECK2(addr, (_pc + 2)) ? 2 : 1;
             }
             break;
+        default:
+            break;
     }
 
     return opcode_cycles[instruction] + extra;
@@ -383,7 +381,7 @@ void MOS6502::exec_instruction(bool& a_Brk)
     }
 
     uint8_t b1, b2;
-    uint16_t addr, w;
+    uint16_t addr;
     int i;
 
     uint16_t pc_initial = PC;
@@ -401,14 +399,15 @@ void MOS6502::exec_instruction(bool& a_Brk)
             SET_FLAG_NZ(A = READ_BYTE_ZP_X());
             break;
         case LDA_ABS:
-            SET_FLAG_NZ(A = READ_BYTE_ABS());
+            READ_BYTE_ABS(A);
+            SET_FLAG_NZ(A);
             break;
         case LDA_ABS_X:
-            addr = READ_ADDR_ABS_X();
+            READ_ADDR_ABS_X();
             SET_FLAG_NZ(A = memory_read_byte_handler(machine, addr));
             break;
         case LDA_ABS_Y:
-            addr = READ_ADDR_ABS_Y();
+            READ_ADDR_ABS_Y();
             SET_FLAG_NZ(A = memory_read_byte_handler(machine, addr));
             break;
         case LDA_IND_X:
@@ -429,10 +428,11 @@ void MOS6502::exec_instruction(bool& a_Brk)
             SET_FLAG_NZ(X = READ_BYTE_ZP_Y());
             break;
         case LDX_ABS:
-            SET_FLAG_NZ(X = READ_BYTE_ABS());
+            READ_BYTE_ABS(b1);
+            SET_FLAG_NZ(X = b1);
             break;
         case LDX_ABS_Y:
-            addr = READ_ADDR_ABS_Y();
+            READ_ADDR_ABS_Y();
             SET_FLAG_NZ(X = memory_read_byte_handler(machine, addr));
             break;
 
@@ -447,10 +447,11 @@ void MOS6502::exec_instruction(bool& a_Brk)
             SET_FLAG_NZ(Y = READ_BYTE_ZP_X());
             break;
         case LDY_ABS:
-            SET_FLAG_NZ(Y = READ_BYTE_ABS());
+            READ_BYTE_ABS(b1);
+            SET_FLAG_NZ(Y = b1);
             break;
         case LDY_ABS_X:
-            addr = READ_ADDR_ABS_X();
+            READ_ADDR_ABS_X();
             SET_FLAG_NZ(Y = memory_read_byte_handler(machine, addr));
             break;
 
@@ -461,13 +462,16 @@ void MOS6502::exec_instruction(bool& a_Brk)
             memory_write_byte_handler(machine, READ_ADDR_ZP_X(), A);
             break;
         case STA_ABS:
-            memory_write_byte_handler(machine, READ_ADDR_ABS(), A);
+            READ_ADDR_ABS();
+            memory_write_byte_handler(machine, addr, A);
             break;
         case STA_ABS_X:
-            memory_write_byte_handler(machine, READ_ADDR_ABS_X(), A);
+            READ_ADDR_ABS_X();
+            memory_write_byte_handler(machine, addr, A);
             break;
         case STA_ABS_Y:
-            memory_write_byte_handler(machine, READ_ADDR_ABS_Y(), A);
+            READ_ADDR_ABS_Y();
+            memory_write_byte_handler(machine, addr, A);
             break;
         case STA_IND_X:
             memory_write_byte_handler(machine, READ_ADDR_IND_X(), A);
@@ -483,7 +487,8 @@ void MOS6502::exec_instruction(bool& a_Brk)
             memory_write_byte_handler(machine, READ_ADDR_ZP_Y(), X);
             break;
         case STX_ABS:
-            memory_write_byte_handler(machine, READ_ADDR_ABS(), X);
+            READ_ADDR_ABS();
+            memory_write_byte_handler(machine, addr, X);
             break;
 
         case STY_ZP:
@@ -493,7 +498,8 @@ void MOS6502::exec_instruction(bool& a_Brk)
             memory_write_byte_handler(machine, READ_ADDR_ZP_X(), Y);
             break;
         case STY_ABS:
-            memory_write_byte_handler(machine, READ_ADDR_ABS(), Y);
+            READ_ADDR_ABS();
+            memory_write_byte_handler(machine, addr, Y);
             break;
 
             // ADD to accumulator with carry
@@ -507,14 +513,15 @@ void MOS6502::exec_instruction(bool& a_Brk)
             ADC(READ_BYTE_ZP_X());
             break;
         case ADC_ABS:
-            ADC(READ_BYTE_ABS());
+            READ_BYTE_ABS(b1);
+            ADC(b1);
             break;
         case ADC_ABS_X:
-            addr = READ_ADDR_ABS_X();
+            READ_ADDR_ABS_X();
             ADC(memory_read_byte_handler(machine, addr));
             break;
         case ADC_ABS_Y:
-            addr = READ_ADDR_ABS_Y();
+            READ_ADDR_ABS_Y();
             ADC(memory_read_byte_handler(machine, addr));
             break;
         case ADC_IND_X:
@@ -536,14 +543,15 @@ void MOS6502::exec_instruction(bool& a_Brk)
             SBC(READ_BYTE_ZP_X());
             break;
         case SBC_ABS:
-            SBC(READ_BYTE_ABS());
+            READ_BYTE_ABS(b1);
+            SBC(b1);
             break;
         case SBC_ABS_X:
-            addr = READ_ADDR_ABS_X();
+            READ_ADDR_ABS_X();
             SBC(memory_read_byte_handler(machine, addr));
             break;
         case SBC_ABS_Y:
-            addr = READ_ADDR_ABS_Y();
+            READ_ADDR_ABS_Y();
             SBC(memory_read_byte_handler(machine, addr));
             break;
         case SBC_IND_X:
@@ -564,11 +572,11 @@ void MOS6502::exec_instruction(bool& a_Brk)
             memory_write_byte_handler(machine, addr, SET_FLAG_NZ(memory_read_byte_handler(machine, addr) + 1));
             break;
         case INC_ABS:
-            addr = READ_ADDR_ABS();
+            READ_ADDR_ABS();
             memory_write_byte_handler(machine, addr, SET_FLAG_NZ(memory_read_byte_handler(machine, addr) + 1));
             break;
         case INC_ABS_X:
-            addr = READ_ADDR_ABS_X();
+            READ_ADDR_ABS_X();
             memory_write_byte_handler(machine, addr, SET_FLAG_NZ(memory_read_byte_handler(machine, addr) + 1));
             break;
 
@@ -582,11 +590,11 @@ void MOS6502::exec_instruction(bool& a_Brk)
             memory_write_byte_handler(machine, addr, SET_FLAG_NZ(memory_read_byte_handler(machine, addr) - 1));
             break;
         case DEC_ABS:
-            addr = READ_ADDR_ABS();
+            READ_ADDR_ABS();
             memory_write_byte_handler(machine, addr, SET_FLAG_NZ(memory_read_byte_handler(machine, addr) - 1));
             break;
         case DEC_ABS_X:
-            addr = READ_ADDR_ABS_X();
+            READ_ADDR_ABS_X();
             memory_write_byte_handler(machine, addr, SET_FLAG_NZ(memory_read_byte_handler(machine, addr) - 1));
             break;
 
@@ -618,14 +626,15 @@ void MOS6502::exec_instruction(bool& a_Brk)
             SET_FLAG_NZ(A &= READ_BYTE_ZP_X());
             break;
         case AND_ABS:
-            SET_FLAG_NZ(A &= READ_BYTE_ABS());
+            READ_BYTE_ABS(b1);
+            SET_FLAG_NZ(A &= b1);
             break;
         case AND_ABS_X:
-            addr = READ_ADDR_ABS_X();
+            READ_ADDR_ABS_X();
             SET_FLAG_NZ(A &= memory_read_byte_handler(machine, addr));
             break;
         case AND_ABS_Y:
-            addr = READ_ADDR_ABS_Y();
+            READ_ADDR_ABS_Y();
             SET_FLAG_NZ(A &= memory_read_byte_handler(machine, addr));
             break;
         case AND_IND_X:
@@ -647,14 +656,15 @@ void MOS6502::exec_instruction(bool& a_Brk)
             SET_FLAG_NZ(A |= READ_BYTE_ZP_X());
             break;
         case ORA_ABS:
-            SET_FLAG_NZ(A |= READ_BYTE_ABS());
+            READ_BYTE_ABS(b1);
+            SET_FLAG_NZ(A |= b1);
             break;
         case ORA_ABS_X:
-            addr = READ_ADDR_ABS_X();
+            READ_ADDR_ABS_X();
             SET_FLAG_NZ(A |= memory_read_byte_handler(machine, addr));
             break;
         case ORA_ABS_Y:
-            addr = READ_ADDR_ABS_Y();
+            READ_ADDR_ABS_Y();
             SET_FLAG_NZ(A |= memory_read_byte_handler(machine, addr));
             break;
         case ORA_IND_X:
@@ -676,14 +686,15 @@ void MOS6502::exec_instruction(bool& a_Brk)
             SET_FLAG_NZ(A ^= READ_BYTE_ZP_X());
             break;
         case EOR_ABS:
-            SET_FLAG_NZ(A ^= READ_BYTE_ABS());
+            READ_BYTE_ABS(b1);
+            SET_FLAG_NZ(A ^= b1);
             break;
         case EOR_ABS_X:
-            addr = READ_ADDR_ABS_X();
+            READ_ADDR_ABS_X();
             SET_FLAG_NZ(A ^= memory_read_byte_handler(machine, addr));
             break;
         case EOR_ABS_Y:
-            addr = READ_ADDR_ABS_Y();
+            READ_ADDR_ABS_Y();
             SET_FLAG_NZ(A ^= memory_read_byte_handler(machine, addr));
             break;
         case EOR_IND_X:
@@ -712,12 +723,14 @@ void MOS6502::exec_instruction(bool& a_Brk)
             memory_write_byte_zp_handler(machine, addr, SET_FLAG_NZ(b1 <<= 1));
             break;
         case ASL_ABS:
-            b1 = memory_read_byte_handler(machine, addr = READ_ADDR_ABS());
+            READ_ADDR_ABS();
+            b1 = memory_read_byte_handler(machine, addr);
             C = b1 & 0x80;
             memory_write_byte_handler(machine, addr, SET_FLAG_NZ(b1 <<= 1));
             break;
         case ASL_ABS_X:
-            b1 = memory_read_byte_handler(machine, addr = READ_ADDR_ABS_X());
+            READ_ADDR_ABS_X();
+            b1 = memory_read_byte_handler(machine, addr);
             C = b1 & 0x80;
             memory_write_byte_handler(machine, addr, SET_FLAG_NZ(b1 <<= 1));
             break;
@@ -740,12 +753,14 @@ void MOS6502::exec_instruction(bool& a_Brk)
             memory_write_byte_zp_handler(machine, addr, SET_FLAG_NZ(b1 >>= 1));
             break;
         case LSR_ABS:
-            b1 = memory_read_byte_handler(machine, addr = READ_ADDR_ABS());
+            READ_ADDR_ABS();
+            b1 = memory_read_byte_handler(machine, addr);
             C = b1 & 0x01;
             memory_write_byte_handler(machine, addr, SET_FLAG_NZ(b1 >>= 1));
             break;
         case LSR_ABS_X:
-            b1 = memory_read_byte_handler(machine, addr = READ_ADDR_ABS_X());
+            READ_ADDR_ABS_X();
+            b1 = memory_read_byte_handler(machine, addr);
             C = b1 & 0x01;
             memory_write_byte_handler(machine, addr, SET_FLAG_NZ(b1 >>= 1));
             break;
@@ -773,13 +788,15 @@ void MOS6502::exec_instruction(bool& a_Brk)
             C = b2;
             break;
         case ROL_ABS:
-            b1 = memory_read_byte_handler(machine, addr = READ_ADDR_ABS());
+            READ_ADDR_ABS();
+            b1 = memory_read_byte_handler(machine, addr);
             b2 = b1 & 0x80;
             memory_write_byte_handler(machine, addr, SET_FLAG_NZ(C ? (b1<<=1) + 1 : b1<<=1));
             C = b2;
             break;
         case ROL_ABS_X:
-            b1 = memory_read_byte_handler(machine, addr = READ_ADDR_ABS_X());
+            READ_ADDR_ABS_X();
+            b1 = memory_read_byte_handler(machine, addr);
             b2 = b1 & 0x80;
             memory_write_byte_handler(machine, addr, SET_FLAG_NZ(C ? (b1<<=1) + 1 : b1<<=1));
             C = b2;
@@ -808,13 +825,15 @@ void MOS6502::exec_instruction(bool& a_Brk)
             C = b2;
             break;
         case ROR_ABS:
-            b1 = memory_read_byte_handler(machine, addr = READ_ADDR_ABS());
+            READ_ADDR_ABS();
+            b1 = memory_read_byte_handler(machine, addr);
             b2 = b1 & 0x01;
             memory_write_byte_handler(machine, addr, SET_FLAG_NZ(C ? (b1>>=1) | 0x80 : b1>>=1));
             C = b2;
             break;
         case ROR_ABS_X:
-            b1 = memory_read_byte_handler(machine, addr = READ_ADDR_ABS_X());
+            READ_ADDR_ABS_X();
+            b1 = memory_read_byte_handler(machine, addr);
             b2 = b1 & 0x01;
             memory_write_byte_handler(machine, addr, SET_FLAG_NZ(C ? (b1>>=1) | 0x80 : b1>>=1));
             C = b2;
@@ -890,7 +909,7 @@ void MOS6502::exec_instruction(bool& a_Brk)
             break;
 
         case BIT_ABS:
-            b1 = READ_BYTE_ABS();
+            READ_BYTE_ABS(b1);
             N_INTERN = b1;
             Z_INTERN = A & b1;
             V = b1 & FLAG_V;  // bit 6 -> V
@@ -935,18 +954,19 @@ void MOS6502::exec_instruction(bool& a_Brk)
             SET_FLAG_NZ((uint8_t)i);
             break;
         case CMP_ABS:
-            i = A - READ_BYTE_ABS();
+            READ_BYTE_ABS(b1);
+            i = A - b1;
             C = i >= 0;
             SET_FLAG_NZ((uint8_t)i);
             break;
         case CMP_ABS_X:
-            addr = READ_ADDR_ABS_X();
+            READ_ADDR_ABS_X();
             i = A - memory_read_byte_handler(machine, addr);
             C = i >= 0;
             SET_FLAG_NZ((uint8_t)i);
             break;
         case CMP_ABS_Y:
-            addr = READ_ADDR_ABS_Y();
+            READ_ADDR_ABS_Y();
             i = A - memory_read_byte_handler(machine, addr);
             C = i >= 0;
             SET_FLAG_NZ((uint8_t)i);
@@ -974,7 +994,8 @@ void MOS6502::exec_instruction(bool& a_Brk)
             SET_FLAG_NZ((uint8_t)i);
             break;
         case CPX_ABS:
-            i = X - READ_BYTE_ABS();
+            READ_BYTE_ABS(b1);
+            i = X - b1;
             C = i >= 0;
             SET_FLAG_NZ((uint8_t)i);
             break;
@@ -990,26 +1011,31 @@ void MOS6502::exec_instruction(bool& a_Brk)
             SET_FLAG_NZ((uint8_t)i);
             break;
         case CPY_ABS:
-            i = Y - READ_BYTE_ABS();
+            READ_BYTE_ABS(b1);
+            i = Y - b1;
             C = i >= 0;
             SET_FLAG_NZ((uint8_t)i);
             break;
 
         case JMP_ABS:
-            PC = READ_ADDR_ABS();
+            READ_ADDR_ABS();
+            PC = addr;
             break;
         case JMP_IND:
-            PC = memory_read_word_handler(machine, READ_ADDR_ABS());
+            READ_ADDR_ABS();
+            PC = memory_read_word_handler(machine, addr);
             break;
 
         case JSR:
             PUSH_BYTE_STACK((PC+1) >> 8); // Store 1 before next instruction
             PUSH_BYTE_STACK((PC+1) & 0xff);
-            PC = READ_ADDR_ABS();
+            READ_ADDR_ABS();
+            PC = addr;
             break;
 
         case RTS:
-            PC = (POP_BYTE_STACK() | (POP_BYTE_STACK() << 8)) + 1;
+            PC = POP_BYTE_STACK();
+            PC += (POP_BYTE_STACK() << 8) + 1;
             break;
 
         case BRK:
@@ -1024,7 +1050,8 @@ void MOS6502::exec_instruction(bool& a_Brk)
 
         case RTI:  // Return from interrupt
             set_p(POP_BYTE_STACK()); //  & 0xdb);
-            PC = POP_BYTE_STACK() | (POP_BYTE_STACK() << 8);
+            PC = POP_BYTE_STACK();
+            PC += (POP_BYTE_STACK() << 8);
             break;
 
         case NOP:
@@ -1083,7 +1110,6 @@ void MOS6502::exec_instruction(bool& a_Brk)
 
         default:
             PrintStat(pc_initial);
-
             a_Brk = true;
             break;
     };

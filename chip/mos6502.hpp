@@ -62,7 +62,7 @@ class MOS6502
 {
 public:
     MOS6502(Machine& a_Machine);
-    ~MOS6502();
+    ~MOS6502() = default;
 
     Monitor& get_monitor() { return monitor; }
 
@@ -108,6 +108,8 @@ public:
     // Add and sub are complex
     void ADC(uint8_t a_Val);
     void SBC(uint8_t a_Val);
+
+
 
     f_memory_read_byte_handler memory_read_byte_handler;
     f_memory_read_byte_zp_handler memory_read_byte_zp_handler;
