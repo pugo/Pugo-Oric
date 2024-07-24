@@ -307,25 +307,29 @@ uint16_t Monitor::disassemble(uint16_t address)
             }
             case Addressing::indirect_absolute:
             {
-                uint16_t value = memory.mem[address++] | (memory.mem[address++] << 8);
+                uint16_t value = memory.mem[address++];
+                value += memory.mem[address++] << 8;
                 std::cout << " ($" << std::setw(4) << (int)value << ")\t";
                 break;
             }
             case Addressing::absolute:
             {
-                uint16_t value = memory.mem[address++] | (memory.mem[address++] << 8);
+                uint16_t value = memory.mem[address++];
+                value += memory.mem[address++] << 8;
                 std::cout << " $" << std::setw(4) << (int)value << "\t";
                 break;
             }
             case Addressing::absolute_indexed_x:
             {
-                uint16_t value = memory.mem[address++] | (memory.mem[address++] << 8);
+                uint16_t value = memory.mem[address++];
+                value += memory.mem[address++] << 8;
                 std::cout << " $" << std::setw(4) << (int)value << ",X\t";
                 break;
             }
             case Addressing::absolute_indexed_y:
             {
-                uint16_t value = memory.mem[address++] | (memory.mem[address++] << 8);
+                uint16_t value = memory.mem[address++];
+                value += memory.mem[address++] << 8;
                 std::cout << " $" << std::setw(4) << (int)value << ",Y\t";
                 break;
             }
@@ -348,7 +352,6 @@ uint16_t Monitor::disassemble(uint16_t address)
                 std::cout << " $" << std::setw(4) << (int)addr << "\t";
                 break;
             }
-                break;
             case Addressing::accumulator:
                 std::cout << " A\t\t";
                 break;

@@ -109,8 +109,6 @@ public:
     void ADC(uint8_t a_Val);
     void SBC(uint8_t a_Val);
 
-
-
     f_memory_read_byte_handler memory_read_byte_handler;
     f_memory_read_byte_zp_handler memory_read_byte_zp_handler;
 
@@ -120,11 +118,7 @@ public:
     f_memory_write_byte_handler memory_write_byte_handler;
     f_memory_write_byte_zp_handler memory_write_byte_zp_handler;
 
-    std::string disassemble(uint16_t a_Address);
-
 protected:
-    bool handle_irq();
-
     Machine& machine;
     Memory& memory;
 

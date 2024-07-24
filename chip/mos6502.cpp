@@ -172,22 +172,6 @@ void MOS6502::irq_clear()
     irq_flag = false;
 }
 
-bool MOS6502::handle_irq()
-{
-    irq_flag = false;
-    if (I) { // Interrupt disabled ?
-        return false;
-    }
-
-    PUSH_BYTE_STACK(PC >> 8);
-    PUSH_BYTE_STACK(PC & 0xff);
-    PUSH_BYTE_STACK(get_p());
-    I = true;
-    PC = memory_read_word_handler(machine, IRQ_VECTOR_L);
-
-    return true;
-}
-
 int inline MOS6502::signed_byte_to_int(uint8_t b)
 {
     if (b < 0x80) {
