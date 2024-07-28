@@ -81,7 +81,9 @@ MOS6502::MOS6502(Machine& a_Machine) :
     quiet(false),
     machine(a_Machine),
     irq_flag(false),
+    nmi_flag(false),
     do_interrupt(false),
+    do_nmi(false),
     memory_read_byte_handler(nullptr),
     memory_read_byte_zp_handler(nullptr),
     memory_read_word_handler(nullptr),
@@ -89,6 +91,10 @@ MOS6502::MOS6502(Machine& a_Machine) :
     memory_write_byte_handler(nullptr),
     memory_write_byte_zp_handler(nullptr),
     memory(a_Machine.memory),
+    instruction_load(true),
+    instruction_cycles(0),
+    current_instruction(0),
+    current_cycle(0),
     monitor(memory)
 {
 }
@@ -110,7 +116,14 @@ void MOS6502::Reset()
     PC = memory_read_byte_handler(machine, RESET_VECTOR_L) + (memory_read_byte_handler(machine, RESET_VECTOR_H) << 8);
     SP = 0xff;
     irq_flag = false;
+    nmi_flag = false;
     do_interrupt = false;
+    do_nmi = false;
+
+    instruction_load = true;
+    instruction_cycles = 0;
+    current_instruction = 0;
+    current_cycle = 0;
 }
 
 void MOS6502::PrintStat()
@@ -154,12 +167,7 @@ void MOS6502::set_p(uint8_t p)
 
 void MOS6502::NMI()
 {
-    std::cout << "NMI interrupt" << std::endl;
-    PUSH_BYTE_STACK(PC >> 8);
-    PUSH_BYTE_STACK(PC);
-    PUSH_BYTE_STACK(get_p());
-    PC = memory_read_word_handler(machine, NMI_VECTOR_L);
-    I = true;
+    nmi_flag = true;
 }
 
 void MOS6502::irq()
@@ -243,7 +251,12 @@ uint8_t MOS6502::time_instruction()
     uint16_t _pc = PC;
     uint8_t extra = 0;
 
-    if (irq_flag && !I) {
+    if (nmi_flag) {
+        _pc = memory_read_word_handler(machine, NMI_VECTOR_L);
+        extra += 7;
+        do_interrupt = true;
+    }
+    else if (irq_flag && !I) {
         _pc = memory_read_word_handler(machine, IRQ_VECTOR_L);
         extra += 7;
         do_interrupt = true;
@@ -251,9 +264,9 @@ uint8_t MOS6502::time_instruction()
 
     uint8_t b1;
     uint16_t addr;
-    uint8_t instruction = memory_read_byte_handler(machine, _pc);
+    current_instruction = memory_read_byte_handler(machine, _pc);
 
-    switch(instruction)
+    switch(current_instruction)
     {
         case LDA_ABS_X:
         case LDY_ABS_X:
@@ -347,31 +360,57 @@ uint8_t MOS6502::time_instruction()
             break;
     }
 
-    return opcode_cycles[instruction] + extra;
+    return opcode_cycles[current_instruction] + extra;
 }
 
 
-void MOS6502::exec_instruction(bool& a_Brk)
+bool MOS6502::exec_instruction(bool& a_Brk)
 {
-    if (do_interrupt) {
-        do_interrupt = false;
-        irq_flag = false;
+    if (instruction_load) {
+        instruction_load = false;
 
-        PUSH_BYTE_STACK(PC >> 8);
-        PUSH_BYTE_STACK(PC & 0xff);
-        PUSH_BYTE_STACK(get_p());
-        I = true;
-        PC = memory_read_word_handler(machine, IRQ_VECTOR_L);
+        current_cycle = 0;
+        instruction_cycles = time_instruction();
+
+        if (do_interrupt) {
+            do_interrupt = false;
+
+            PUSH_BYTE_STACK(PC >> 8);
+            PUSH_BYTE_STACK(PC & 0xff);
+            PUSH_BYTE_STACK(get_p());
+
+            if (nmi_flag) {
+                PC = memory_read_word_handler(machine, NMI_VECTOR_L);
+                nmi_flag = false;
+                std::cout << "NMI interrupt" << std::endl;
+            }
+
+            else if (irq_flag) {
+                I = true;
+                PC = memory_read_word_handler(machine, IRQ_VECTOR_L);
+                irq_flag = false;
+            }
+
+        }
     }
 
+    if (++current_cycle < instruction_cycles) {
+//        std::cout << " -- current cycle: " << (int)current_cycle << std::endl;
+        return false;
+    }
+
+//    std::cout << " -- Exec (" << (int)instruction_cycles << " cycles)" << std::endl;
     uint8_t b1, b2;
     uint16_t addr;
     int i;
 
     uint16_t pc_initial = PC;
-    uint8_t instruction = READ_BYTE_IMM();
+//    uint8_t instruction = READ_BYTE_IMM();
 
-    switch(instruction)
+    instruction_load = true;
+    ++PC;
+
+    switch(current_instruction)
     {
         case LDA_IMM:
             SET_FLAG_NZ(A = READ_BYTE_IMM());
@@ -1101,4 +1140,6 @@ void MOS6502::exec_instruction(bool& a_Brk)
     if (! quiet) {
         PrintStat(pc_initial);
     }
+
+    return true;
 }

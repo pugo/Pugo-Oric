@@ -126,7 +126,7 @@ private:
     uint8_t t1_latch_high;
     uint16_t t1_counter;
     bool t1_run;
-    bool t1_reload;
+    uint8_t t1_reload;
 
     uint8_t t2_latch_low;
     uint8_t t2_latch_high;

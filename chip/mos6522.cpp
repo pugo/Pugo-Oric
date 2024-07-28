@@ -88,7 +88,7 @@ void MOS6522::reset()
     t1_latch_high = 0;
     t1_counter = 0;
     t1_run = false;
-    t1_reload = false;
+    t1_reload = 0;
 
     t2_latch_low = 0;
     t2_latch_high = 0;
@@ -106,9 +106,9 @@ void MOS6522::reset()
 short MOS6522::exec(uint8_t a_Cycles)
 {
 //    std::cout << " -- MOS6522::exec: " << (int)a_Cycles << " --" << std::endl;
-    if (a_Cycles == 0) {
-        return 0;
-    }
+//    if (a_Cycles == 0) {
+//        return 0;
+//    }
 
     if (ca2_do_pulse) {
         ca2 = true;
@@ -122,72 +122,74 @@ short MOS6522::exec(uint8_t a_Cycles)
         if (cb2_changed_handler) { cb2_changed_handler(machine, cb2); }
     }
 
-    int32_t todo_cycles;
+//    int32_t todo_cycles;
 
     switch (acr & 0xc0)
     {
         case 0x00:
         case 0x80:
             // T1 - One shot
-            if (t1_run && a_Cycles >= t1_counter) {
-                irq_set(IRQ_T1);
-                if (acr & 0x80) {
-                    orb |= 0x80;    // Output 1 on PB7 if ACR7 is set.
+            if (t1_reload) {
+                --t1_reload;
+                if (t1_reload == 0) {
+                    t1_counter = (t1_latch_high << 8) | t1_latch_low;
                 }
-                t1_run = false;
             }
-            t1_counter -= a_Cycles;
+            else {
+                if (t1_run && t1_counter == 0) {
+                    irq_set(IRQ_T1);
+                    if (acr & 0x80) {
+                        orb |= 0x80;    // Output 1 on PB7 if ACR7 is set.
+                    }
+                    t1_run = false;
+                }
+                --t1_counter;
+            }
             break;
         case 0x40:
         case 0xC0:
             // T1 - Continuous
-            todo_cycles = a_Cycles;
-//            std::cout << "cont t1: " << (int)t1_counter << std::endl;
-
             if (t1_reload) {
-//                todo_cycles -= 2;
-//                t1_counter = (t1_latch_high << 8) | t1_latch_low; // +2: compensate for boundary time and load time.
-                t1_reload = false;
+                --t1_reload;
+                if (t1_reload == 0) {
+                    t1_counter = (t1_latch_high << 8) | t1_latch_low;
+                }
             }
+            else {
+                if (t1_counter == 0) {
+                    irq_set(IRQ_T1);
 
-//            std::cout << "todo_cycles: " << (int) todo_cycles << "; t1_counter: " << (int) t1_counter << std::endl;
-            if (todo_cycles >= t1_counter) {
-//                todo_cycles -= (t1_counter + 1);
-                irq_set(IRQ_T1);
+                    if (acr & 0x80) {
+                        orb ^= 0x80;    // Output squarewave on PB7 if ACR7 is set.
+                    }
 
-                if (acr & 0x80) {
-                    orb ^= 0x80;    // Output squarewave on PB7 if ACR7 is set.
+                    t1_reload = 1;
+//                    t1_counter = ((t1_latch_high << 8) | t1_latch_low) + 2; // +2: compensate for boundary time and load time.
                 }
 
-//                if (!todo_cycles) {
-//                    t1_reload = true;
-//                    break;
-//                }
-
-//                --todo_cycles;
-                t1_counter = ((t1_latch_high << 8) | t1_latch_low) + 2; // +2: compensate for boundary time and load time.
-//                std::cout << " - todo_cycles: " << (int) todo_cycles << std::endl;
+                --t1_counter;
             }
-            else
-                t1_counter -= todo_cycles;
+
             break;
     }
 
     if (!(acr & 0x20)) {
         // T2 - One shot
-        todo_cycles = a_Cycles;
+//        todo_cycles = a_Cycles;
 
         if (t2_reload) {
-            --todo_cycles;
             t2_reload = false;
         }
-
-        if (t2_run && (todo_cycles >= t2_counter)) {
+        else {
+            if (t2_run && (t2_counter == 0)) {
 //            std::cout << "Timer2 Interrupt!" << std::endl;
-            irq_set(IRQ_T2);
-            t2_run = false;
+                irq_set(IRQ_T2);
+                t2_run = false;
+            }
+
+            --t2_counter;
+//            t2_counter -= todo_cycles;
         }
-        t2_counter -= todo_cycles;
     }
 
     switch (acr & 0x1c)
@@ -325,7 +327,7 @@ void MOS6522::write_byte(uint16_t a_Offset, uint8_t a_Value)
                     if (cb2_changed_handler) { cb2_changed_handler(machine, cb2); }
                     break;
             }
-            machine.update_key_output();
+//            machine.update_key_output();
             machine.via_orb_changed(orb);
             break;
         case ORA:
@@ -360,7 +362,7 @@ void MOS6522::write_byte(uint16_t a_Offset, uint8_t a_Value)
             break;
         case T1C_H:
             t1_latch_high = a_Value;
-            t1_counter = (t1_latch_high << 8) | t1_latch_low;
+//            t1_counter = (t1_latch_high << 8) | t1_latch_low;
             t1_reload = true;
             t1_run = true;
             irq_clear(IRQ_T1);

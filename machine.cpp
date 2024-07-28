@@ -168,18 +168,18 @@ void Machine::run(uint32_t steps, Oric* oric)
         }
 
         while (cycle_count > 0) {
-            uint8_t cycles = cpu->time_instruction();
+            tape->exec(1);
+            mos_6522->exec(1);
+            ay3->exec(1);
 
-            tape->exec(cycles);
-            mos_6522->exec(cycles);
-            ay3->exec(cycles);
-            update_key_output();
+            if (cpu->exec_instruction(break_exec)) {
+                update_key_output();
+            }
 
-            cycle_count -= cycles;
-            cpu->exec_instruction(break_exec);
+            cycle_count -= 1;
         }
 
-        if (cycle_count <= 0) {
+//        if (cycle_count <= 0) {
             if (paint_raster(oric)) {
                 next_frame += 20;
 
@@ -194,6 +194,10 @@ void Machine::run(uint32_t steps, Oric* oric)
                             if (! warpmode_on) {
                                 next_frame = SDL_GetTicks64();
                             }
+                        }
+
+                        if (event.key.keysym.sym == SDLK_F10 && event.type == SDL_KEYDOWN) {
+                            cpu->NMI();
                         }
 
                         auto trans = key_translations.find(std::make_pair(sym, event.key.keysym.mod));
@@ -221,7 +225,7 @@ void Machine::run(uint32_t steps, Oric* oric)
                     }
                 }
             }
-        }
+//        }
         cycle_count += cycles_per_raster;
     }
 }

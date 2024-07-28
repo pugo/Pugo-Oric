@@ -11,7 +11,7 @@ This is the result of a *very* long and low intensive hobby project I have worke
 since 2009, which currently is 14 years.
 
 The purpose was to develop an emulator of the first computer I ever got,
-as a christmas gift some 40 years ago. The computer was an Oric 1 and it
+as a Christmas gift some 40 years ago. The computer was an Oric 1, and it
 was fantastic back then!
 
 There already is a brilliant emulator of Oric: Oricutron, which is more
@@ -20,10 +20,71 @@ project has been to learn more about how emulators work and to close the circle
 by learning more about the computer I got as a kid.
 
 
+## Building
+
+The project should be possible to compile on Linux and macOS using CMake.
+
+This should typically be done like the following.
+
+```
+$ mkdir build
+$ cd build
+$ cmake ..
+$ make -j10
+```
+
+## Running
+
+The program currently looks for ROM files from the ROMS directory in the project
+root, so you might want to run the program from there:
+
+```
+$ ./build/oric
+```
+
+To specify which tape TAP file to use, use the `--tape` or `-t` command line
+argument:
+
+```
+$ ./build/oric --tape taps/hunchbk.tap
+```
+
+## Control keys
+
+The following control keys can alter the emulator behavior.
+
+* `ctrl-F12`: Toggle warp mode (go as fast as possible).
+* `ctrl-F10`: Soft reset (NMI)
+
+
+## Monitor
+
+You can at any time enter a small monitor mode by pressing `ctrl-c`.
+
+The monitor has commands like the following.
+
+```
+Available monitor commands:
+
+h              : help (showing this text)
+g <address>    : go to address and run
+pc <address>   : set program counter to address
+s [n]          : step one or possible n steps
+i              : print machine info
+v              : print VIA (6522) info
+d              : disassemble from PC
+d <address> <n>: disassemble from address and n bytes ahead
+m <address> <n>: dump memory from address and n bytes ahead
+quiet          : prevent debug output at run time
+debug          : show debug output at run time
+sr, softreset  : soft reset oric
+```
+ 
+
 ## Timeline
 
 As I work as a developer this has been a project I have gone back to for shorter
-stints when normal work for some reasons have had less amount of coding. That means
+stints when normal work for some reason have had less amount of coding. That means
 that this project has been extremely slow. But that has always been a wonderful thing!
 I have never felt any pressure to work on it and instead hacked on it by pure love.
 
@@ -40,25 +101,12 @@ The timeline is something like:
 * 2017: Key input
 * 2020: Tape loading
 * 2023: AY3-8912 sound
-
-
-## Usage
-
-The project should be possible to build on Linux using CMake.
-
-```
-$ mkdir build
-$ cd build
-$ cmake ..
-$ make -j10
-```
-   
-**Observe:** Currently the loaded tape iamge is hard coded in `machine.cpp`.
+* 2024: Cycle bug fixing, new monitor
 
 
 ## Contribution
 
-Since this is a pet project I work on only when i like to and because I feel that
+Since this is a pet project I work on only when I like to and because I feel that
 I should implement all by myself I am reluctant to accept any contributions. But 
 the licence is GPL v3, so feel free to fork it and do what you like as long as
 you follow that license.
