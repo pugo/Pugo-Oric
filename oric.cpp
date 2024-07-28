@@ -144,6 +144,7 @@ Oric::State Oric::handle_command(std::string& a_Cmd)
         std::cout << "m <address> <n>: dump memory from address and n bytes ahead" << std::endl;
         std::cout << "quiet          : prevent debug output at run time" << std::endl;
         std::cout << "debug          : show debug output at run time" << std::endl;
+        std::cout << "sr, softreset  : soft reset oric" << std::endl;
         std::cout << "" << std::endl;
         return STATE_MON;
     }
@@ -205,6 +206,11 @@ Oric::State Oric::handle_command(std::string& a_Cmd)
     else if (cmd == "debug") {
         machine->cpu->set_quiet(false);
         std::cout << "Debug mode enabled" << std::endl;
+    }
+
+    else if (cmd == "sr" || cmd == "softreset") {
+        machine->cpu->NMI();
+        std::cout << "NMI triggered" << std::endl;
     }
 
     else if (cmd == "q") { // quit

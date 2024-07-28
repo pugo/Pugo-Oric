@@ -79,7 +79,7 @@ public:
     void PrintStat(uint16_t address);
 
     uint8_t time_instruction();
-    void exec_instruction(bool& a_Brk);
+    bool exec_instruction(bool& a_Brk);
 
     // Registers
     uint8_t A;
@@ -125,8 +125,16 @@ protected:
     uint16_t PC;
     uint8_t SP;
     bool quiet;
+
     bool irq_flag;
+    bool nmi_flag;
     bool do_interrupt;
+    bool do_nmi;
+
+    bool instruction_load;
+    uint8_t instruction_cycles;
+    uint8_t current_instruction;
+    uint8_t current_cycle;
 
     Monitor monitor;
 };
