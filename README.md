@@ -96,15 +96,13 @@ To speed up the loading time it is possible to toggle warp mode with
 ## Exiting
 
 Since the emulator does not have any GUI with interaction at this point
-the best way is to press `ctrl-c` in the terminal window you started the
-emulator in. On the first press of `ctrl-c` the emulator will enter the
-monitor mode. See the monitor section below for more information about
-the monitor. To exit for real, press `ctrl-c` a second time.
+the best way is to simply close the window.
 
-Sending `SIGINT` twice to the process shoud achieve the same result.
-
-
-
+It is also possible to press `ctrl-c` in the terminal window where the
+emulator was started. On the first press of `ctrl-c` the emulator will
+enter the monitor mode. See the monitor section below for more 
+information about the monitor. To exit for real, press `ctrl-c` a second 
+time.
 
 ## Monitor
 

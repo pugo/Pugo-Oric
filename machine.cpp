@@ -184,32 +184,42 @@ void Machine::run(uint32_t steps, Oric* oric)
                 next_frame += 20;
 
                 while (SDL_PollEvent(&event)) {
-                    if (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP)
+                    switch (event.type)
                     {
-                        auto sym = event.key.keysym.sym;
+                        case SDL_KEYDOWN:
+                        case SDL_KEYUP:
+                        {
+                            auto sym = event.key.keysym.sym;
 
-                        if (event.key.keysym.sym == SDLK_F12 && event.type == SDL_KEYDOWN) {
-                            warpmode_on = !warpmode_on;
-                            std::cout << "Warp mode: " << (warpmode_on ? "on" : "off") << std::endl;
-                            if (! warpmode_on) {
-                                next_frame = SDL_GetTicks64();
+                            if (event.key.keysym.sym == SDLK_F12 && event.type == SDL_KEYDOWN) {
+                                warpmode_on = !warpmode_on;
+                                std::cout << "Warp mode: " << (warpmode_on ? "on" : "off") << std::endl;
+                                if (! warpmode_on) {
+                                    next_frame = SDL_GetTicks64();
+                                }
                             }
+
+                            if (event.key.keysym.sym == SDLK_F10 && event.type == SDL_KEYDOWN) {
+                                cpu->NMI();
+                            }
+
+                            auto trans = key_translations.find(std::make_pair(sym, event.key.keysym.mod));
+                            if (trans != key_translations.end()) {
+                                sym = trans->second.first;
+                            }
+
+                            auto key = key_map.find(sym);
+                            if (key != key_map.end()) {
+                                key_press(key->second, event.type == SDL_KEYDOWN);
+                            }
+                            break;
                         }
 
-                        if (event.key.keysym.sym == SDLK_F10 && event.type == SDL_KEYDOWN) {
-                            cpu->NMI();
-                        }
-
-                        auto trans = key_translations.find(std::make_pair(sym, event.key.keysym.mod));
-                        if (trans != key_translations.end()) {
-                            sym = trans->second.first;
-                        }
-
-                        auto key = key_map.find(sym);
-                        if (key != key_map.end()) {
-                            key_press(key->second, event.type == SDL_KEYDOWN);
-                        }
-                        break;
+                        case SDL_WINDOWEVENT:
+                            if (event.window.event == SDL_WINDOWEVENT_CLOSE) {
+                                oric->do_quit();
+                                break_exec = true;
+                            }
                     }
                 }
 
@@ -220,12 +230,10 @@ void Machine::run(uint32_t steps, Oric* oric)
                 }
                 else {
                     if (! warpmode_on) {
-    //                    std::cout << "delay: " << (int) (next_frame - now) << std::endl;
                         SDL_Delay(next_frame - now);
                     }
                 }
             }
-//        }
         cycle_count += cycles_per_raster;
     }
 }

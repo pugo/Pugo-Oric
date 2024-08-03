@@ -48,6 +48,7 @@ public:
 
     void run();
     void do_break();
+    void do_quit();
 
 protected:
     State handle_command(std::string& a_Cmd);

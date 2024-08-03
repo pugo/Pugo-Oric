@@ -105,6 +105,12 @@ void Oric::do_break()
 }
 
 
+void Oric::do_quit()
+{
+    state = STATE_QUIT;
+}
+
+
 uint16_t Oric::string_to_word(std::string& a_Addr)
 {
     uint16_t x;
