@@ -217,36 +217,30 @@ void TapeTap::set_motor(bool motor_on)
 }
 
 
-short TapeTap::exec(uint8_t cycles)
+void TapeTap::exec()
 {
-    if (cycles == 0) {
-        return 0;
-    }
-
     if (!do_run_motor) {
-        return 0;
+        return;
     }
 
-    if (tape_cycles_counter > cycles) {
-        tape_cycles_counter -= cycles;
+    if (tape_cycles_counter > 1) {
+        tape_cycles_counter--;
 
         if (delay > 0) {
-            delay -= cycles;
-            if (delay < 0) {
-                delay = 1;
-            }
+            --delay;
+//            if (delay < 0) {
+//                delay = 1;
+//            }
             std::cout << "Delay: " << delay << std::endl;
         }
-        return cycles;
+        return;
     }
 
     tape_pulse ^= 0x01;
     via.write_cb1(tape_pulse);
 
     if (delay > 0) {
-        delay -= cycles;
-
-        if(delay <= 0)
+        if(--delay == 0)
         {
             if (tape_pulse) {
                 delay = 1;
@@ -257,7 +251,7 @@ short TapeTap::exec(uint8_t cycles)
         }
 
         tape_cycles_counter = Pulse_1;
-        return cycles;
+        return;
     }
 
     if (tape_pulse) {
@@ -269,8 +263,6 @@ short TapeTap::exec(uint8_t cycles)
         // Second part of bit, differently long down period.
         tape_cycles_counter = current_bit ? Pulse_1 : Pulse_0;
     }
-
-    return cycles;
 }
 
 

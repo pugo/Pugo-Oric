@@ -168,8 +168,8 @@ void Machine::run(uint32_t steps, Oric* oric)
         }
 
         while (cycle_count > 0) {
-            tape->exec(1);
-            mos_6522->exec(1);
+            tape->exec();
+            mos_6522->exec();
             ay3->exec(1);
 
             if (cpu->exec_instruction(break_exec)) {

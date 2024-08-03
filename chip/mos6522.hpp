@@ -78,7 +78,7 @@ public:
     ~MOS6522();
 
     void reset();
-    short exec(uint8_t a_Cycles);
+    void exec();
 
     uint8_t read_byte(uint16_t a_Offset);
     void write_byte(uint16_t a_Offset, uint8_t a_Value);

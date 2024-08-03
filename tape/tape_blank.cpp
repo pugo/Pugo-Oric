@@ -55,8 +55,7 @@ void TapeBlank::set_motor(bool motor_on)
 }
 
 
-short TapeBlank::exec(uint8_t cycles)
+void TapeBlank::exec()
 {
-    return 0;
 }
 

@@ -38,7 +38,7 @@ public:
     void print_stat() override;
 
     void set_motor(bool motor_on) override;
-    short exec(uint8_t cycles) override;
+    void exec() override;
 
     bool do_run_motor;
 

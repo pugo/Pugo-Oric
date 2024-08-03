@@ -103,13 +103,8 @@ void MOS6522::reset()
     ier = 0;   // Interrupt Enable Register
 }
 
-short MOS6522::exec(uint8_t a_Cycles)
+void MOS6522::exec()
 {
-//    std::cout << " -- MOS6522::exec: " << (int)a_Cycles << " --" << std::endl;
-//    if (a_Cycles == 0) {
-//        return 0;
-//    }
-
     if (ca2_do_pulse) {
         ca2 = true;
         ca2_do_pulse = false;
@@ -121,8 +116,6 @@ short MOS6522::exec(uint8_t a_Cycles)
         cb2_do_pulse = false;
         if (cb2_changed_handler) { cb2_changed_handler(machine, cb2); }
     }
-
-//    int32_t todo_cycles;
 
     switch (acr & 0xc0)
     {
@@ -164,7 +157,6 @@ short MOS6522::exec(uint8_t a_Cycles)
                     }
 
                     t1_reload = 1;
-//                    t1_counter = ((t1_latch_high << 8) | t1_latch_low) + 2; // +2: compensate for boundary time and load time.
                 }
 
                 --t1_counter;
@@ -175,20 +167,16 @@ short MOS6522::exec(uint8_t a_Cycles)
 
     if (!(acr & 0x20)) {
         // T2 - One shot
-//        todo_cycles = a_Cycles;
-
         if (t2_reload) {
             t2_reload = false;
         }
         else {
             if (t2_run && (t2_counter == 0)) {
-//            std::cout << "Timer2 Interrupt!" << std::endl;
                 irq_set(IRQ_T2);
                 t2_run = false;
             }
 
             --t2_counter;
-//            t2_counter -= todo_cycles;
         }
     }
 
@@ -218,8 +206,6 @@ short MOS6522::exec(uint8_t a_Cycles)
             std::cout << "shift: 0x18" << std::endl;
             break;
     }
-
-    return a_Cycles;
 }
 
 uint8_t MOS6522::read_byte(uint16_t a_Offset)

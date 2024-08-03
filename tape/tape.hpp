@@ -35,7 +35,7 @@ public:
     virtual void print_stat() = 0;
 
     virtual void set_motor(bool motor_on) = 0;
-    virtual short exec(uint8_t cycles) = 0;
+    virtual void exec() = 0;
 
     bool do_run_motor;
 };

@@ -3,7 +3,7 @@
 This project implements a basic Oric computer emulator with graphics, sound, etc.
 All code is written from scratch.
 
-It is my absolutely slowest project, just made out of love!
+It is my absolutely slowest project, just made out of love to programming and to my first computer.
 
 ## Background
 
@@ -24,6 +24,16 @@ by learning more about the computer I got as a kid.
 
 The project should be possible to compile on Linux and macOS using CMake.
 
+### Dependencies
+
+The following dependencies are required.
+
+ * `boost`
+ * `sdl2`
+ * `sdl2_image`
+
+### Compile with CMake
+
 This should typically be done like the following.
 
 ```
@@ -35,12 +45,37 @@ $ make -j10
 
 ## Running
 
-The program currently looks for ROM files from the ROMS directory in the project
+The program currently looks for ROM files from the `ROMS` directory in the project
 root, so you might want to run the program from there:
 
 ```
 $ ./build/oric
 ```
+
+### Command line arguments
+
+Run the emulator with flag `-?` (or `--help`) to see available parameters.
+
+```
+$ ./build/oric -?
+
+Usage: oric [options]
+Allowed options:
+  --help                produce help message
+  -m [ --monitor ]      start in monitor mode
+  -a [ --atmos ]        use Atmos ROM
+  -t [ --tape ] arg     Tape file to use
+```
+
+### Control keys
+
+The following control keys can alter the emulator behavior.
+
+* `ctrl-F12`: Toggle warp mode (go as fast as possible).
+* `ctrl-F10`: Soft reset the emulator (NMI)
+
+
+### Loading from tape image
 
 To specify which tape TAP file to use, use the `--tape` or `-t` command line
 argument:
@@ -49,12 +84,26 @@ argument:
 $ ./build/oric --tape taps/hunchbk.tap
 ```
 
-## Control keys
+To load a tape program from the emulator you can try the following.
 
-The following control keys can alter the emulator behavior.
+```
+CLOAD"
+```
 
-* `ctrl-F12`: Toggle warp mode (go as fast as possible).
-* `ctrl-F10`: Soft reset (NMI)
+To speed up the loading time it is possible to toggle warp mode with
+`ctrl-F12`.
+
+## Exiting
+
+Since the emulator does not have any GUI with interaction at this point
+the best way is to press `ctrl-c` in the terminal window you started the
+emulator in. On the first press of `ctrl-c` the emulator will enter the
+monitor mode. See the monitor section below for more information about
+the monitor. To exit for real, press `ctrl-c` a second time.
+
+Sending `SIGINT` twice to the process shoud achieve the same result.
+
+
 
 
 ## Monitor
@@ -116,4 +165,4 @@ you follow that license.
 All code is licensed with GPL v3.
 
 ---
-Sweden, Linghem 2023, Anders Piniesjö
+Sweden, Linghem 2024, Anders Piniesjö
