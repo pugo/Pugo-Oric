@@ -41,6 +41,7 @@ public:
     ~Oric();
 
     void init();
+    void init_machine();
 
     Config& get_config() { return config; }
     Machine& get_machine() { return *machine; }

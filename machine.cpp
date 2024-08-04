@@ -93,7 +93,7 @@ Machine::~Machine()
 void Machine::init(Frontend* frontend)
 {
     this->frontend = frontend;
-    cpu = new MOS6502(*this);
+    init_cpu();
     mos_6522 = new MOS6522(*this);
     ay3 = new AY3_8912(*this);
 
@@ -107,13 +107,6 @@ void Machine::init(Frontend* frontend)
         std::cout << "No tape specified." << std::endl;
         tape = new TapeBlank();
     }
-
-    cpu->memory_read_byte_handler = read_byte;
-    cpu->memory_read_byte_zp_handler = read_byte_zp;
-    cpu->memory_read_word_handler = read_word;
-    cpu->memory_read_word_zp_handler = read_word_zp;
-    cpu->memory_write_byte_handler = write_byte;
-    cpu->memory_write_byte_zp_handler = write_byte_zp;
 
     // AY data bus reads from VIA ORA (Output Register A).
     ay3->m_read_data_handler = read_via_ora;
@@ -135,6 +128,17 @@ void Machine::init(Frontend* frontend)
             key_map[keytab[i]] = i;
         }
     }
+}
+
+void Machine::init_cpu()
+{
+    cpu = new MOS6502(*this);
+    cpu->memory_read_byte_handler = read_byte;
+    cpu->memory_read_byte_zp_handler = read_byte_zp;
+    cpu->memory_read_word_handler = read_word;
+    cpu->memory_read_word_zp_handler = read_word_zp;
+    cpu->memory_write_byte_handler = write_byte;
+    cpu->memory_write_byte_zp_handler = write_byte_zp;
 }
 
 void Machine::reset()

@@ -46,6 +46,7 @@ public:
     virtual ~Machine();
 
     void init(Frontend* frontend);
+    void init_cpu();
 
     void reset();
     void run(uint32_t steps, Oric* oric);
