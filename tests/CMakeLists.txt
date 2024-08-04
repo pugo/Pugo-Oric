@@ -1,0 +1,12 @@
+project(tests)
+
+include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
+include_directories(${gmock_SOURCE_DIR}/include ${gmock_SOURCE_DIR})
+
+add_executable(gtests_run
+        6502_test.cpp
+)
+
+target_link_libraries(gtests_run gtest gtest_main gmock)
+
+add_test(NAME gtests_run COMMAND gtests_run)
