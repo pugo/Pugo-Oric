@@ -7,6 +7,7 @@ add_executable(gtests_run
         6502_test.cpp
 )
 
-target_link_libraries(gtests_run gtest gtest_main gmock)
+target_link_libraries(gtests_run gtest gtest_main gmock oric_lib)
 
+include(GoogleTest)
 add_test(NAME gtests_run COMMAND gtests_run)

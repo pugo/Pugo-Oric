@@ -34,6 +34,8 @@ namespace po = boost::program_options;
 Oric::Oric(Config& config) :
     config(config),
     state(STATE_RUN),
+    frontend(nullptr),
+    machine(nullptr),
     last_command(""),
     last_address(0)
 {
@@ -62,11 +64,21 @@ void Oric::init()
     }
 }
 
+void Oric::init_machine()
+{
+    machine = new Machine(this);
+}
+
 
 Oric::~Oric()
 {
-    delete machine;
-    delete frontend;
+    if (machine) {
+        delete machine;
+    }
+
+    if (frontend) {
+        delete frontend;
+    }
 }
 
 

@@ -21,29 +21,32 @@ project(oric)
 find_package(Boost 1.71.0 COMPONENTS program_options log)
 find_package(SDL2 REQUIRED)
 
-set(ORIC_SOURCES main.cpp oric.cpp memory.cpp machine.cpp frontend.cpp monitor.cpp config.cpp
+set (LIB_SOURCES
+        oric.cpp
+        memory.cpp
+        machine.cpp
+        frontend.cpp
+        monitor.cpp
+        config.cpp
         oric.hpp
-        tests/6502_test.cpp)
+)
+
 
 include_directories(${Boost_INCLUDE_DIRS} ${SDL2_INCLUDE_DIRS} .)
 
 include(chip/CMakeLists.txt)
 include(tape/CMakeLists.txt)
 
-add_executable(oric ${ORIC_SOURCES})
-
+add_executable(oric main.cpp ${LIB_SOURCES} )
 target_link_libraries(oric ${Boost_LIBRARIES} ${SDL2_LIBRARIES})
+
+add_library(oric_lib STATIC ${LIB_SOURCES})
+target_link_libraries(oric_lib ${Boost_LIBRARIES} ${SDL2_LIBRARIES})
+
+install(TARGETS oric RUNTIME DESTINATION bin)
 
 enable_testing()
 add_subdirectory(tests)
 
 
-install(TARGETS oric RUNTIME DESTINATION bin)
 
-
-
-
-
-
-
-#target_link_libraries(SDL2Test )
