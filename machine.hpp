@@ -43,10 +43,15 @@ class Machine
 {
 public:
     Machine(Oric* oric);
+
     virtual ~Machine();
 
     void init(Frontend* frontend);
+
     void init_cpu();
+    void init_mos6522();
+    void init_ay3();
+    void init_tape();
 
     void reset();
     void run(uint32_t steps, Oric* oric);
@@ -60,8 +65,6 @@ public:
     void update_key_output();
     void via_orb_changed(uint8_t a_Orb);
 
-//    static uint8_t read_byte(Machine& a_machine, uint16_t a_Address);
-
     static uint8_t inline read_byte(Machine& a_Machine, uint16_t a_Address)
     {
         if (a_Address >= 0x300 && a_Address < 0x400) {
@@ -70,24 +73,19 @@ public:
         return a_Machine.memory.mem[a_Address];
     }
 
-
-
     static uint8_t read_byte_zp(Machine& a_Machine, uint8_t a_Address);
 
-//    static uint16_t read_word(Machine& a_Machine, uint16_t a_Address);
     static uint16_t inline read_word(Machine &a_Machine, uint16_t a_Address)
     {
         return a_Machine.memory.mem[a_Address] | a_Machine.memory.mem[a_Address + 1] << 8;
     }
 
-//    static uint16_t read_word_zp(Machine& a_Machine, uint8_t a_Address);
     static uint16_t inline read_word_zp(Machine &a_Machine, uint8_t a_Address)
     {
         return a_Machine.memory.mem[a_Address] | a_Machine.memory.mem[a_Address + 1 & 0xff] << 8;
     }
 
     static void write_byte(Machine& a_Machine, uint16_t a_Address, uint8_t a_Val);
-//    static void write_byte_zp(Machine& a_Machine, uint8_t a_Address, uint8_t a_Val);
 
     static void inline write_byte_zp(Machine &a_Machine, uint8_t a_Address, uint8_t a_Val)
     {
@@ -102,6 +100,21 @@ public:
     static uint8_t inline read_via_ora(Machine& a_Machine)
     {
         return a_Machine.mos_6522->read_ora();
+    }
+
+    static void inline via_orb_changed_callback(Machine& a_Machine, uint8_t orb)
+    {
+        a_Machine.via_orb_changed(orb);
+    }
+
+    static void inline irq_callback(Machine& a_Machine)
+    {
+        a_Machine.irq();
+    }
+
+    static void inline irq_clear_callback(Machine& a_Machine)
+    {
+        a_Machine.irq_clear();
     }
 
     static uint8_t read_via_orb(Machine& a_Machine);

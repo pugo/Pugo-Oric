@@ -50,8 +50,11 @@ using namespace std;
 
 MOS6522::MOS6522(Machine& a_Machine) :
     machine(a_Machine),
+    orb_changed_handler(nullptr),
     ca2_changed_handler(nullptr),
-    cb2_changed_handler(nullptr)
+    cb2_changed_handler(nullptr),
+    irq_handler(nullptr),
+    irq_clear_handler(nullptr)
 {
     boost::assign::insert(register_names)
         (ORB, "ORB")(ORA, "ORA")(DDRB, "DDRB")(DDRA, "DDRA")
@@ -314,7 +317,7 @@ void MOS6522::write_byte(uint16_t a_Offset, uint8_t a_Value)
                     break;
             }
 //            machine.update_key_output();
-            machine.via_orb_changed(orb);
+            if (orb_changed_handler) { orb_changed_handler(machine, orb); }
             break;
         case ORA:
             ora = a_Value;
@@ -348,7 +351,7 @@ void MOS6522::write_byte(uint16_t a_Offset, uint8_t a_Value)
             break;
         case T1C_H:
             t1_latch_high = a_Value;
-//            t1_counter = (t1_latch_high << 8) | t1_latch_low;
+            t1_counter = (t1_latch_high << 8) | t1_latch_low;
             t1_reload = true;
             t1_run = true;
             irq_clear(IRQ_T1);
@@ -410,7 +413,7 @@ void MOS6522::write_byte(uint16_t a_Offset, uint8_t a_Value)
                 ifr |= 0x80;	// bit 7=1 if any IRQ is set.
             }
             else {
-                machine.irq_clear();
+                if (irq_clear_handler) { irq_clear_handler(machine); }
             }
             break;
         case IER:
@@ -450,12 +453,12 @@ void MOS6522::irq_check()
 {
     if ((ier & ifr) & 0x7f) {
         if ((ifr & 0x80) == 0) {
-            machine.irq();
+            if (irq_handler) { irq_handler(machine); }
             ifr |= 0x80;
         }
     }
     else {
-        machine.irq_clear();
+        if (irq_clear_handler) { irq_clear_handler(machine); }
         ifr &= 0x7f;
     }
 }
@@ -467,7 +470,7 @@ void MOS6522::irq_set(uint8_t a_Bits)
         ifr |= 0x80;
     }
     if (a_Bits & ier) {
-        machine.irq();
+        if (irq_handler) { irq_handler(machine); }
     }
 }
 
@@ -533,7 +536,7 @@ void MOS6522::write_cb2(bool a_Value)
     if (cb2 != a_Value) {
         cb2 = a_Value;
         // Set interrupt on pos/neg transition if 0 or 40 in pcr.
-        if ((cb2 && ((pcr & 0xC0) == 0x40)) || (!ca2 && ((pcr & 0xC0) == 0x00))) {
+        if ((cb2 && ((pcr & 0xC0) == 0x40)) || (!cb2 && ((pcr & 0xC0) == 0x00))) {
             irq_set(IRQ_CB2);
         }
 

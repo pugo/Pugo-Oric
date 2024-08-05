@@ -71,8 +71,12 @@ public:
         PCR_MASK_CB2 = 0xE0
     };
 
+    typedef void (*f_orb_changed_handler)(Machine &machine, uint8_t orb);
     typedef void (*f_ca2_changed_handler)(Machine &machine, bool value);
     typedef void (*f_cb2_changed_handler)(Machine &machine, bool aValue);
+
+    typedef void (*f_irq_handler)(Machine &machine);
+    typedef void (*f_irq_clear_handler)(Machine &machine);
 
     MOS6522(Machine& a_Machine);
     ~MOS6522();
@@ -98,8 +102,12 @@ public:
 
     void print_stat();
 
+    f_orb_changed_handler orb_changed_handler;
     f_ca2_changed_handler ca2_changed_handler;
     f_cb2_changed_handler cb2_changed_handler;
+
+    f_irq_handler irq_handler;
+    f_irq_clear_handler irq_clear_handler;
 
 private:
     void irq_check();
