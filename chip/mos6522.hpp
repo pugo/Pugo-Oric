@@ -102,6 +102,11 @@ public:
 
     void print_stat();
 
+    // Mainly used by unit tests to be able to get and set values without affecting interrupt flags.
+    uint16_t get_t1_counter() { return t1_counter; }
+    uint16_t get_t2_counter() { return t2_counter; }
+    void set_ifr(uint8_t value) { ifr = value; }
+
     f_orb_changed_handler orb_changed_handler;
     f_ca2_changed_handler ca2_changed_handler;
     f_cb2_changed_handler cb2_changed_handler;
