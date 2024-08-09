@@ -27,9 +27,6 @@ class Machine;
 class Memory;
 
 
-/**
-    @author Anders Piniesjö <pugo@pugo.org>
-*/
 class MOS6522
 {
 public:

@@ -200,105 +200,102 @@ void AY3_8912::reset()
 }
 
 
-short AY3_8912::exec(uint8_t cycles)
+short AY3_8912::exec()
 {
     uint32_t c;
 //    std::cout << "-- cycles: " << std::dec << (int)cycles <<  std::endl;
 
     int32_t cycle_diff_change = 0;
-    while (cycles) {
-        // Tones
+
+    // Tones
+    for (uint8_t channel = 0; channel < 3; channel++) {
+        if (++channels[channel].counter >= channels[channel].tone_period) {
+            channels[channel].counter = 0;
+            channels[channel].value ^= 1;
+        }
+    }
+
+    // Noise
+    if (++noise.counter >= noise.period) {
+        noise.counter = 0;
+        noise.bit ^= 1;
+        if (noise.bit) {
+            noise.rng ^= (((noise.rng & 1) ^ ((noise.rng >> 3) & 1)) << 17);
+            noise.rng >>= 1;
+        }
+    }
+
+    // Envelope
+    if (++envelope.counter >= envelope.period) {
+        envelope.counter = 0;
+
+        if (! envelope.holding) {
+            envelope.shape_counter = (envelope.shape_counter + 1) & 0x1f;
+            if (envelope.hold && (envelope.shape_counter == 0x1f)) {
+                envelope.holding = true;
+            }
+        }
+
         for (uint8_t channel = 0; channel < 3; channel++) {
-            if (++channels[channel].counter >= channels[channel].tone_period) {
-                channels[channel].counter = 0;
-                channels[channel].value ^= 1;
+            if (channels[channel].use_envelope) {
+                channels[channel].volume = voltab[_ay38910_shapes[envelope.shape][envelope.shape_counter]];
             }
         }
+    }
 
-        // Noise
-        if (++noise.counter >= noise.period) {
-            noise.counter = 0;
-            noise.bit ^= 1;
-            if (noise.bit) {
-                noise.rng ^= (((noise.rng & 1) ^ ((noise.rng >> 3) & 1)) << 17);
-                noise.rng >>= 1;
-            }
-        }
-
-        // Envelope
-        if (++envelope.counter >= envelope.period) {
-            envelope.counter = 0;
-
-            if (! envelope.holding) {
-                envelope.shape_counter = (envelope.shape_counter + 1) & 0x1f;
-                if (envelope.hold && (envelope.shape_counter == 0x1f)) {
-                    envelope.holding = true;
-                }
-            }
-
-            for (uint8_t channel = 0; channel < 3; channel++) {
-                if (channels[channel].use_envelope) {
-                    channels[channel].volume = voltab[_ay38910_shapes[envelope.shape][envelope.shape_counter]];
-                }
-            }
-        }
-
-        if (cycle_count >= (cycles_per_sample + cycle_diff)) {
-            if (move_sound_data) {
+    if (cycle_count >= (cycles_per_sample + cycle_diff)) {
+        if (move_sound_data) {
 //                buffer_mutex.lock();
-                uint32_t len = sound_buffer_index - sound_buffer_next_play_index;
+            uint32_t len = sound_buffer_index - sound_buffer_next_play_index;
 //    std::cout << "-- sound_buffer_index: " << std::dec << (int)sound_buffer_index << ", sound_buffer_next_play_index: " <<  (int)sound_buffer_next_play_index << ", len: " << (int)len << std::endl;
 
-                memmove(sound_buffer, &sound_buffer[sound_buffer_next_play_index], len * 2);
-                sound_buffer_index = len;
-                sound_buffer_next_play_index = 0;
-                move_sound_data = false;
+            memmove(sound_buffer, &sound_buffer[sound_buffer_next_play_index], len * 2);
+            sound_buffer_index = len;
+            sound_buffer_next_play_index = 0;
+            move_sound_data = false;
 
-                cycle_diffs_buffer.push_back(len);
+            cycle_diffs_buffer.push_back(len);
 
-                if (old_length_counter++ == 100) {
-                    old_length_counter = 0;
+            if (old_length_counter++ == 100) {
+                old_length_counter = 0;
 
-                    if (cycle_diffs_buffer.size() == 40) {
-                        int16_t avg = std::accumulate(cycle_diffs_buffer.begin(), cycle_diffs_buffer.end(), 0) / cycle_diffs_buffer.size();
-                        if (old_length == 0) {
-                            old_length = avg;
-                        }
-
-                        if (avg > old_length) {
-                            cycle_diff_change = 1;
-                        }
-                        else if (avg < old_length) {
-                            cycle_diff_change = -1;
-                        }
-
+                if (cycle_diffs_buffer.size() == 40) {
+                    int16_t avg = std::accumulate(cycle_diffs_buffer.begin(), cycle_diffs_buffer.end(), 0) / cycle_diffs_buffer.size();
+                    if (old_length == 0) {
                         old_length = avg;
                     }
+
+                    if (avg > old_length) {
+                        cycle_diff_change = 1;
+                    }
+                    else if (avg < old_length) {
+                        cycle_diff_change = -1;
+                    }
+
+                    old_length = avg;
                 }
+            }
 
 //                buffer_mutex.unlock();
-            }
-
-            uint32_t out = 0;
-
-            for (uint8_t channel = 0; channel < 3; channel++) {
-                out += ((channels[channel].value | channels[channel].disabled) & ((noise.rng & 1) |
-                                  channels[channel].noise_diabled)) * channels[channel].volume;
-            }
-
-            if (out > 32767) { out = 32767; }
-
-            if ((sound_buffer_index + 2) < 32768) {
-                sound_buffer[sound_buffer_index++] = out;
-                sound_buffer[sound_buffer_index++] = out;
-            }
-            cycle_count -= (cycles_per_sample + cycle_diff);
-        }
-        else {
-            cycle_count += cycle_multiplier;
         }
 
-        --cycles;
+        uint32_t out = 0;
+
+        for (uint8_t channel = 0; channel < 3; channel++) {
+            out += ((channels[channel].value | channels[channel].disabled) & ((noise.rng & 1) |
+                              channels[channel].noise_diabled)) * channels[channel].volume;
+        }
+
+        if (out > 32767) { out = 32767; }
+
+        if ((sound_buffer_index + 2) < 32768) {
+            sound_buffer[sound_buffer_index++] = out;
+            sound_buffer[sound_buffer_index++] = out;
+        }
+        cycle_count -= (cycles_per_sample + cycle_diff);
+    }
+    else {
+        cycle_count += cycle_multiplier;
     }
 
     cycle_diff += cycle_diff_change;

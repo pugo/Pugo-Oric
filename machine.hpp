@@ -25,6 +25,7 @@
 #include "chip/mos6502.hpp"
 #include "chip/mos6522.hpp"
 #include "chip/ay3_8912.hpp"
+#include "chip/ula.hpp"
 #include "memory.hpp"
 
 #include "tape/tape_tap.hpp"
@@ -95,8 +96,6 @@ public:
         a_Machine.memory.mem[a_Address] = a_Val;
     }
 
-//    static uint8_t read_via_ora(Machine& a_Machine);
-
     static uint8_t inline read_via_ora(Machine& a_Machine)
     {
         return a_Machine.mos_6522->read_ora();
@@ -125,18 +124,14 @@ public:
     bool break_exec;
     Memory memory;
     Frontend* frontend;
+    bool warpmode_on;
 
 protected:
-    inline bool paint_raster(Oric* oric);
-
+    ULA ula;
     Oric* oric;
     Tape* tape;
 
     int32_t cycle_count;
-    bool is_running;
-    bool warpmode_on;
-
-    uint16_t raster_current;
 
     bool sound_paused;
     uint32_t sound_pause_counter;

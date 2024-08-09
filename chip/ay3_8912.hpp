@@ -105,7 +105,7 @@ public:
     ~AY3_8912();
 
     void reset();
-    short exec(uint8_t cycles);
+    short exec();
 
     void set_bdir(bool value);
     void set_bc1(bool value);

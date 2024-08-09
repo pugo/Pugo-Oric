@@ -18,7 +18,6 @@
 #include <iostream>
 #include <sstream>
 #include <cstdlib>
-#include <vector>
 #include <boost/assign.hpp>
 
 #include "machine.hpp"
@@ -52,24 +51,18 @@ static int32_t keytab[] = {
 
 
 constexpr uint8_t cycles_per_raster = 64;
-constexpr uint16_t raster_max = 312;
-constexpr uint16_t raster_visible_lines = 224;
-//constexpr uint16_t raster_visible_first = 65;
-constexpr uint16_t raster_visible_first = 44;
-constexpr uint16_t raster_visible_last = raster_visible_first + raster_visible_lines;
 
 constexpr uint32_t sound_pause_target = 1000;
 
 
 Machine::Machine(Oric* oric) :
+    ula(this, &memory, Frontend::texture_width, Frontend::texture_height, Frontend::texture_bpp),
     oric(oric),
     memory(65535),
     tape(nullptr),
     cycle_count(0),
-    is_running(false),
     warpmode_on(false),
     break_exec(false),
-    raster_current(0),
     sound_paused(true),
     sound_pause_counter(0),
     current_key_row(0)
@@ -193,7 +186,7 @@ void Machine::run(uint32_t steps, Oric* oric)
         while (cycle_count > 0) {
             tape->exec();
             mos_6522->exec();
-            ay3->exec(1);
+            ay3->exec();
 
             if (cpu->exec_instruction(break_exec)) {
                 update_key_output();
@@ -202,81 +195,63 @@ void Machine::run(uint32_t steps, Oric* oric)
             cycle_count -= 1;
         }
 
-//        if (cycle_count <= 0) {
-            if (paint_raster(oric)) {
-                next_frame += 20;
+        if (ula.paint_raster()) {
+            next_frame += 20;
 
-                while (SDL_PollEvent(&event)) {
-                    switch (event.type)
+            while (SDL_PollEvent(&event)) {
+                switch (event.type)
+                {
+                    case SDL_KEYDOWN:
+                    case SDL_KEYUP:
                     {
-                        case SDL_KEYDOWN:
-                        case SDL_KEYUP:
-                        {
-                            auto sym = event.key.keysym.sym;
+                        auto sym = event.key.keysym.sym;
 
-                            if (event.key.keysym.sym == SDLK_F12 && event.type == SDL_KEYDOWN) {
-                                warpmode_on = !warpmode_on;
-                                std::cout << "Warp mode: " << (warpmode_on ? "on" : "off") << std::endl;
-                                if (! warpmode_on) {
-                                    next_frame = SDL_GetTicks64();
-                                }
+                        if (event.key.keysym.sym == SDLK_F12 && event.type == SDL_KEYDOWN) {
+                            warpmode_on = !warpmode_on;
+                            std::cout << "Warp mode: " << (warpmode_on ? "on" : "off") << std::endl;
+                            if (! warpmode_on) {
+                                next_frame = SDL_GetTicks64();
                             }
-
-                            if (event.key.keysym.sym == SDLK_F10 && event.type == SDL_KEYDOWN) {
-                                cpu->NMI();
-                            }
-
-                            auto trans = key_translations.find(std::make_pair(sym, event.key.keysym.mod));
-                            if (trans != key_translations.end()) {
-                                sym = trans->second.first;
-                            }
-
-                            auto key = key_map.find(sym);
-                            if (key != key_map.end()) {
-                                key_press(key->second, event.type == SDL_KEYDOWN);
-                            }
-                            break;
                         }
 
-                        case SDL_WINDOWEVENT:
-                            if (event.window.event == SDL_WINDOWEVENT_CLOSE) {
-                                oric->do_quit();
-                                break_exec = true;
-                            }
-                    }
-                }
+                        if (event.key.keysym.sym == SDLK_F10 && event.type == SDL_KEYDOWN) {
+                            cpu->NMI();
+                        }
 
-                uint64_t now = SDL_GetTicks64();
+                        auto trans = key_translations.find(std::make_pair(sym, event.key.keysym.mod));
+                        if (trans != key_translations.end()) {
+                            sym = trans->second.first;
+                        }
 
-                if (now > next_frame) {
-                    next_frame = now;
-                }
-                else {
-                    if (! warpmode_on) {
-                        SDL_Delay(next_frame - now);
+                        auto key = key_map.find(sym);
+                        if (key != key_map.end()) {
+                            key_press(key->second, event.type == SDL_KEYDOWN);
+                        }
+                        break;
                     }
+
+                    case SDL_WINDOWEVENT:
+                        if (event.window.event == SDL_WINDOWEVENT_CLOSE) {
+                            oric->do_quit();
+                            break_exec = true;
+                        }
                 }
             }
+
+            uint64_t now = SDL_GetTicks64();
+
+            if (now > next_frame) {
+                next_frame = now;
+            }
+            else {
+                if (! warpmode_on) {
+                    SDL_Delay(next_frame - now);
+                }
+            }
+        }
+
         cycle_count += cycles_per_raster;
     }
-}
-
-inline bool Machine::paint_raster(Oric* oric)
-{
-    bool render_screen = false;
-
-    if (++raster_current == raster_max) {
-        raster_current = 0;
-        render_screen = true;
-        frontend->render_graphics();
-    }
-
-    if ((raster_current < raster_visible_first) || (raster_current >= raster_visible_last)) {
-        return render_screen;
-    }
-
-    frontend->update_graphics(raster_current - raster_visible_first, memory.mem);
-    return render_screen;
 }
 
 void Machine::key_press(uint8_t a_KeyBits, bool a_Down)

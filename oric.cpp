@@ -60,7 +60,8 @@ void Oric::init()
         machine->memory.load("ROMS/basic11b.rom", 0xc000);
     }
     else {
-    	machine->memory.load("ROMS/basic10.rom", 0xc000);
+//    	machine->memory.load("ROMS/test108k.rom", 0xc000);
+        machine->memory.load("ROMS/basic10.rom", 0xc000);
     }
 }
 

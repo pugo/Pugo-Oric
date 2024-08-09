@@ -78,7 +78,7 @@ MOS6502::MOS6502(Machine& a_Machine) :
     C(false),
     PC(0),
     SP(0),
-    quiet(false),
+    quiet(true),
     machine(a_Machine),
     irq_flag(false),
     nmi_flag(false),
