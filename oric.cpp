@@ -209,7 +209,7 @@ Oric::State Oric::handle_command(std::string& a_Cmd)
         last_address = machine->cpu->get_monitor().disassemble(string_to_word(parts[1]), string_to_word(parts[2]));
     }
     else if (cmd == "v") { // info
-        machine->mos_6522->print_stat();
+        machine->mos_6522->get_state().print();
     }
     else if (cmd == "m") { // info
         if (parts.size() < 3) {

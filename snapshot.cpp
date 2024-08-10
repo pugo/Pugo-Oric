@@ -15,47 +15,16 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
-#ifndef MEMORY_H
-#define MEMORY_H
 
-#include <iostream>
-#include <ostream>
-#include <cstdint>
-#include <vector>
+#include "snapshot.hpp"
 
 
-class Snapshot;
-
-
-class Memory
+Snapshot::Snapshot()
 {
-public:
-    Memory(uint32_t a_Size);
-    ~Memory();
+}
 
-    void load(const std::string& path, uint32_t address);
-    uint32_t get_size() { return size; }
-
-    void save_to_snapshot(Snapshot& snapshot);
-    void load_from_snapshot(Snapshot& snapshot);
-
-    void set_mem_pos(uint16_t a_Address) { mempos = a_Address; }
-
-    friend Memory& operator<<(Memory& a_Os, unsigned int a_In) {
-        a_Os.mem[a_Os.mempos++] = static_cast<uint8_t>(a_In & 0xff);
-        return a_Os;
-    }
-
-    void show(uint32_t a_Pos, uint32_t a_Length);
-
-    std::vector<uint8_t> memory;
-    uint8_t* mem;
-
-protected:
-    uint32_t size;
-    uint32_t mempos;
-};
+Snapshot::~Snapshot()
+{
+}
 
 
-
-#endif // MEMORY_H

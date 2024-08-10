@@ -19,10 +19,11 @@
 #define AY3_8912_H
 
 #include <memory>
-#include <machine.hpp>
 #include <mutex>
 #include <boost/circular_buffer.hpp>
 
+class Snapshot;
+class Machine;
 
 typedef uint8_t (*f_read_data_handler)(Machine &oric);
 typedef uint8_t (*f_write_data_handler)(Machine &oric);
@@ -101,17 +102,37 @@ public:
         NUM_REGS
     };
 
+    struct State
+    {
+        void reset();
+
+        bool bdir;
+        bool bc1;
+        bool bc2;
+
+        uint8_t current_register;
+        uint8_t registers[NUM_REGS];
+
+        Channel channels[3];
+        Noise noise;
+        Envelope envelope;
+    };
+
     AY3_8912(Machine& machine);
     ~AY3_8912();
 
     void reset();
+
+    void save_to_snapshot(Snapshot& snapshot);
+    void load_from_snapshot(Snapshot& snapshot);
+
     short exec();
 
     void set_bdir(bool value);
     void set_bc1(bool value);
     void set_bc2(bool value);
 
-    uint8_t get_register(Register a_Register) { return registers[a_Register]; }
+    uint8_t get_register(Register a_Register) { return state.registers[a_Register]; }
 
     static void set_bdir(Machine& machine, bool a_Value);
     static void set_bc1(Machine& machine, bool a_Value);
@@ -131,17 +152,7 @@ private:
     inline void write_to_psg(uint8_t value);
 
     Machine& machine;
-
-    bool bdir;
-    bool bc1;
-    bool bc2;
-
-    uint8_t current_register;
-    uint8_t registers[NUM_REGS];
-
-    Channel channels[3];
-    Noise noise;
-    Envelope envelope;
+    AY3_8912::State state;
 
     uint32_t cycles_per_sample;
     uint32_t cycle_count;

@@ -29,6 +29,7 @@
 
 #include "mos6502_opcodes.hpp"
 #include "monitor.hpp"
+#include "snapshot.hpp"
 
 #include <memory>
 
@@ -80,6 +81,9 @@ public:
 
     uint8_t time_instruction();
     bool exec_instruction(bool& a_Brk);
+
+    void save_to_snapshot(Snapshot& snapshot);
+    void load_from_snapshot(Snapshot& snapshot);
 
     // Registers
     uint8_t A;

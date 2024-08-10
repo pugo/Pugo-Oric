@@ -218,6 +218,14 @@ void Machine::run(uint32_t steps, Oric* oric)
                             cpu->NMI();
                         }
 
+                        if (event.key.keysym.sym == SDLK_F4 && event.type == SDL_KEYDOWN) {
+                            save_snapshot();
+                        }
+
+                        if (event.key.keysym.sym == SDLK_F5 && event.type == SDL_KEYDOWN) {
+                            load_snapshot();
+                        }
+
                         auto trans = key_translations.find(std::make_pair(sym, event.key.keysym.mod));
                         if (trans != key_translations.end()) {
                             sym = trans->second.first;
@@ -297,6 +305,25 @@ void Machine::via_orb_changed(uint8_t a_Orb)
     }
 }
 
+void Machine::save_snapshot()
+{
+    cpu->save_to_snapshot(snapshot);
+    mos_6522->save_to_snapshot(snapshot);
+    memory.save_to_snapshot(snapshot);
+    ay3->save_to_snapshot(snapshot);
+
+    std::cout << "Saved snapshot." << std::endl;
+}
+
+void Machine::load_snapshot()
+{
+    cpu->load_from_snapshot(snapshot);
+    mos_6522->load_from_snapshot(snapshot);
+    memory.load_from_snapshot(snapshot);
+    ay3->load_from_snapshot(snapshot);
+
+    std::cout << "Loaded snapshot." << std::endl;
+}
 
 // --- Memory functions -------------------
 

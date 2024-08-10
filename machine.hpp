@@ -27,6 +27,7 @@
 #include "chip/ay3_8912.hpp"
 #include "chip/ula.hpp"
 #include "memory.hpp"
+#include "snapshot.hpp"
 
 #include "tape/tape_tap.hpp"
 #include "tape/tape_blank.hpp"
@@ -65,6 +66,9 @@ public:
     void key_press(uint8_t a_KeyBits, bool a_Down);
     void update_key_output();
     void via_orb_changed(uint8_t a_Orb);
+
+    void save_snapshot();
+    void load_snapshot();
 
     static uint8_t inline read_byte(Machine& a_Machine, uint16_t a_Address)
     {
@@ -141,6 +145,8 @@ protected:
 
     uint8_t current_key_row;
     uint8_t key_rows[8];
+
+    Snapshot snapshot;
 };
 
 #endif // MACHINE_H

@@ -28,6 +28,7 @@ set (LIB_SOURCES
         frontend.cpp
         monitor.cpp
         config.cpp
+        snapshot.cpp
         oric.hpp
 )
 

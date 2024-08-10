@@ -16,34 +16,31 @@
 // =========================================================================
 
 #include <stdlib.h>
-#include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <errno.h>
-#include <fstream>
 #include <sstream>
 #include <iomanip>
 #include <string.h>
 
 #include "memory.hpp"
+#include "snapshot.hpp"
 
-#include "chip/mos6502_opcodes.hpp"
 #include "chip/mos6502.hpp"
 
 
 Memory::Memory(uint32_t a_Size) :
     mem(NULL),
     size(a_Size),
-    mempos(0)
+    mempos(0),
+    memory(a_Size)
 {
-    mem = new uint8_t[a_Size];
+    mem = memory.data();
     memset(mem, 0, a_Size);
 }
 
 Memory::~Memory()
 {
-    delete[] mem;
 }
 
 void error_exit(std::string a_Description)
@@ -89,6 +86,19 @@ void Memory::load(const std::string& path, uint32_t address)
     free(buff);
     return;
 }
+
+
+void Memory::save_to_snapshot(Snapshot& snapshot)
+{
+    snapshot.memory = memory;
+}
+
+
+void Memory::load_from_snapshot(Snapshot& snapshot)
+{
+    memory = snapshot.memory;
+}
+
 
 void Memory::show(uint32_t a_Pos, uint32_t a_Length)
 {

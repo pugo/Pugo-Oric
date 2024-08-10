@@ -15,13 +15,16 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
+#include <iostream>
+#include <cstdio>
+
+#include "machine.hpp"
+#include "snapshot.hpp"
+
 #include "mos6502.hpp"
 #include "mos6502_opcodes.hpp"
 #include "mos6502_cycles.hpp"
-#include <machine.hpp>
 
-#include <iostream>
-#include <cstdio>
 
 // Macros for addressing modes
 #define READ_BYTE_IMM()     memory_read_byte_handler(machine, PC++)
@@ -126,6 +129,58 @@ void MOS6502::Reset()
     current_cycle = 0;
 }
 
+void MOS6502::save_to_snapshot(Snapshot& snapshot)
+{
+    snapshot.mos6502.A = A;
+    snapshot.mos6502.X = X;
+    snapshot.mos6502.Y = Y;
+    snapshot.mos6502.N_INTERN = N_INTERN;
+    snapshot.mos6502.Z_INTERN = Z_INTERN;
+    snapshot.mos6502.V = V;
+    snapshot.mos6502.B = B;
+    snapshot.mos6502.D = D;
+    snapshot.mos6502.I = I;
+    snapshot.mos6502.C = C;
+
+    snapshot.mos6502.PC = PC;
+    snapshot.mos6502.SP = SP;
+    snapshot.mos6502.irq_flag = irq_flag;
+    snapshot.mos6502.nmi_flag = nmi_flag;
+    snapshot.mos6502.do_interrupt = do_interrupt;
+    snapshot.mos6502.do_nmi = do_nmi;
+
+    snapshot.mos6502.instruction_load = instruction_load;
+    snapshot.mos6502.instruction_cycles = instruction_cycles;
+    snapshot.mos6502.current_instruction = current_instruction;
+    snapshot.mos6502.current_cycle = current_cycle;
+}
+
+void MOS6502::load_from_snapshot(Snapshot& snapshot)
+{
+    A = snapshot.mos6502.A;
+    X = snapshot.mos6502.X;
+    Y = snapshot.mos6502.Y;
+    N_INTERN = snapshot.mos6502.N_INTERN;
+    Z_INTERN = snapshot.mos6502.Z_INTERN;
+    V = snapshot.mos6502.V;
+    B = snapshot.mos6502.B;
+    D = snapshot.mos6502.D;
+    I = snapshot.mos6502.I;
+    C = snapshot.mos6502.C;
+
+    PC = snapshot.mos6502.PC;
+    SP = snapshot.mos6502.SP;
+    irq_flag = snapshot.mos6502.irq_flag;
+    nmi_flag = snapshot.mos6502.nmi_flag;
+    do_interrupt = snapshot.mos6502.do_interrupt;
+    do_nmi = snapshot.mos6502.do_nmi;
+
+    instruction_load = snapshot.mos6502.instruction_load;
+    instruction_cycles = snapshot.mos6502.instruction_cycles;
+    current_instruction = snapshot.mos6502.current_instruction;
+    current_cycle = snapshot.mos6502.current_cycle;
+}
+
 void MOS6502::PrintStat()
 {
     PrintStat(PC);
@@ -134,7 +189,8 @@ void MOS6502::PrintStat()
 void MOS6502::PrintStat(uint16_t address)
 {
     std::cout << monitor.disassemble(address) << " ";
-    printf("A: %02X, X: %02X, Y: %02X  |  N: %d, Z: %d, C: %d, V: %d  |  SP: %02X\n", A, X, Y, N, Z, C, V, SP);
+    printf("A: %02X, X: %02X, Y: %02X  |  N: %d, Z: %d, C: %d, V: %d  |  SP: %02X\n",
+           A, X, Y, N, Z, C, V, SP);
 }
 
 //   7                           0

@@ -71,8 +71,10 @@ Allowed options:
 
 The following control keys can alter the emulator behavior.
 
-* `ctrl-F12`: Toggle warp mode (go as fast as possible).
-* `ctrl-F10`: Soft reset the emulator (NMI)
+* `F4`: Make snapshot (to RAM)
+* `F5`: Load snapshot (from RAM)
+* `F10`: Soft reset the emulator (NMI)
+* `F12`: Toggle warp mode (go as fast as possible).
 
 
 ### Loading from tape image
@@ -91,7 +93,7 @@ CLOAD"
 ```
 
 To speed up the loading time it is possible to toggle warp mode with
-`ctrl-F12`.
+`F12`.
 
 ## Exiting
 
@@ -148,7 +150,7 @@ The timeline is something like:
 * 2017: Key input
 * 2020: Tape loading
 * 2023: AY3-8912 sound
-* 2024: Cycle bug fixing, new monitor
+* 2024: Cycle bug fixing, new monitor, blink mode, snapshots
 
 
 ## Contribution

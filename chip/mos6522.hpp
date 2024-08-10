@@ -25,6 +25,7 @@
 
 class Machine;
 class Memory;
+class Snapshot;
 
 
 class MOS6522
@@ -68,6 +69,53 @@ public:
         PCR_MASK_CB2 = 0xE0
     };
 
+    struct State
+    {
+        void reset();
+        void print();
+
+        bool ca1;
+        bool ca2;
+        bool ca2_do_pulse;
+
+        bool cb1;
+        bool cb2;
+        bool cb2_do_pulse;
+
+        uint8_t ira;		// Input Register A
+        uint8_t ora;		// Output Register A
+        uint8_t ddra;		// Data Direction Register A (input = 0, output = 1)
+
+        uint8_t irb;		// Input Register B
+        uint8_t orb;		// Output Register B
+        uint8_t ddrb;		// Data Direction Register B (input = 0, output = 1)
+
+        uint8_t t1_latch_low;
+        uint8_t t1_latch_high;
+        uint16_t t1_counter;
+        bool t1_run;
+        uint8_t t1_reload;
+
+        uint8_t t2_latch_low;
+        uint8_t t2_latch_high;
+        uint16_t t2_counter;
+        bool t2_run;
+        bool t2_reload;
+
+        uint8_t sr;         // Shift register
+
+        uint8_t acr;		// Auxilliary control register (shift mode, etc)
+        // |  7  |  6  |    5    |  4  |  3  |  2  |      1       |      0       |
+        // |  T1 ctrl  | T2 ctrl |     SR  ctrl    | PB latch en. | PA latch en. |
+
+        uint8_t pcr;		// Peripheral control register
+        // |  7  |  6  |  5  |     4    |  3  |  2  |  1  |     0    |
+        // |    CB2 ctrl     | CB1 ctrl |     CA2 ctrl    | CA1 ctrl |
+
+        uint8_t ifr;		// Interrupt Flag Register:   | IRQ  | T1 | T2 | CB1 | CB2 | SR | CA1 | CA2 |
+        uint8_t ier;		// Interrupt Enable Register: | ctrl | T1 | T2 | CB1 | CB2 | SR | CA1 | CA2 |
+    };
+
     typedef void (*f_orb_changed_handler)(Machine &machine, uint8_t orb);
     typedef void (*f_ca2_changed_handler)(Machine &machine, bool value);
     typedef void (*f_cb2_changed_handler)(Machine &machine, bool aValue);
@@ -81,15 +129,18 @@ public:
     void reset();
     void exec();
 
+    void save_to_snapshot(Snapshot& snapshot);
+    void load_from_snapshot(Snapshot& snapshot);
+
     uint8_t read_byte(uint16_t a_Offset);
     void write_byte(uint16_t a_Offset, uint8_t a_Value);
 
-    uint8_t read_ora() { return (ora & ddra); }
-    uint8_t read_orb() { return (orb & ddrb); }
+    uint8_t read_ora() { return (state.ora & state.ddra); }
+    uint8_t read_orb() { return (state.orb & state.ddrb); }
 
     void set_irb_bit(const uint8_t a_Bit, const bool a_Value);
 
-    void write_irb(uint8_t a_Value) { irb = a_Value; }
+    void write_irb(uint8_t a_Value) { state.irb = a_Value; }
 
     void write_ca1(bool a_Value);
     void write_ca2(bool a_Value);
@@ -97,12 +148,12 @@ public:
     void write_cb1(bool a_Value);
     void write_cb2(bool a_Value);
 
-    void print_stat();
+    MOS6522::State get_state() { return state; }
 
     // Mainly used by unit tests to be able to get and set values without affecting interrupt flags.
-    uint16_t get_t1_counter() { return t1_counter; }
-    uint16_t get_t2_counter() { return t2_counter; }
-    void set_ifr(uint8_t value) { ifr = value; }
+    uint16_t get_t1_counter() { return state.t1_counter; }
+    uint16_t get_t2_counter() { return state.t2_counter; }
+    void set_ifr(uint8_t value) { state.ifr = value; }
 
     f_orb_changed_handler orb_changed_handler;
     f_ca2_changed_handler ca2_changed_handler;
@@ -116,48 +167,8 @@ private:
     void irq_set(uint8_t a_Bits);
     void irq_clear(uint8_t a_Bits);
 
-    bool ca1;
-    bool ca2;
-    bool ca2_do_pulse;
-
-    bool cb1;
-    bool cb2;
-    bool cb2_do_pulse;
-
-    uint8_t ira;		// Input Register A
-    uint8_t ora;		// Output Register A
-    uint8_t ddra;		// Data Direction Register A (input = 0, output = 1)
-
-    uint8_t irb;		// Input Register B
-    uint8_t orb;		// Output Register B
-    uint8_t ddrb;		// Data Direction Register B (input = 0, output = 1)
-
-    uint8_t t1_latch_low;
-    uint8_t t1_latch_high;
-    uint16_t t1_counter;
-    bool t1_run;
-    uint8_t t1_reload;
-
-    uint8_t t2_latch_low;
-    uint8_t t2_latch_high;
-    uint16_t t2_counter;
-    bool t2_run;
-    bool t2_reload;
-
-    uint8_t sr;         // Shift register
-
-    uint8_t acr;		// Auxilliary control register (shift mode, etc)
-    // |  7  |  6  |    5    |  4  |  3  |  2  |      1       |      0       |
-    // |  T1 ctrl  | T2 ctrl |     SR  ctrl    | PB latch en. | PA latch en. |
-
-    uint8_t pcr;		// Peripheral control register
-    // |  7  |  6  |  5  |     4    |  3  |  2  |  1  |     0    |
-    // |    CB2 ctrl     | CB1 ctrl |     CA2 ctrl    | CA1 ctrl |
-
-    uint8_t ifr;		// Interrupt Flag Register:   | IRQ  | T1 | T2 | CB1 | CB2 | SR | CA1 | CA2 |
-    uint8_t ier;		// Interrupt Enable Register: | ctrl | T1 | T2 | CB1 | CB2 | SR | CA1 | CA2 |
-
     Machine& machine;
+    MOS6522::State state;
 
     std::map<Register, std::string> register_names;
 };
