@@ -204,7 +204,7 @@ void MOS6522::exec()
     }
 
     if (!(state.acr & 0x20)) {
-        // T2 - One shot
+        // T2 - One shot (pulse counting mode handled in set_irb_bit)
         if (state.t2_reload) {
             state.t2_reload = false;
         }
@@ -469,13 +469,14 @@ void MOS6522::write_byte(uint16_t a_Offset, uint8_t a_Value)
 
 void MOS6522::set_irb_bit(const uint8_t a_Bit, const bool a_Value)
 {
+    uint8_t original_bit_6 = state.irb & 0x40;
+
     uint8_t b = 1 << a_Bit;
     state.irb = (state.irb & ~b) | (a_Value ? b : 0);
 
     if (state.acr & 0x20) {
-        if (a_Bit == 5 && (state.irb & 0x40) && !a_Value) {
+        if (a_Bit == 6 && (original_bit_6 & 0x40) && !a_Value) {
             state.t2_counter--;
-
             if (state.t2_run && (state.t2_counter == 0)) {
                 irq_set(IRQ_T2);
                 state.t2_run = false;

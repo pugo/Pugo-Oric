@@ -660,4 +660,31 @@ TEST_F(MOS6522Test, T2_interrupt_clear_on_read)
     ASSERT_EQ(mos6522->read_byte(MOS6522::IFR), 0);
 }
 
+TEST_F(MOS6522Test, T2_pulse_counting)
+{
+    mos6522->write_byte(MOS6522::ACR, 0x20);    // Enable T2 pulse counting mode.
+    mos6522->write_byte(MOS6522::IFR, 0x00);
+    mos6522->write_byte(MOS6522::IER, 0xff);    // Enable interrupts for bit 0-6.
+
+    mos6522->write_byte(MOS6522::T2C_L, 0x05);
+    mos6522->write_byte(MOS6522::T2C_H, 0x00);
+
+    mos6522->exec();  // Initial load
+
+    ASSERT_EQ(mos6522->get_t2_counter(), 0x05);
+
+    for (int i = 4; i > 0; i--) {
+        mos6522->set_irb_bit(6, true);
+        mos6522->set_irb_bit(6, false);
+        ASSERT_EQ(mos6522->get_t2_counter(), (uint8_t)i);
+    }
+
+    mos6522->set_irb_bit(6, true);
+    mos6522->set_irb_bit(6, false);
+    ASSERT_EQ(mos6522->get_t2_counter(), 0);
+
+    // Expect interrupt
+    ASSERT_EQ(mos6522->read_byte(MOS6522::IFR), MOS6522::IRQ_T2 | 0x80);
+}
+
 } // Unittest

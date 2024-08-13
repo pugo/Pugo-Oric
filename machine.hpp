@@ -70,6 +70,8 @@ public:
     void save_snapshot();
     void load_snapshot();
 
+    // --- Memory functions -------------------
+
     static uint8_t inline read_byte(Machine& a_Machine, uint16_t a_Address)
     {
         if (a_Address >= 0x300 && a_Address < 0x400) {
@@ -78,7 +80,10 @@ public:
         return a_Machine.memory.mem[a_Address];
     }
 
-    static uint8_t read_byte_zp(Machine& a_Machine, uint8_t a_Address);
+    static uint8_t inline read_byte_zp(Machine &a_Machine, uint8_t a_Address)
+    {
+        return a_Machine.memory.mem[a_Address];
+    }
 
     static uint16_t inline read_word(Machine &a_Machine, uint16_t a_Address)
     {
@@ -90,7 +95,18 @@ public:
         return a_Machine.memory.mem[a_Address] | a_Machine.memory.mem[a_Address + 1 & 0xff] << 8;
     }
 
-    static void write_byte(Machine& a_Machine, uint16_t a_Address, uint8_t a_Val);
+    static void inline write_byte(Machine &a_Machine, uint16_t a_Address, uint8_t a_Val)
+    {
+        if (a_Address >= 0xc000) {
+            return;
+        }
+
+        if (a_Address >= 0x300 && a_Address < 0x400) {
+            a_Machine.mos_6522->write_byte(a_Address, a_Val);
+        }
+
+        a_Machine.memory.mem[a_Address] = a_Val;
+    }
 
     static void inline write_byte_zp(Machine &a_Machine, uint8_t a_Address, uint8_t a_Val)
     {
@@ -103,6 +119,11 @@ public:
     static uint8_t inline read_via_ora(Machine& a_Machine)
     {
         return a_Machine.mos_6522->read_ora();
+    }
+
+    static uint8_t inline read_via_orb(Machine& a_Machine)
+    {
+        return a_Machine.mos_6522->read_orb();
     }
 
     static void inline via_orb_changed_callback(Machine& a_Machine, uint8_t orb)
@@ -120,7 +141,6 @@ public:
         a_Machine.irq_clear();
     }
 
-    static uint8_t read_via_orb(Machine& a_Machine);
 
     MOS6502* cpu;
     MOS6522* mos_6522;

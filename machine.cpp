@@ -325,59 +325,5 @@ void Machine::load_snapshot()
     std::cout << "Loaded snapshot." << std::endl;
 }
 
-// --- Memory functions -------------------
-
-//uint8_t inline Machine::read_byte(Machine& a_Machine, uint16_t a_Address)
-//{
-//    if (a_Address >= 0x300 && a_Address < 0x400) {
-//        return a_Machine.mos_6522->read_byte(a_Address);
-//    }
-//    return a_Machine.memory.mem[a_Address];
-//}
-
-uint8_t inline Machine::read_byte_zp(Machine &a_Machine, uint8_t a_Address)
-{
-    return a_Machine.memory.mem[a_Address];
-}
-
-//uint16_t inline Machine::read_word(Machine &a_Machine, uint16_t a_Address)
-//{
-//    return a_Machine.memory.mem[a_Address] | a_Machine.memory.mem[a_Address + 1] << 8;
-//}
-
-//uint16_t inline Machine::read_word_zp(Machine &a_Machine, uint8_t a_Address)
-//{
-//    return a_Machine.memory.mem[a_Address] | a_Machine.memory.mem[a_Address + 1 & 0xff] << 8;
-//}
-
-void inline Machine::write_byte(Machine &a_Machine, uint16_t a_Address, uint8_t a_Val)
-{
-    if (a_Address >= 0xc000) {
-        return;
-    }
-
-    if (a_Address >= 0x300 && a_Address < 0x400) {
-        a_Machine.mos_6522->write_byte(a_Address, a_Val);
-    }
-
-    a_Machine.memory.mem[a_Address] = a_Val;
-}
-
-//void inline Machine::write_byte_zp(Machine &a_Machine, uint8_t a_Address, uint8_t a_Val)
-//{
-//    if (a_Address > 0x00ff) {
-//        return;
-//    }
-//    a_Machine.memory.mem[a_Address] = a_Val;
-//}
 
 
-//uint8_t inline Machine::read_via_ora(Machine& a_Machine)
-//{
-//    return a_Machine.mos_6522->read_ora();
-//}
-
-uint8_t inline Machine::read_via_orb(Machine& a_Machine)
-{
-    return a_Machine.mos_6522->read_orb();
-}
