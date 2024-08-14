@@ -15,6 +15,8 @@ include_directories(${gmock_SOURCE_DIR}/include ${gmock_SOURCE_DIR})
 add_executable(gtests_run
         6502_test.cpp
         6522_test.cpp
+        6522_test_control_registers.cpp
+        6522_test_counters.cpp
 )
 
 target_link_libraries(gtests_run  gtest_main gmock oric_lib)

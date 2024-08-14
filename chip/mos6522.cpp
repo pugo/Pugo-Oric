@@ -143,12 +143,14 @@ void MOS6522::load_from_snapshot(Snapshot& snapshot)
 
 void MOS6522::exec()
 {
+    // In pulse output mode, CA2 goes low for one cycle after read/write of ORA. Return it to high here.
     if (state.ca2_do_pulse) {
         state.ca2 = true;
         state.ca2_do_pulse = false;
         if (ca2_changed_handler) { ca2_changed_handler(machine, state.ca2); }
     }
 
+    // In pulse output mode, CB2 goes low for one cycle after read/write of ORA. Return it to high here.
     if (state.cb2_do_pulse) {
         state.cb2 = true;
         state.cb2_do_pulse = false;
@@ -524,15 +526,16 @@ void MOS6522::write_ca1(bool a_Value)
 {
     if (state.ca1 != a_Value) {
         state.ca1 = a_Value;
+
         // Transitions only if enabled in PCR.
         if ((state.ca1 && (state.pcr & PCR_MASK_CA1)) || (!state.ca1 && !(state.pcr & PCR_MASK_CA1))) {
             irq_set(IRQ_CA1);
+        }
 
-            // Handshake mode, set ca2 on pos transition of ca1.
-            if (state.ca1 && !state.ca2 && (state.pcr & PCR_MASK_CA2) == 0x08) {
-                state.ca2 = true;
-                if (ca2_changed_handler) { ca2_changed_handler(machine, state.ca2); }
-            }
+        // Handshake mode, set ca2 on pos transition of ca1.
+        if (state.ca1 && !state.ca2 && (state.pcr & PCR_MASK_CA2) == 0x08) {
+            state.ca2 = true;
+            if (ca2_changed_handler) { ca2_changed_handler(machine, state.ca2); }
         }
     }
 }
@@ -542,7 +545,8 @@ void MOS6522::write_ca2(bool a_Value)
     if (state.ca2 != a_Value) {
         state.ca2 = a_Value;
         // Set interrupt on pos/neg transition if 0 or 4 in pcr.
-        if ((state.ca2 && ((state.pcr & 0x0C) == 0x04 || (state.pcr & 0x0C) == 0x06)) || (!state.ca2 && ((state.pcr & 0x0C) == 0x00) || (state.pcr & 0x0C) == 0x02)) {
+        if ((state.ca2 && ((state.pcr & 0x0C) == 0x04 || (state.pcr & 0x0C) == 0x06)) ||
+            (!state.ca2 && ((state.pcr & 0x0C) == 0x00) || (state.pcr & 0x0C) == 0x02)) {
             irq_set(IRQ_CA2);
         }
 
@@ -557,12 +561,12 @@ void MOS6522::write_cb1(bool a_Value)
         state.cb1 = a_Value;
         if ((state.cb1 && (state.pcr & PCR_MASK_CB1)) || (!state.cb1 && !(state.pcr & PCR_MASK_CB1))) {
             irq_set(IRQ_CB1);
+        }
 
-            // Handshake mode, set cb2 on pos transition of cb1.
-            if (state.cb1 && !state.cb2 && (state.pcr & PCR_MASK_CB2) == 0x80) {
-                state.cb2 = true;
-                if (cb2_changed_handler) { cb2_changed_handler(machine, state.cb2); }
-            }
+        // Handshake mode, set cb2 on pos transition of cb1.
+        if (state.cb1 && !state.cb2 && (state.pcr & PCR_MASK_CB2) == 0x80) {
+            state.cb2 = true;
+            if (cb2_changed_handler) { cb2_changed_handler(machine, state.cb2); }
         }
     }
 }
