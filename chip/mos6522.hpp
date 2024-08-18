@@ -69,6 +69,11 @@ public:
         PCR_MASK_CB2 = 0xE0
     };
 
+    enum ACR {
+        ACR_PA_LATCH_ENABLE = 0x01,
+        ACR_PB_LATCH_ENABLE = 0x02
+    };
+
     struct State
     {
         void reset();
@@ -83,10 +88,12 @@ public:
         bool cb2_do_pulse;
 
         uint8_t ira;		// Input Register A
+        uint8_t ira_pins;   // Input Register A - pin input
         uint8_t ora;		// Output Register A
         uint8_t ddra;		// Data Direction Register A (input = 0, output = 1)
 
         uint8_t irb;		// Input Register B
+        uint8_t irb_pins;   // Input Register B - pin input
         uint8_t orb;		// Output Register B
         uint8_t ddrb;		// Data Direction Register B (input = 0, output = 1)
 
@@ -148,7 +155,7 @@ public:
     void write_cb1(bool a_Value);
     void write_cb2(bool a_Value);
 
-    MOS6522::State get_state() { return state; }
+    MOS6522::State& get_state() { return state; }
 
     // Mainly used by unit tests to be able to get and set values without affecting interrupt flags.
     uint16_t get_t1_counter() { return state.t1_counter; }

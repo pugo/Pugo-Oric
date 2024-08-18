@@ -58,13 +58,15 @@ void MOS6522::State::reset()
     cb2 = false;
     cb2_do_pulse = false;
 
-    ira = 0x00;   // input register A
-    ora = 0;      // output register A
-    ddra = 0;     // data direction register A
+    ira = 0x00;         // input register A
+    ira_pins = 0x00;    // input register A - pin input
+    ora = 0x00;         // output register A
+    ddra = 0x00;        // data direction register A
 
-    irb = 0x00;   // input register B
-    orb = 0;      // output register B
-    ddrb = 0;     // data direction register B
+    irb = 0x00;         // input register B
+    irb_pins = 0x00;    // input register B - pin input
+    orb = 0x00;         // output register B
+    ddrb = 0x00;        // data direction register B
 
     t1_latch_low = 0;
     t1_latch_high = 0;
@@ -474,7 +476,12 @@ void MOS6522::set_irb_bit(const uint8_t a_Bit, const bool a_Value)
     uint8_t original_bit_6 = state.irb & 0x40;
 
     uint8_t b = 1 << a_Bit;
-    state.irb = (state.irb & ~b) | (a_Value ? b : 0);
+
+    state.irb_pins = (state.irb_pins & ~b) | (a_Value ? b : 0);
+
+    if (!(state.acr & ACR_PB_LATCH_ENABLE)) {
+        state.irb = state.irb_pins;
+    }
 
     if (state.acr & 0x20) {
         if (a_Bit == 6 && (original_bit_6 & 0x40) && !a_Value) {
@@ -504,6 +511,15 @@ void MOS6522::irq_check()
 void MOS6522::irq_set(uint8_t a_Bits)
 {
     state.ifr |= a_Bits;
+
+    if ((state.acr & ACR_PA_LATCH_ENABLE) && (a_Bits & IRQ_CA1)) {
+        state.ira = state.ira_pins;
+    }
+
+    if ((state.acr & ACR_PB_LATCH_ENABLE) && (a_Bits & IRQ_CB1)) {
+        state.irb = state.irb_pins;
+    }
+
     if ((state.ifr & state.ier) & 0x7f) {
         state.ifr |= 0x80;
     }
