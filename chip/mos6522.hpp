@@ -88,12 +88,12 @@ public:
         bool cb2_do_pulse;
 
         uint8_t ira;		// Input Register A
-        uint8_t ira_pins;   // Input Register A - pin input
+        uint8_t ira_latch;  // Input Register A - input latch
         uint8_t ora;		// Output Register A
         uint8_t ddra;		// Data Direction Register A (input = 0, output = 1)
 
         uint8_t irb;		// Input Register B
-        uint8_t irb_pins;   // Input Register B - pin input
+        uint8_t irb_latch;  // Input Register B - input latch
         uint8_t orb;		// Output Register B
         uint8_t ddrb;		// Data Direction Register B (input = 0, output = 1)
 
@@ -145,15 +145,16 @@ public:
     uint8_t read_ora() { return (state.ora & state.ddra); }
     uint8_t read_orb() { return (state.orb & state.ddrb); }
 
-    void set_irb_bit(const uint8_t a_Bit, const bool a_Value);
+    void set_ira_bit(const uint8_t bit, const bool value);
+    void set_irb_bit(const uint8_t bit, const bool value);
 
-    void write_irb(uint8_t a_Value) { state.irb = a_Value; }
+//    void write_irb(uint8_t value) { state.irb = value; }
 
-    void write_ca1(bool a_Value);
-    void write_ca2(bool a_Value);
+    void write_ca1(bool value);
+    void write_ca2(bool value);
 
-    void write_cb1(bool a_Value);
-    void write_cb2(bool a_Value);
+    void write_cb1(bool value);
+    void write_cb2(bool value);
 
     MOS6522::State& get_state() { return state; }
 
@@ -171,8 +172,8 @@ public:
 
 private:
     void irq_check();
-    void irq_set(uint8_t a_Bits);
-    void irq_clear(uint8_t a_Bits);
+    void irq_set(uint8_t bits);
+    void irq_clear(uint8_t bits);
 
     Machine& machine;
     MOS6522::State state;

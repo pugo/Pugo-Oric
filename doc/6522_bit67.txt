@@ -1,0 +1,263 @@
+Introduction To The 6522 VIA (Versatile Interface Adapter):
+
+The 6522 VIA (Versatile Interface Adapter) was one of the finest I/O chips
+ever developed. It had both a simple, elegant pin configuration/hardware
+implementation and excellent functionality, with two 8-bit I/O buses that
+could be easily controlled through a regular 8-bit CPU's data bus. Even
+today, the 6522 is a perfectly usable I/O controller.
+
+The 6522, like almost any standard IC, has its pins numbered from top-left to
+lower-left, and then from bottom-right to top-right. In other words, the
+top-leftmost pin is pin 1, the bottom-left pin is pin 20, the bottom-right
+pin is pin 21, and the top-right pin is pin 40. (This is all with the chip's
+orientation notch at the top.) The 6522's pinout is as follows:
+
+1: Vss (Ground)
+2: PA0
+3: PA1
+4: PA2
+5: PA3
+6: PA4
+7: PA5
+8: PA6
+9: PA7
+10: PB0
+11: PB1
+12: PB2
+13: PB3
+14: PB4
+15: PB5
+16: PB6
+17: PB7
+18: CB1 (Control for Port B)
+19: CB2 (Control for Port B)
+20: Vcc (+5V)
+21: IRQ (Active-low; Output to the CPU, not an input to the VIA)
+22: R/W (High = read, low = write)
+23: CS2 (Chip Select 1; Active-low)
+24: CS1 (Chip Select 2; Active-high)
+25: CLK2 (Enable)
+26: D7
+27: D6
+28: D5
+29: D4
+30: D3
+31: D2
+32: D1
+33: D0
+34: RES (Reset; active-low)
+35: RS3 (Register Select 3)
+36: RS2 (Register Select 2)
+37: RS1 (Register Select 1)
+38: RS0 (Register Select 0)
+39: CA2 (Control for Port A)
+40: CA1 (Control for Port A)
+
+Vss is ground, and Vcc is +5 volts, as usual.
+
+CLK2 is normally tied to the 6502 CPU's CLK2 output. This signal will
+actually trigger the 6522, and make it perform whatever read/write operation
+is selected. Although it is normally pulsed at a constant frequency by the
+CPU, you can actually trigger CLK2 by hand, using a push-button switch, if
+you are operating the 6522 manually. This may be thought of as the "Enable"
+signal, and it is usually called the "Enable" pin in this document, since
+that's a little more appropriate a term for it when you're working with the
+6522 alone (as opposed to when you're using it in conjunction with the 6502,
+where it makes a little more sense since CLK2 or PHI2 refers to a clock
+output pin on the 6502).
+
+The D pins are the data bus.
+
+The two CS (Chip Select) pins enable the chip. For the chip to be enabled,
+CS1 must be high and CS2 must be low. If these two conditions are not met,
+the chip will not respond. These pins are normally tied to the computer's
+address bus.
+
+The RS (Register Select) pins are also normally tied to the address bus, so
+the computer can select which register in the 6522 to access. Together with
+the R/W pin, the CPU can read to and write from the 6522's internal registers
+as follows:
+
+To read a register on the 6522:
+
+Ensure that the two CS pins are active, R/W is high (for read), and that the
+RS pins are set to the register you want to read. Then pulse the CLK2 pin,
+and the 6522 will place the contents of the selected register onto the data
+bus.
+
+To write to a register on the 6522:
+
+Ensure that the two CS pins are active, R/W is low (for write), and that the
+RS pins are set to the register you want to write to. Place the value you
+want to store in this register on the data bus, and pulse the CLK2 pin. The
+6522 will store the contents of the data bus in the selected register.
+
+Note that the Output Registers (ORs) and Input Registers (IRs) behave
+slightly differently, because they actually depend on what is on the I/O bus
+right now, or what has been sent to it; They are not normal storage registers
+like the other registers on the 6522.
+
+The PA and PB pins form the two actual I/O buses.
+
+The CA and CB pins, which are the "control" pins for the two I/O buses, are
+mostly for interrupts and handshaking; However, CA1 and CB1 serve another
+important function as they control "input latching" for the two I/O buses.
+
+Input latching is basically a way to store something sent to the VIA without
+having to read the I/O bus immediately. When you latch one of the input
+registers (IRs), it stores whatever is currently on its I/O bus, and it will
+store that value so the CPU can read it later. If input latching is turned
+off, then the IR will be "transparent", matching whatever is currently on
+the I/O bus pins. The state of the IR will change without even having to
+cycle the VIA's Enable pin. On the other hand, if input latching is turned
+on, then the IR will contain whatever was on the I/O bus pins at the time of
+the last latch.
+
+If input latching is turned on, when CA1 goes active, IRA will latch whatever
+is currently on the PA pins. Similarly, when CB1 goes active, IRB will latch
+whatever is currently on the PB pins. (Notice that we are careful to say
+"active", not "high" or "low", because CA1 and CB1 can be set to either
+active-high or active-low.) In the latching context, CA1 or CB1 are usually
+connected to the peripheral(s), so the peripheral can send the VIA a "data is
+currently being sent" signal, so the VIA can then store the current data from
+the peripheral and pass it on to the CPU when the CPU reads it. CA1 is set to
+active-high or active-low through the last bit (bit 0) of the PCR, or
+Peripheral Control Register (at Register Select address C hex, 12 decimal, or
+1100 binary). If that bit is 0, CA1 is active-low; If that bit is 1, CA1 is
+active-high. CB1 is set to active-high or active-low through the fourth bit
+(bit 4) of the PCR. If that bit is 0, CB1 is active-low; If that bit is 1,
+CB1 is active-high.
+
+Input latching is enabled/disabled via the ACR, or Auxiliary Control
+Register. The ACR is at address B (1011) of the Register Select pins. The
+last two bits of this register control latching; The second-last bit is for
+port B, and the last bit is for port A. If the corresponding bit in the ACR
+is on (1), then latching for that port is enabled. If the corresponding bit
+in the ACR is off (0), then latching for that port is disabled.
+
+Behaviour for reading the IRs is as follows:
+
+If you read a pin on IRA and input latching is disabled for port A, then you
+will simply read the current state of the corresponding PA pin, regardless of
+whether that pin is set to be an input or an output.
+
+If you read a pin on IRA and input latching is enabled for port A, then you
+will read the actual IRA, which is the last value that was latched into IRA.
+
+If you read a pin on IRB and the pin is set to be an input (with latching
+disabled), then you will read the current state of the corresponding PB pin.
+
+If you read a pin on IRB and the pin is set to be an input (with latching
+enabled), then you will read the actual IRB.
+
+If you read a pin on IRB and the pin is set to be an output, then you will
+actually read ORB, which contains the last value that was written to port B.
+
+Writing to a pin which is set to be an input will change the OR for that pin,
+but the state of the pin itself will not change as long as the DDR dictates
+that it is an input.
+
+Note that there is no such thing as "output latching" on the 6522; Writing to
+ORA or ORB will always simply set the OR, and the OR will then retain that
+value until it is written to again. The ORs are also never transparent;
+Whereas an input bus which has input latching turned off can change with its
+input without the Enable pin even being cycled, outputting to an OR will not
+take effect until the Enable pin has made a transition to low or high.
+
+The direction of the I/O buses can be set (to be either input or output) via
+the Data Direction Register. (DDRA and DDRB are the Data Direction Registers
+for I/O bus A and I/O Bus B.) The actual output can be sent by the Output
+Register (ORA or ORB). The two I/O buses also have Input Registers (IRA and
+IRB). ORA and IRA use the same Register Select codes, as do ORB and IRB.
+Whether the OR or the IR is used depends entirely upon the state of the DDR.
+When an I/O bus pin is set to be an output (via the DDR), you write to it
+through the OR. (Writing to a pin which is set to be an input does nothing.)
+When an I/O bus pin is set to be an input, you read from it through the IR.
+However, since the OR and the IR use the same address, their separate
+existence is transparent. ORA and IRA are 0001 (RS0 high, all others low),
+ORB and IRB are 0000 (all RS pins low). DDRA is 0011 and DDRB is 0010.
+
+To output to a peripheral from the CPU through the I/O bus:
+
+1. Set the RS pins to 0010 or 0011 (for DDRA or DDRB).
+2. Set the data bus to 11111111. (All 1s, making all the I/O bus pins
+  outputs.)
+3. Enable both CSes.
+4. Make sure R/W is low.
+5. Pulse CLK2.
+(DDRA or DDRB is now set to make all I/O pins on that bus act as outputs.)
+6. Set the RS pins to 0000 or 0001 (for ORA or ORB).
+7. Set the data bus to whatever you want to output on the I/O bus.
+8. Enable both CSes.
+9. Make sure R/W is low.
+10. Pulse CLK2.
+
+To input from a peripheral to the CPU through the I/O bus:
+
+1. Set the RS pins to 0010 or 0011 (for DDRA or DDRB).
+2. Set the data bus to 00000000. (All 0s, making all the I/O bus pins
+  inputs.)
+3. Enable both CSes.
+4. Make sure R/W is low.
+5. Pulse CLK2.
+(DDRA or DDRB is now set to make all I/O pins on that bus act as inputs.)
+6. Set the RS pins to 0000 or 0001 (for IRA or IRB).
+7. Enable both CSes.
+8. Make sure R/W is high.
+9. Pulse CLK2.
+(Data from the selected I/O bus should now appear on the system data bus.)
+
+Quick tutorial for the 6522:
+
+Begin by hooking up power to Vcc and Vss. Enable both Chip Select pins (make
+CS1 high and CS2 low).
+
+Set RS to 0011 (for DDRA). (That is, RS3 and RS2 should be low, RS1 and RS0
+should be high.) Set R/W high (for read). Keep the Enable pin low for now, to
+keep the chip from doing anything.
+
+Pulse Reset low for a moment to reset the chip, then keep it high. Now set
+the Enable pin high, and check one of the data bus pins. Note its state; If
+it is low (0), this means that the corresponding pin on I/O bus A is set to
+be an input, while a high (1) indicates that that pin is set to be an output.
+
+Set Enable low, then put R/W low (for write). Attach the data bus pin you
+checked to either high or low, the opposite of whatever it was before. If it
+was high, connect it to ground; If it was low, connect it to Vcc. Now pulse
+the Enable pin momentarily, then let it go low again. Doing this should
+change the state of the corresponding bit in DDRA.
+
+To check this, set R/W high again (for read), and put Enable high. Check the
+data bus pin again; It should now have changed. This is how to read and write
+the state of the DDRs. DDRB is changed in exactly the same way, except that
+you set the RS pins to 0010.
+
+Put Enable low. Using DDRA, make any pin on I/O bus A be an output. (That is,
+set its bit to 1 (on) in DDRA.) Now set RS to 0001 (which will select ORA).
+Also set R/W to low (for write). Put Enable high, and check the status of the
+corresponding pin on I/O bus A. You might want to put an LED on it so you can
+see its state. Now attach a wire to the data bus pin that corresponds to that
+I/O pin, and put it on the opposite of where the I/O pin is now; If the I/O
+pin is high, put the data bus pin low, and if the I/O pin is low, put the
+data bus pin high. Drop Enable and raise it again; The I/O pin should change
+state to match whatever you are sending it through the data bus. This is how
+you output to a peripheral through the 6522. Sending to I/O port B works
+exactly the same way, except that you set RS to 0000 for ORB.
+
+Put Enable low again. Set RS to 1011, which will select the ACR, which is
+where you control latching for the two I/O buses. Ensure that D0 is kept low,
+since that is the pin corresponding to the last bit in the ACR, which is the
+bit for latching of data bus A, and we want to turn off latching for port A.
+Put R/W low (for write) and pulse Enable. Latching should now be disabled for
+port A.
+
+Using DDRA, make a pin on I/O bus A be an input. (That is, set its bit to 0
+(off) in DDRA.) Now set RS to 0001 (which will select IRA). Set R/W high (for
+read). Put Enable high, and watch the status of the data bus pin that
+corresponds to the I/O bus pin you are using. Again, you might want to attach
+an LED, only this time it goes to the data bus pin. Now attach a wire to the
+I/O bus pin, and watch what happens to the data bus pin when you touch the
+wire to Vcc and Vss; The data bus pin should change to reflect whatever is
+being sent to it through the I/O bus. This is how you input from a peripheral
+through the 6522. Reading from I/O port B works exactly the same way, except,
+of course, that you set RS to 0000 for IRB.

@@ -77,6 +77,7 @@ protected:
     MOS6522* mos6522;
 };
 
+// === PA =================================================================================
 
 // Set and read data direction register A. Expect equal value.
 TEST_F(MOS6522Test, WriteReadDDRA)
@@ -100,6 +101,24 @@ TEST_F(MOS6522Test, ReadORAAllOutputs)
     mos6522->write_byte(MOS6522::ORA, 0xff);
     ASSERT_EQ(mos6522->read_byte(MOS6522::ORA), 0xff);
 }
+
+// Ensure latching of ORB is controlled by interrupt if enabled.
+TEST_F(MOS6522Test, ReadORALatching)
+{
+    mos6522->write_byte(MOS6522::IER, 0xff);            // Enable interrupts for bit 0-6.
+    mos6522->write_byte(MOS6522::DDRA, 0x00);
+    mos6522->get_state().ora = 0x00;
+    mos6522->get_state().ca1 = true;                    // Start with ca1 high as CA1 ctrl = 0 means high to low interrupt
+    mos6522->write_byte(MOS6522::ACR, 0x01);            // Enable PA latching
+
+    mos6522->set_ira_bit(0, true);                      // Set ira bit 1 high. This should not be latched until interrupt
+    ASSERT_EQ(mos6522->read_byte(MOS6522::ORA), 0x00);  // Expect no change
+
+    mos6522->write_ca1(false);                          // Interrupt by high -> low transition
+    ASSERT_EQ(mos6522->read_byte(MOS6522::ORA), 0x01);  // Now expect value to be latched by interrupt.
+}
+
+// === PB =================================================================================
 
 // Set and read data direction register B. Expect equal value.
 TEST_F(MOS6522Test, WriteReadDDRB)
@@ -139,6 +158,8 @@ TEST_F(MOS6522Test, ReadORBLatching)
     mos6522->write_cb1(false);                          // Interrupt by high -> low transition
     ASSERT_EQ(mos6522->read_byte(MOS6522::ORB), 0x02);  // Now expect value to be latched by interrupt.
 }
+
+// === T1 =================================================================================
 
 // Writing T1L_L should not transfer to any other T1 registers.
 TEST_F(MOS6522Test, WriteT1L_L)
@@ -232,6 +253,8 @@ TEST_F(MOS6522Test, WriteT1C_H_interrupt_clear)
     ASSERT_EQ(mos6522->read_byte(MOS6522::IFR), 0);
 }
 
+// === T2 =================================================================================
+
 // Writing T2C_L only writes to T2L_L, not T2C_L until transfer.
 TEST_F(MOS6522Test, WriteT2C_L)
 {
@@ -272,6 +295,8 @@ TEST_F(MOS6522Test, WriteT2C_H_interrupt_clear)
     mos6522->write_byte(MOS6522::T2C_H, 0x88);
     ASSERT_EQ(mos6522->read_byte(MOS6522::IFR), 0);
 }
+
+// === Other ============================================================================
 
 TEST_F(MOS6522Test, WriteSR)
 {

@@ -59,12 +59,12 @@ void MOS6522::State::reset()
     cb2_do_pulse = false;
 
     ira = 0x00;         // input register A
-    ira_pins = 0x00;    // input register A - pin input
+    ira_latch = 0x00;    // input register A - input latch
     ora = 0x00;         // output register A
     ddra = 0x00;        // data direction register A
 
     irb = 0x00;         // input register B
-    irb_pins = 0x00;    // input register B - pin input
+    irb_latch = 0x00;    // input register B - input latch
     orb = 0x00;         // output register B
     ddrb = 0x00;        // data direction register B
 
@@ -273,6 +273,10 @@ uint8_t MOS6522::read_byte(uint16_t a_Offset)
                     if (cb2_changed_handler) { cb2_changed_handler(machine, state.cb2); }
                     break;
             }
+
+            if (state.acr & ACR_PB_LATCH_ENABLE) {
+                return (state.orb & state.ddrb) | (state.irb_latch & ~state.ddrb);
+            }
             return (state.orb & state.ddrb) | (state.irb & ~state.ddrb);
         case ORA:
             irq_clear(IRQ_CA1);
@@ -292,6 +296,10 @@ uint8_t MOS6522::read_byte(uint16_t a_Offset)
                     state.ca2_do_pulse = true;
                     if (ca2_changed_handler) { ca2_changed_handler(machine, state.ca2); }
                     break;
+            }
+
+            if (state.acr & ACR_PA_LATCH_ENABLE) {
+                return (state.ora & state.ddra) | (state.ira_latch & ~state.ddra);
             }
             return (state.ora & state.ddra) | (state.ira & ~state.ddra);
         case DDRB:
@@ -471,20 +479,23 @@ void MOS6522::write_byte(uint16_t a_Offset, uint8_t a_Value)
     }
 }
 
-void MOS6522::set_irb_bit(const uint8_t a_Bit, const bool a_Value)
+void MOS6522::set_ira_bit(const uint8_t bit, const bool value)
+{
+    uint8_t b = 1 << bit;
+
+    state.ira = (state.ira & ~b) | (value ? b : 0);
+}
+
+void MOS6522::set_irb_bit(const uint8_t bit, const bool value)
 {
     uint8_t original_bit_6 = state.irb & 0x40;
 
-    uint8_t b = 1 << a_Bit;
+    uint8_t b = 1 << bit;
 
-    state.irb_pins = (state.irb_pins & ~b) | (a_Value ? b : 0);
-
-    if (!(state.acr & ACR_PB_LATCH_ENABLE)) {
-        state.irb = state.irb_pins;
-    }
+    state.irb = (state.irb & ~b) | (value ? b : 0);
 
     if (state.acr & 0x20) {
-        if (a_Bit == 6 && (original_bit_6 & 0x40) && !a_Value) {
+        if (bit == 6 && (original_bit_6 & 0x40) && !value) {
             state.t2_counter--;
             if (state.t2_run && (state.t2_counter == 0)) {
                 irq_set(IRQ_T2);
@@ -508,29 +519,29 @@ void MOS6522::irq_check()
     }
 }
 
-void MOS6522::irq_set(uint8_t a_Bits)
+void MOS6522::irq_set(uint8_t bits)
 {
-    state.ifr |= a_Bits;
+    state.ifr |= bits;
 
-    if ((state.acr & ACR_PA_LATCH_ENABLE) && (a_Bits & IRQ_CA1)) {
-        state.ira = state.ira_pins;
+    if ((state.acr & ACR_PA_LATCH_ENABLE) && (bits & IRQ_CA1)) {
+        state.ira_latch = state.ira;
     }
 
-    if ((state.acr & ACR_PB_LATCH_ENABLE) && (a_Bits & IRQ_CB1)) {
-        state.irb = state.irb_pins;
+    if ((state.acr & ACR_PB_LATCH_ENABLE) && (bits & IRQ_CB1)) {
+        state.irb_latch = state.irb;
     }
 
     if ((state.ifr & state.ier) & 0x7f) {
         state.ifr |= 0x80;
     }
-    if (a_Bits & state.ier) {
+    if (bits & state.ier) {
         if (irq_handler) { irq_handler(machine); }
     }
 }
 
-void MOS6522::irq_clear(uint8_t a_Bits)
+void MOS6522::irq_clear(uint8_t bits)
 {
-    state.ifr &= ~a_Bits;
+    state.ifr &= ~bits;
 
     // Clear bit 7 if no (enabled) interrupts exist.
     if (!((state.ifr & state.ier) & 0x7f)) {
@@ -538,10 +549,10 @@ void MOS6522::irq_clear(uint8_t a_Bits)
     }
 }
 
-void MOS6522::write_ca1(bool a_Value)
+void MOS6522::write_ca1(bool value)
 {
-    if (state.ca1 != a_Value) {
-        state.ca1 = a_Value;
+    if (state.ca1 != value) {
+        state.ca1 = value;
 
         // Transitions only if enabled in PCR.
         if ((state.ca1 && (state.pcr & PCR_MASK_CA1)) || (!state.ca1 && !(state.pcr & PCR_MASK_CA1))) {
@@ -556,10 +567,10 @@ void MOS6522::write_ca1(bool a_Value)
     }
 }
 
-void MOS6522::write_ca2(bool a_Value)
+void MOS6522::write_ca2(bool value)
 {
-    if (state.ca2 != a_Value) {
-        state.ca2 = a_Value;
+    if (state.ca2 != value) {
+        state.ca2 = value;
         // Set interrupt on pos/neg transition if 0 or 4 in pcr.
         if ((state.ca2 && ((state.pcr & 0x0C) == 0x04 || (state.pcr & 0x0C) == 0x06)) ||
             (!state.ca2 && ((state.pcr & 0x0C) == 0x00) || (state.pcr & 0x0C) == 0x02)) {
@@ -570,11 +581,11 @@ void MOS6522::write_ca2(bool a_Value)
     }
 }
 
-void MOS6522::write_cb1(bool a_Value)
+void MOS6522::write_cb1(bool value)
 {
-    if (state.cb1 != a_Value) {
+    if (state.cb1 != value) {
         // Transitions only if enabled in PCR.
-        state.cb1 = a_Value;
+        state.cb1 = value;
         if ((state.cb1 && (state.pcr & PCR_MASK_CB1)) || (!state.cb1 && !(state.pcr & PCR_MASK_CB1))) {
             irq_set(IRQ_CB1);
         }
@@ -587,10 +598,10 @@ void MOS6522::write_cb1(bool a_Value)
     }
 }
 
-void MOS6522::write_cb2(bool a_Value)
+void MOS6522::write_cb2(bool value)
 {
-    if (state.cb2 != a_Value) {
-        state.cb2 = a_Value;
+    if (state.cb2 != value) {
+        state.cb2 = value;
         // Set interrupt on pos/neg transition if 0 or 40 in pcr.
         if ((state.cb2 && ((state.pcr & 0xC0) == 0x40)) || (!state.cb2 && ((state.pcr & 0xC0) == 0x00))) {
             irq_set(IRQ_CB2);
