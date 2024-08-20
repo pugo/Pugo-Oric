@@ -59,12 +59,12 @@ void MOS6522::State::reset()
     cb2_do_pulse = false;
 
     ira = 0x00;         // input register A
-    ira_latch = 0x00;    // input register A - input latch
+    ira_latch = 0x00;   // input register A - input latch
     ora = 0x00;         // output register A
     ddra = 0x00;        // data direction register A
 
     irb = 0x00;         // input register B
-    irb_latch = 0x00;    // input register B - input latch
+    irb_latch = 0x00;   // input register B - input latch
     orb = 0x00;         // output register B
     ddrb = 0x00;        // data direction register B
 
@@ -80,11 +80,15 @@ void MOS6522::State::reset()
     t2_run = false;
     t2_reload = false;
 
-    sr = 0;    // Shift Register
-    acr = 0;   // Auxilliary Control Register
-    pcr = 0;   // Peripheral Control Register
-    ifr = 0;   // Interrupt Flag Register
-    ier = 0;   // Interrupt Enable Register
+    sr = 0;             // Shift Register
+    sr_counter = 0;     // Modulo 8 counter for current bit
+    sr_timer = 0;       // Time countdown
+    sr_run = false;     // Whether SR shifting should be done, triggered by SR read/write
+
+    acr = 0;            // Auxilliary Control Register
+    pcr = 0;            // Peripheral Control Register
+    ifr = 0;            // Interrupt Flag Register
+    ier = 0;            // Interrupt Enable Register
 }
 
 
@@ -107,6 +111,17 @@ void MOS6522::State::print()
     std::cout << "  -   IFR: " << (int)ifr << std::endl;
     std::cout << "  -   IER: " << (int)(ier | 0x80) << std::endl;
     std::cout << "  - IORA2: " << (int)ora << std::endl;
+}
+
+void MOS6522::State::sr_shift_in()
+{
+    sr = (sr << 1) + (cb2 ? 1 : 0);
+}
+
+void MOS6522::State::sr_shift_out()
+{
+    cb2 = sr & 0x80;
+    sr = (sr << 1) + (cb2 ? 1 : 0);
 }
 
 
@@ -226,26 +241,69 @@ void MOS6522::exec()
     {
         case 0x00:  // off
             break;
-        case 0x04:  // Shift in under T2 control (not implemented)
-            std::cout << "shift: 0x04" << std::endl;
+        case 0x04:  // Shift in under T2 control
+            if (! state.sr_run) { break; }
+
+            if (--state.sr_timer == 0) {
+                state.sr_timer = state.t2_latch_low + 1;
+                state.cb1 = ! state.cb1;
+                if (state.cb1) {
+                    state.sr_shift_in();
+                    sr_handle_counter();
+                }
+            }
             break;
         case 0x08:  // Shift in under O2 control (not implemented)
-            std::cout << "shift: 0x08" << std::endl;
+            if (! state.sr_run) { break; }
+
+            state.cb1 = ! state.cb1;
+            if (state.cb1) {
+                state.sr_shift_in();
+                sr_handle_counter();
+            }
             break;
         case 0x0c:  // Shift in under control of external clock (not implemented)
-            std::cout << "shift: 0x0c" << std::endl;
+            if (state.ifr & IRQ_SR) { irq_clear(IRQ_SR); }
+            state.sr_run = false;
+            state.sr_counter = 0;
             break;
         case 0x1c:  // Shift out under control of external clock (not implemented)
-            std::cout << "shift: 0x1c" << std::endl;
+            if (state.ifr & IRQ_SR) { irq_clear(IRQ_SR); }
+            state.sr_run = false;
+            state.sr_counter = 0;
             break;
         case 0x10:  // Shift out free-running at T2 rate
-            std::cout << "shift: 0x10" << std::endl;
+            if (! state.sr_run) { break; }
+
+            if (--state.sr_timer == 0) {
+                state.sr_timer = state.t2_latch_low + 1;
+                state.cb1 = ! state.cb1;
+                if (! state.cb1) {
+                    state.sr_shift_out();
+                    state.sr_counter = (state.sr_counter + 1) % 8;
+                }
+            }
             break;
         case 0x14:  // Shift out under T2 control
-            std::cout << "shift: 0x14" << std::endl;
+            if (! state.sr_run) { break; }
+
+            if (--state.sr_timer == 0) {
+                state.sr_timer = state.t2_latch_low + 1;
+                state.cb1 = ! state.cb1;
+                if (! state.cb1) {
+                    state.sr_shift_out();
+                    sr_handle_counter();
+                }
+            }
             break;
         case 0x18:  // Shift out under O2 control
-            std::cout << "shift: 0x18" << std::endl;
+            if (! state.sr_run) { break; }
+
+            state.cb1 = ! state.cb1;
+            if (! state.cb1) {
+                state.sr_shift_out();
+                sr_handle_counter();
+            }
             break;
     }
 }
@@ -321,8 +379,10 @@ uint8_t MOS6522::read_byte(uint16_t a_Offset)
         case T2C_H:
             return state.t2_counter >> 8;
         case SR:
+            state.sr_timer = 0;
+            state.sr_counter = 0;
+            state.sr_run = true;
             irq_clear(IRQ_SR);
-            std::cout << "  ===== READ SR TRIGGER =====" << std::endl;
             return state.sr;
         case ACR:
             return state.acr;
@@ -426,6 +486,9 @@ void MOS6522::write_byte(uint16_t a_Offset, uint8_t a_Value)
             break;
         case SR:
             state.sr = a_Value;
+            state.sr_timer = 0;
+            state.sr_counter = 0;
+            state.sr_run = true;
             irq_clear(IRQ_SR);
             break;
         case ACR:
@@ -546,6 +609,15 @@ void MOS6522::irq_clear(uint8_t bits)
     // Clear bit 7 if no (enabled) interrupts exist.
     if (!((state.ifr & state.ier) & 0x7f)) {
         state.ifr &= 0x7f;
+    }
+}
+
+void MOS6522::sr_handle_counter()
+{
+    if (++state.sr_counter == 8) {
+        irq_set(IRQ_SR);
+        state.sr_timer = 0;
+        state.sr_run = false;
     }
 }
 

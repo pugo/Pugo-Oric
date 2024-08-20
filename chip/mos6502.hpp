@@ -85,6 +85,10 @@ public:
     void save_to_snapshot(Snapshot& snapshot);
     void load_from_snapshot(Snapshot& snapshot);
 
+    // The public exposure of variables like below is uncommon for normal projects,
+    // but this is an emulator where the chips must be able to quickly access each
+    // other without the overhead of getter functions, etc.
+
     // Registers
     uint8_t A;
     uint8_t X;

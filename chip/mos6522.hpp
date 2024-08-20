@@ -76,9 +76,6 @@ public:
 
     struct State
     {
-        void reset();
-        void print();
-
         bool ca1;
         bool ca2;
         bool ca2_do_pulse;
@@ -110,6 +107,9 @@ public:
         bool t2_reload;
 
         uint8_t sr;         // Shift register
+        uint8_t sr_counter; // Modulo 8 counter for current bit
+        uint8_t sr_timer;   // Time countdown
+        bool sr_run;        // Set true by read/write to SR
 
         uint8_t acr;		// Auxilliary control register (shift mode, etc)
         // |  7  |  6  |    5    |  4  |  3  |  2  |      1       |      0       |
@@ -121,6 +121,12 @@ public:
 
         uint8_t ifr;		// Interrupt Flag Register:   | IRQ  | T1 | T2 | CB1 | CB2 | SR | CA1 | CA2 |
         uint8_t ier;		// Interrupt Enable Register: | ctrl | T1 | T2 | CB1 | CB2 | SR | CA1 | CA2 |
+
+        void reset();
+        void print();
+
+        void sr_shift_in();
+        void sr_shift_out();
     };
 
     typedef void (*f_orb_changed_handler)(Machine &machine, uint8_t orb);
@@ -174,6 +180,7 @@ private:
     void irq_check();
     void irq_set(uint8_t bits);
     void irq_clear(uint8_t bits);
+    void sr_handle_counter();
 
     Machine& machine;
     MOS6522::State state;
