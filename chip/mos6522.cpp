@@ -244,8 +244,12 @@ void MOS6522::exec()
         case 0x04:  // Shift in under T2 control
             if (! state.sr_run) { break; }
 
+            if (state.sr_timer == 0) {
+                state.sr_timer = state.t2_latch_low;
+                break;
+            }
+
             if (--state.sr_timer == 0) {
-                state.sr_timer = state.t2_latch_low + 1;
                 state.cb1 = ! state.cb1;
                 if (state.cb1) {
                     state.sr_shift_in();
@@ -275,8 +279,12 @@ void MOS6522::exec()
         case 0x10:  // Shift out free-running at T2 rate
             if (! state.sr_run) { break; }
 
+            if (state.sr_timer == 0) {
+                state.sr_timer = state.t2_latch_low;
+                break;
+            }
+
             if (--state.sr_timer == 0) {
-                state.sr_timer = state.t2_latch_low + 1;
                 state.cb1 = ! state.cb1;
                 if (! state.cb1) {
                     state.sr_shift_out();
@@ -287,8 +295,12 @@ void MOS6522::exec()
         case 0x14:  // Shift out under T2 control
             if (! state.sr_run) { break; }
 
+            if (state.sr_timer == 0) {
+                state.sr_timer = state.t2_latch_low;
+                break;
+            }
+
             if (--state.sr_timer == 0) {
-                state.sr_timer = state.t2_latch_low + 1;
                 state.cb1 = ! state.cb1;
                 if (! state.cb1) {
                     state.sr_shift_out();

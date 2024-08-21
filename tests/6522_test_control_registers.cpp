@@ -18,64 +18,14 @@
 #include <memory>
 #include <gtest/gtest.h>
 
-#include "../config.hpp"
-#include "../oric.hpp"
-
+#include "6522_test.hpp"
 
 namespace Unittest {
 
 using namespace testing;
 
-
-class MOS6522TestCR : public ::testing::Test
-{
-protected:
-    virtual void SetUp()
-    {
-        Config config;
-
-        oric = new Oric(config);
-        oric->init_machine();
-        oric->get_machine().init_mos6522();
-
-        mos6522 = oric->get_machine().mos_6522;
-        mos6522->orb_changed_handler = test_via_orb_changed_callback;
-        mos6522->ca2_changed_handler = test_ca2_changed_callback;
-        mos6522->cb2_changed_handler = test_cb2_changed_callback;
-        mos6522->irq_handler = test_irq_callback;
-        mos6522->irq_clear_handler = test_irq_clear_callback;
-    }
-
-    virtual void TearDown()
-    {
-        delete oric;
-    }
-
-    void run(Machine& machine) {
-        bool brk = false;
-        while (! brk) {
-            machine.cpu->exec_instruction(brk);
-        }
-    }
-
-    static void inline test_via_orb_changed_callback(Machine& a_Machine, uint8_t orb)
-    {}
-
-    static void inline test_ca2_changed_callback(Machine& a_Machine, bool ca2)
-    {}
-
-    static void inline test_cb2_changed_callback(Machine& a_Machine, bool cb2)
-    {}
-
-    static void inline test_irq_callback(Machine& a_Machine)
-    {}
-
-    static void inline test_irq_clear_callback(Machine& a_Machine)
-    {}
-
-    Oric* oric;
-    MOS6522* mos6522;
-};
+class MOS6522TestCR : public MOS6522Test
+{};
 
 // --- CA1 ---
 

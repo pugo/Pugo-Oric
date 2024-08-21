@@ -18,8 +18,7 @@
 #include <memory>
 #include <gtest/gtest.h>
 
-#include "../config.hpp"
-#include "../oric.hpp"
+#include "6522_test.hpp"
 
 
 namespace Unittest {
@@ -27,67 +26,20 @@ namespace Unittest {
 using namespace testing;
 
 
-class MOS6522Test : public ::testing::Test
-{
-protected:
-    virtual void SetUp()
-    {
-        Config config;
-
-        oric = new Oric(config);
-        oric->init_machine();
-        oric->get_machine().init_mos6522();
-
-        mos6522 = oric->get_machine().mos_6522;
-        mos6522->orb_changed_handler = test_via_orb_changed_callback;
-        mos6522->ca2_changed_handler = test_ca2_changed_callback;
-        mos6522->cb2_changed_handler = test_cb2_changed_callback;
-        mos6522->irq_handler = test_irq_callback;
-        mos6522->irq_clear_handler = test_irq_clear_callback;
-    }
-
-    virtual void TearDown()
-    {
-        delete oric;
-    }
-
-    void run(Machine& machine) {
-        bool brk = false;
-        while (! brk) {
-            machine.cpu->exec_instruction(brk);
-        }
-    }
-
-    static void inline test_via_orb_changed_callback(Machine& a_Machine, uint8_t orb)
-    {}
-
-    static void inline test_ca2_changed_callback(Machine& a_Machine, bool ca2)
-    {}
-
-    static void inline test_cb2_changed_callback(Machine& a_Machine, bool cb2)
-    {}
-
-    static void inline test_irq_callback(Machine& a_Machine)
-    {}
-
-    static void inline test_irq_clear_callback(Machine& a_Machine)
-    {}
-
-    Oric* oric;
-    MOS6522* mos6522;
-};
+class MOS6522TestRegisters : public MOS6522Test
+{};
 
 // === PA =================================================================================
 
 // Set and read data direction register A. Expect equal value.
-TEST_F(MOS6522Test, WriteReadDDRA)
+TEST_F(MOS6522TestRegisters, WriteReadDDRA)
 {
     mos6522->write_byte(MOS6522::DDRA, 0xff);
     ASSERT_EQ(mos6522->read_byte(MOS6522::DDRA), 0xff);
 }
 
 // Set data direction to input for all bits. Expect no result from ORA.
-TEST_F(MOS6522Test, ReadORAAllInputs)
+TEST_F(MOS6522TestRegisters, ReadORAAllInputs)
 {
     mos6522->write_byte(MOS6522::DDRA, 0x00);
     mos6522->write_byte(MOS6522::ORA, 0xff);
@@ -95,7 +47,7 @@ TEST_F(MOS6522Test, ReadORAAllInputs)
 }
 
 // Set data direction to output for all bits. Expect result from ORA.
-TEST_F(MOS6522Test, ReadORAAllOutputs)
+TEST_F(MOS6522TestRegisters, ReadORAAllOutputs)
 {
     mos6522->write_byte(MOS6522::DDRA, 0xff);
     mos6522->write_byte(MOS6522::ORA, 0xff);
@@ -103,7 +55,7 @@ TEST_F(MOS6522Test, ReadORAAllOutputs)
 }
 
 // Ensure latching of ORB is controlled by interrupt if enabled.
-TEST_F(MOS6522Test, ReadORALatching)
+TEST_F(MOS6522TestRegisters, ReadORALatching)
 {
     mos6522->write_byte(MOS6522::IER, 0xff);            // Enable interrupts for bit 0-6.
     mos6522->write_byte(MOS6522::DDRA, 0x00);
@@ -121,14 +73,14 @@ TEST_F(MOS6522Test, ReadORALatching)
 // === PB =================================================================================
 
 // Set and read data direction register B. Expect equal value.
-TEST_F(MOS6522Test, WriteReadDDRB)
+TEST_F(MOS6522TestRegisters, WriteReadDDRB)
 {
     mos6522->write_byte(MOS6522::DDRB, 0xff);
     ASSERT_EQ(mos6522->read_byte(MOS6522::DDRB), 0xff);
 }
 
 // Set data direction to input for all bits. Expect no result from ORB.
-TEST_F(MOS6522Test, ReadORBAllInputs)
+TEST_F(MOS6522TestRegisters, ReadORBAllInputs)
 {
     mos6522->write_byte(MOS6522::DDRB, 0x00);
     mos6522->write_byte(MOS6522::ORB, 0xff);
@@ -136,7 +88,7 @@ TEST_F(MOS6522Test, ReadORBAllInputs)
 }
 
 // Set data direction to output for all bits. Expect result from ORA.
-TEST_F(MOS6522Test, ReadORBAllOutputs)
+TEST_F(MOS6522TestRegisters, ReadORBAllOutputs)
 {
     mos6522->write_byte(MOS6522::DDRB, 0xff);
     mos6522->write_byte(MOS6522::ORB, 0xff);
@@ -144,7 +96,7 @@ TEST_F(MOS6522Test, ReadORBAllOutputs)
 }
 
 // Ensure latching of ORB is controlled by interrupt if enabled.
-TEST_F(MOS6522Test, ReadORBLatching)
+TEST_F(MOS6522TestRegisters, ReadORBLatching)
 {
     mos6522->write_byte(MOS6522::IER, 0xff);            // Enable interrupts for bit 0-6.
     mos6522->write_byte(MOS6522::DDRB, 0x00);
@@ -162,7 +114,7 @@ TEST_F(MOS6522Test, ReadORBLatching)
 // === T1 =================================================================================
 
 // Writing T1L_L should not transfer to any other T1 registers.
-TEST_F(MOS6522Test, WriteT1L_L)
+TEST_F(MOS6522TestRegisters, WriteT1L_L)
 {
     mos6522->write_byte(MOS6522::T1L_L, 0xee);
     ASSERT_EQ(mos6522->read_byte(MOS6522::T1L_L), 0xee);
@@ -172,7 +124,7 @@ TEST_F(MOS6522Test, WriteT1L_L)
 }
 
 // Writing T1L_H should not transfer to any other T1 registers.
-TEST_F(MOS6522Test, WriteT1L_H)
+TEST_F(MOS6522TestRegisters, WriteT1L_H)
 {
     mos6522->write_byte(MOS6522::T1L_H, 0x44);
     ASSERT_EQ(mos6522->read_byte(MOS6522::T1L_L), 0x00);
@@ -182,7 +134,7 @@ TEST_F(MOS6522Test, WriteT1L_H)
 }
 
 // Writing T1L_H should clear interrupt.
-TEST_F(MOS6522Test, WriteT1L_H_interrupt_clear)
+TEST_F(MOS6522TestRegisters, WriteT1L_H_interrupt_clear)
 {
     mos6522->write_byte(MOS6522::IER, 0xff);                        // Enable interrupts for bit 0-6.
     mos6522->set_ifr(0x80 | MOS6522::IRQ_T1);
@@ -194,7 +146,7 @@ TEST_F(MOS6522Test, WriteT1L_H_interrupt_clear)
 }
 
 // Writing both T1L_L and T1L_H should not transfer to any other T1 registers.
-TEST_F(MOS6522Test, WriteT1L_LH)
+TEST_F(MOS6522TestRegisters, WriteT1L_LH)
 {
     mos6522->write_byte(MOS6522::T1L_L, 0x12);
     mos6522->write_byte(MOS6522::T1L_H, 0x34);
@@ -205,7 +157,7 @@ TEST_F(MOS6522Test, WriteT1L_LH)
 }
 
 // Writing T1C_L should only write to T1L_L.
-TEST_F(MOS6522Test, WriteT1C_L)
+TEST_F(MOS6522TestRegisters, WriteT1C_L)
 {
     mos6522->write_byte(MOS6522::T1C_L, 0x77);
     ASSERT_EQ(mos6522->read_byte(MOS6522::T1L_L), 0x77);
@@ -215,7 +167,7 @@ TEST_F(MOS6522Test, WriteT1C_L)
 }
 
 // Reading T1C_L should clear interrupt.
-TEST_F(MOS6522Test, ReadT1C_L_interrupt_clear)
+TEST_F(MOS6522TestRegisters, ReadT1C_L_interrupt_clear)
 {
     mos6522->write_byte(MOS6522::IER, 0xff);                        // Enable interrupts for bit 0-6.
     mos6522->set_ifr(0x80 | MOS6522::IRQ_T1);
@@ -227,7 +179,7 @@ TEST_F(MOS6522Test, ReadT1C_L_interrupt_clear)
 }
 
 // Writing T1C_H should write to T1L_H and T1C_H and transfer T1L_L to T1C_L.
-TEST_F(MOS6522Test, WriteT1C_H)
+TEST_F(MOS6522TestRegisters, WriteT1C_H)
 {
     mos6522->write_byte(MOS6522::IER, 0xff);                        // Enable interrupts for bit 0-6.
     mos6522->write_byte(MOS6522::IFR, 0x80 + MOS6522::IRQ_T1);      // Start with T1 interrupt set.
@@ -242,7 +194,7 @@ TEST_F(MOS6522Test, WriteT1C_H)
 }
 
 // Writing T1C_H should clear interrupt.
-TEST_F(MOS6522Test, WriteT1C_H_interrupt_clear)
+TEST_F(MOS6522TestRegisters, WriteT1C_H_interrupt_clear)
 {
     mos6522->write_byte(MOS6522::IER, 0xff);                        // Enable interrupts for bit 0-6.
     mos6522->set_ifr(0x80 | MOS6522::IRQ_T1);
@@ -256,7 +208,7 @@ TEST_F(MOS6522Test, WriteT1C_H_interrupt_clear)
 // === T2 =================================================================================
 
 // Writing T2C_L only writes to T2L_L, not T2C_L until transfer.
-TEST_F(MOS6522Test, WriteT2C_L)
+TEST_F(MOS6522TestRegisters, WriteT2C_L)
 {
     mos6522->write_byte(MOS6522::T2C_L, 0x99);
     ASSERT_EQ(mos6522->read_byte(MOS6522::T2C_L), 0x00);
@@ -264,7 +216,7 @@ TEST_F(MOS6522Test, WriteT2C_L)
 }
 
 // Reading T2C_L should clear interrupt.
-TEST_F(MOS6522Test, ReadT2C_L_interrupt_clear)
+TEST_F(MOS6522TestRegisters, ReadT2C_L_interrupt_clear)
 {
     mos6522->write_byte(MOS6522::IER, 0xff);                        // Enable interrupts for bit 0-6.
     mos6522->set_ifr(0x80 | MOS6522::IRQ_T2);
@@ -276,7 +228,7 @@ TEST_F(MOS6522Test, ReadT2C_L_interrupt_clear)
 }
 
 // Writing T2C_H transfers T2L_L to T2C_L.
-TEST_F(MOS6522Test, WriteT2C_H)
+TEST_F(MOS6522TestRegisters, WriteT2C_H)
 {
     mos6522->write_byte(MOS6522::T2C_L, 0xaa);
     mos6522->write_byte(MOS6522::T2C_H, 0xbb);
@@ -285,7 +237,7 @@ TEST_F(MOS6522Test, WriteT2C_H)
 }
 
 // Writing T2C_H should clear interrupt.
-TEST_F(MOS6522Test, WriteT2C_H_interrupt_clear)
+TEST_F(MOS6522TestRegisters, WriteT2C_H_interrupt_clear)
 {
     mos6522->write_byte(MOS6522::IER, 0xff);                        // Enable interrupts for bit 0-6.
     mos6522->set_ifr(0x80 | MOS6522::IRQ_T2);
@@ -298,19 +250,19 @@ TEST_F(MOS6522Test, WriteT2C_H_interrupt_clear)
 
 // === Other ============================================================================
 
-TEST_F(MOS6522Test, WriteSR)
+TEST_F(MOS6522TestRegisters, WriteSR)
 {
     mos6522->write_byte(MOS6522::SR, 0xaa);
     ASSERT_EQ(mos6522->read_byte(MOS6522::SR), 0xaa);
 }
 
-TEST_F(MOS6522Test, WriteACR)
+TEST_F(MOS6522TestRegisters, WriteACR)
 {
     mos6522->write_byte(MOS6522::ACR, 0xbb);
     ASSERT_EQ(mos6522->read_byte(MOS6522::ACR), 0xbb);
 }
 
-TEST_F(MOS6522Test, WritePCR)
+TEST_F(MOS6522TestRegisters, WritePCR)
 {
     mos6522->write_byte(MOS6522::PCR, 0xcc);
     ASSERT_EQ(mos6522->read_byte(MOS6522::PCR), 0xcc);
