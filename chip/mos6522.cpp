@@ -257,7 +257,7 @@ void MOS6522::exec()
                 }
             }
             break;
-        case 0x08:  // Shift in under O2 control (not implemented)
+        case 0x08:  // Shift in under O2 control
             if (! state.sr_run) { break; }
 
             state.cb1 = ! state.cb1;
