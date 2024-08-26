@@ -74,6 +74,9 @@ public:
         ACR_PB_LATCH_ENABLE = 0x02
     };
 
+    /**
+     * State of a MOS6522.
+     */
     struct State
     {
         bool ca1;
@@ -139,34 +142,116 @@ public:
     MOS6522(Machine& a_Machine);
     ~MOS6522();
 
+    /**
+     * Reset the MOS 6522.
+     */
     void reset();
+
+    /**
+     * Execute one clock cycle.
+     */
     void exec();
 
+    /**
+     * Save MOS 6522 state to snapshot.
+     * @param snapshot reference to snapshot
+     */
     void save_to_snapshot(Snapshot& snapshot);
+
+    /**
+     * Load MOS 6522 state from snapshot.
+     * @param snapshot reference to snapshot
+     */
     void load_from_snapshot(Snapshot& snapshot);
 
-    uint8_t read_byte(uint16_t a_Offset);
-    void write_byte(uint16_t a_Offset, uint8_t a_Value);
+    /**
+     * Read register value.
+     * @param offset register to read
+     * @return value of register
+     */
+    uint8_t read_byte(uint16_t offset);
 
+    /**
+     * Write register value.
+     * @param offset register to write
+     * @param value new value
+     */
+    void write_byte(uint16_t offset, uint8_t value);
+
+    /**
+     * Read output register A.
+     * @return value of output register A, with correct data direction
+     */
     uint8_t read_ora() { return (state.ora & state.ddra); }
+
+    /**
+     * Read output register B.
+     * @return value of output register B, with correct data direction
+     */
     uint8_t read_orb() { return (state.orb & state.ddrb); }
 
+    /**
+     * Set bit in input register A.
+     * @param bit bit to set (0-7)
+     * @param value value to set (boolean)
+     */
     void set_ira_bit(const uint8_t bit, const bool value);
+
+    /**
+     * Set bit in input register B.
+     * @param bit bit to set (0-7)
+     * @param value value to set (boolean)
+     */
     void set_irb_bit(const uint8_t bit, const bool value);
 
-//    void write_irb(uint8_t value) { state.irb = value; }
-
+    /**
+     * Set CA1 value
+     * @param value CA1 value
+     */
     void write_ca1(bool value);
+
+    /**
+     * Set CA2 value
+     * @param value CA1 value
+     */
     void write_ca2(bool value);
 
+    /**
+     * Set CB1 value
+     * @param value CA1 value
+     */
     void write_cb1(bool value);
+
+    /**
+     * Set CB2 value
+     * @param value CA1 value
+     */
     void write_cb2(bool value);
 
+    /**
+     * Return reference ot current MOS 6522 state.
+     * @return reference to current MOS 6522 state
+     */
     MOS6522::State& get_state() { return state; }
 
-    // Mainly used by unit tests to be able to get and set values without affecting interrupt flags.
+    /**
+     * Get value of T1 counter.
+     * @return value of T1 counter
+     * Mainly used by unit tests to be able to get and set values without affecting interrupt flags.
+     */
     uint16_t get_t1_counter() { return state.t1_counter; }
+
+    /**
+     * Get value of T2 counter.
+     * @return value of T2 counter
+     * Mainly used by unit tests to be able to get and set values without affecting interrupt flags.
+     */
     uint16_t get_t2_counter() { return state.t2_counter; }
+
+    /**
+     * Set IFR (interrupt flag register) value
+     * @param value new IFR value
+     */
     void set_ifr(uint8_t value) { state.ifr = value; }
 
     f_orb_changed_handler orb_changed_handler;

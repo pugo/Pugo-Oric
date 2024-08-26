@@ -54,7 +54,7 @@ protected:
     void run(Machine& machine) {
         bool brk = false;
         while (! brk) {
-            machine.cpu->exec_instruction(brk);
+            machine.cpu->exec(brk);
         }
     }
 

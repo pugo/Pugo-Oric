@@ -320,9 +320,9 @@ void MOS6522::exec()
     }
 }
 
-uint8_t MOS6522::read_byte(uint16_t a_Offset)
+uint8_t MOS6522::read_byte(uint16_t offset)
 {
-    switch(a_Offset & 0x000f)
+    switch(offset & 0x000f)
     {
         case ORB:
             irq_clear(IRQ_CB1);
@@ -410,13 +410,13 @@ uint8_t MOS6522::read_byte(uint16_t a_Offset)
     return 0;
 }
 
-void MOS6522::write_byte(uint16_t a_Offset, uint8_t a_Value)
+void MOS6522::write_byte(uint16_t offset, uint8_t value)
 {
-    switch(a_Offset & 0x000f)
+    switch(offset & 0x000f)
     {
         case ORB:
-// 	cout << "Write " << m_RegisterNames[static_cast<Register>(a_Offset & 0x000f)] << ": " << static_cast<unsigned int>(a_Value) << endl;
-            state.orb = a_Value;
+// 	cout << "Write " << m_RegisterNames[static_cast<Register>(offset & 0x000f)] << ": " << static_cast<unsigned int>(value) << endl;
+            state.orb = value;
             irq_clear(IRQ_CB1);
             switch (state.pcr & PCR_MASK_CB2) {
                 case 0x00:
@@ -439,7 +439,7 @@ void MOS6522::write_byte(uint16_t a_Offset, uint8_t a_Value)
             if (orb_changed_handler) { orb_changed_handler(machine, state.orb); }
             break;
         case ORA:
-            state.ora = a_Value;
+            state.ora = value;
             irq_clear(IRQ_CA1);
             switch (state.pcr & PCR_MASK_CA2) {
                 case 0x00:
@@ -460,16 +460,16 @@ void MOS6522::write_byte(uint16_t a_Offset, uint8_t a_Value)
             }
             break;
         case DDRB:
-            state.ddrb = a_Value;
+            state.ddrb = value;
             break;
         case DDRA:
-            state.ddra = a_Value;
+            state.ddra = value;
             break;
         case T1C_L:
-            state.t1_latch_low = a_Value;
+            state.t1_latch_low = value;
             break;
         case T1C_H:
-            state.t1_latch_high = a_Value;
+            state.t1_latch_high = value;
             state.t1_counter = (state.t1_latch_high << 8) | state.t1_latch_low;
             state.t1_reload = true;
             state.t1_run = true;
@@ -480,37 +480,37 @@ void MOS6522::write_byte(uint16_t a_Offset, uint8_t a_Value)
             }
             break;
         case T1L_L:
-            state.t1_latch_low = a_Value;
+            state.t1_latch_low = value;
             break;
         case T1L_H:
-            state.t1_latch_high = a_Value;
+            state.t1_latch_high = value;
             irq_clear(IRQ_T1);
             break;
         case T2C_L:
-            state.t2_latch_low = a_Value;
+            state.t2_latch_low = value;
             break;
         case T2C_H:
-            state.t2_latch_high = a_Value;
+            state.t2_latch_high = value;
             state.t2_counter = (state.t2_latch_high << 8) | state.t2_latch_low;
             state.t2_run = true;
             state.t2_reload = true;
             irq_clear(IRQ_T2);
             break;
         case SR:
-            state.sr = a_Value;
+            state.sr = value;
             state.sr_timer = 0;
             state.sr_counter = 0;
             state.sr_run = true;
             irq_clear(IRQ_SR);
             break;
         case ACR:
-            state.acr = a_Value;
-            if( ( ( a_Value & 0xc0 ) != 0x40 ) &&
-                ( ( a_Value & 0xc0 ) != 0xc0 ) )
+            state.acr = value;
+            if( ( ( value & 0xc0 ) != 0x40 ) &&
+                ( ( value & 0xc0 ) != 0xc0 ) )
                 state.t1_reload = false;
             break;
         case PCR:
-            state.pcr = a_Value;
+            state.pcr = value;
             // Manual output modes
             if ((state.pcr & 0x0c) == 0x0c) {
                 state.ca2 = !!(state.pcr & 0x02);
@@ -530,7 +530,7 @@ void MOS6522::write_byte(uint16_t a_Offset, uint8_t a_Value)
             break;
         case IFR:
             // Interrupt flag bits are cleared by writing 1:s for corresponding bit.
-            state.ifr &= (~a_Value) & 0x7f;
+            state.ifr &= (~value) & 0x7f;
             if ((state.ifr & state.ier) & 0x7f) {
                 state.ifr |= 0x80;	// bit 7=1 if any IRQ is set.
             }
@@ -539,17 +539,17 @@ void MOS6522::write_byte(uint16_t a_Offset, uint8_t a_Value)
             }
             break;
         case IER:
-            if (a_Value & 0x80) {
-                state.ier |= (a_Value & 0x7f);	// if bit 7=1: set given bits.
+            if (value & 0x80) {
+                state.ier |= (value & 0x7f);	// if bit 7=1: set given bits.
             }
             else {
-                state.ier &= ~(a_Value & 0x7f);	// if bit 7=0: clear given bits.
+                state.ier &= ~(value & 0x7f);	// if bit 7=0: clear given bits.
             }
 
             irq_check();
             break;
         case IORA2:
-            state.ora = a_Value;
+            state.ora = value;
             break;
     }
 }

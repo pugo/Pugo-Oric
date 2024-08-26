@@ -63,82 +63,82 @@ public:
     void irq() { cpu->irq(); }
     void irq_clear() { cpu->irq_clear(); }
 
-    void key_press(uint8_t a_KeyBits, bool a_Down);
+    void key_press(uint8_t key_bits, bool down);
     void update_key_output();
-    void via_orb_changed(uint8_t a_Orb);
+    void via_orb_changed(uint8_t orb);
 
     void save_snapshot();
     void load_snapshot();
 
     // --- Memory functions -------------------
 
-    static uint8_t inline read_byte(Machine& a_Machine, uint16_t a_Address)
+    static uint8_t inline read_byte(Machine& machine, uint16_t address)
     {
-        if (a_Address >= 0x300 && a_Address < 0x400) {
-            return a_Machine.mos_6522->read_byte(a_Address);
+        if (address >= 0x300 && address < 0x400) {
+            return machine.mos_6522->read_byte(address);
         }
-        return a_Machine.memory.mem[a_Address];
+        return machine.memory.mem[address];
     }
 
-    static uint8_t inline read_byte_zp(Machine &a_Machine, uint8_t a_Address)
+    static uint8_t inline read_byte_zp(Machine &machine, uint8_t address)
     {
-        return a_Machine.memory.mem[a_Address];
+        return machine.memory.mem[address];
     }
 
-    static uint16_t inline read_word(Machine &a_Machine, uint16_t a_Address)
+    static uint16_t inline read_word(Machine &machine, uint16_t address)
     {
-        return a_Machine.memory.mem[a_Address] | a_Machine.memory.mem[a_Address + 1] << 8;
+        return machine.memory.mem[address] | machine.memory.mem[address + 1] << 8;
     }
 
-    static uint16_t inline read_word_zp(Machine &a_Machine, uint8_t a_Address)
+    static uint16_t inline read_word_zp(Machine &machine, uint8_t address)
     {
-        return a_Machine.memory.mem[a_Address] | a_Machine.memory.mem[a_Address + 1 & 0xff] << 8;
+        return machine.memory.mem[address] | machine.memory.mem[address + 1 & 0xff] << 8;
     }
 
-    static void inline write_byte(Machine &a_Machine, uint16_t a_Address, uint8_t a_Val)
+    static void inline write_byte(Machine &machine, uint16_t address, uint8_t val)
     {
-        if (a_Address >= 0xc000) {
+        if (address >= 0xc000) {
             return;
         }
 
-        if (a_Address >= 0x300 && a_Address < 0x400) {
-            a_Machine.mos_6522->write_byte(a_Address, a_Val);
+        if (address >= 0x300 && address < 0x400) {
+            machine.mos_6522->write_byte(address, val);
         }
 
-        a_Machine.memory.mem[a_Address] = a_Val;
+        machine.memory.mem[address] = val;
     }
 
-    static void inline write_byte_zp(Machine &a_Machine, uint8_t a_Address, uint8_t a_Val)
+    static void inline write_byte_zp(Machine &machine, uint8_t address, uint8_t val)
     {
-        if (a_Address > 0x00ff) {
+        if (address > 0x00ff) {
             return;
         }
-        a_Machine.memory.mem[a_Address] = a_Val;
+        machine.memory.mem[address] = val;
     }
 
-    static uint8_t inline read_via_ora(Machine& a_Machine)
+    static uint8_t inline read_via_ora(Machine& machine)
     {
-        return a_Machine.mos_6522->read_ora();
+        return machine.mos_6522->read_ora();
     }
 
-    static uint8_t inline read_via_orb(Machine& a_Machine)
+    static uint8_t inline read_via_orb(Machine& machine)
     {
-        return a_Machine.mos_6522->read_orb();
+        return machine.mos_6522->read_orb();
     }
 
-    static void inline via_orb_changed_callback(Machine& a_Machine, uint8_t orb)
+    static void inline via_orb_changed_callback(Machine& machine, uint8_t orb)
     {
-        a_Machine.via_orb_changed(orb);
+        machine.via_orb_changed(orb);
     }
 
-    static void inline irq_callback(Machine& a_Machine)
+    static void inline irq_callback(Machine& machine)
     {
-        a_Machine.irq();
+        machine.irq();
     }
 
-    static void inline irq_clear_callback(Machine& a_Machine)
+    static void inline irq_clear_callback(Machine& machine)
     {
-        a_Machine.irq_clear();
+        machine.irq_clear();
     }
 
 

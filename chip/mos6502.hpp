@@ -65,24 +65,81 @@ public:
     MOS6502(Machine& a_Machine);
     ~MOS6502() = default;
 
+    /**
+     * Get debug monitor.
+     * @return reference to debug monitor
+     */
     Monitor& get_monitor() { return monitor; }
 
+    /**
+     * Set program counter address.
+     * @param pc program counter address
+     */
     void set_pc(uint16_t pc) { PC = pc; }
+
+    /**
+     * Get program counter address.
+     * @return program counter address
+     */
     uint16_t get_pc() { return PC; }
+
+    /**
+     * Get stack pointer address.
+     * @return stack pointer address
+     */
     uint8_t get_sp() { return SP; }
+
+    /**
+     * Get the P register (processor status).
+     * @return P register
+     */
     uint8_t get_p();
+
+    /**
+     * Set the P register (processor status).
+     * @param p new P register value
+     */
     void set_p(uint8_t p);
 
+    /**
+     * Set quiet status.
+     * @param val new quiet value
+     */
     void set_quiet(bool val) { quiet = val; }
 
+    /**
+     * Reset the processor.
+     */
     void Reset();
+
+    /**
+     * Print CPU status.
+     */
     void PrintStat();
-    void PrintStat(uint16_t address);
 
+    /**
+     * Calculate CPU cycles used by instruction at PC.
+     * @return cycles used by instruction at PC
+     */
     uint8_t time_instruction();
-    bool exec_instruction(bool& a_Brk);
 
+    /**
+     * Execute instruction *cycle*.
+     * @param a_Brk reference to varianble set to true if break is triggered
+     * @return true if instruction was executed (not all cycles execute full instruction)
+     */
+    bool exec(bool& a_Brk);
+
+    /**
+     * Save CPU state to snapshot.
+     * @param snapshot reference to snapshot
+     */
     void save_to_snapshot(Snapshot& snapshot);
+
+    /**
+     * Load CPU state from snapshot.
+     * @param snapshot reference to snapshot
+     */
     void load_from_snapshot(Snapshot& snapshot);
 
     // The public exposure of variables like below is uncommon for normal projects,
@@ -107,15 +164,12 @@ public:
     bool I; // interrupt
     bool C; // carry
 
-    void NMI();
-    void irq();
-    void irq_clear();
-
-    int inline signed_byte_to_int(uint8_t b);
-
-    // Add and sub are complex
-    void ADC(uint8_t a_Val);
-    void SBC(uint8_t a_Val);
+    /**
+     * Trigger NMI (Non Maskable Interrupt).
+     */
+    void NMI() { nmi_flag = true; }
+    void irq() { irq_flag = true; }
+    void irq_clear() { irq_flag = false; }
 
     f_memory_read_byte_handler memory_read_byte_handler;
     f_memory_read_byte_zp_handler memory_read_byte_zp_handler;
@@ -127,6 +181,24 @@ public:
     f_memory_write_byte_zp_handler memory_write_byte_zp_handler;
 
 protected:
+    /**
+     * Print status and instruction at given address.
+     * @param address
+     */
+    void PrintStat(uint16_t address);
+
+    /**
+     * Implementation of ADC instruction.
+     * @param value value to add
+     */
+    void ADC(uint8_t value);
+
+    /**
+     * Implementation of SBC instruction.
+     * @param value value to substract
+     */
+    void SBC(uint8_t value);
+
     Machine& machine;
     Memory& memory;
 

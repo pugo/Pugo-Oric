@@ -52,8 +52,8 @@ public:
     void do_quit();
 
 protected:
-    State handle_command(std::string& a_Cmd);
-    uint16_t string_to_word(std::string& a_Addr);
+    State handle_command(std::string& command_line);
+    uint16_t string_to_word(std::string& addr);
 
     Config& config;
     State state;

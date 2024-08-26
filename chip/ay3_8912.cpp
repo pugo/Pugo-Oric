@@ -460,18 +460,18 @@ void AY3_8912::set_bc2(bool value)
     state.bc2 = value;
 }
 
-void AY3_8912::set_bdir(Machine& machine, bool a_Value) {
-    machine.ay3->set_bdir(a_Value);
+void AY3_8912::set_bdir_callback(Machine& machine, bool value) {
+    machine.ay3->set_bdir(value);
 }
 
-void AY3_8912::set_bc1(Machine& machine, bool a_Value)
+void AY3_8912::set_bc1_callback(Machine& machine, bool value)
 {
-    machine.ay3->set_bc1(a_Value);
+    machine.ay3->set_bc1(value);
 }
 
-void AY3_8912::set_bc2(Machine& machine, bool a_Value)
+void AY3_8912::set_bc2_callback(Machine& machine, bool value)
 {
-    machine.ay3->set_bc2(a_Value);
+    machine.ay3->set_bc2(value);
 }
 
 void AY3_8912::audio_callback(void* user_data, uint8_t* raw_buffer, int len)

@@ -35,15 +35,21 @@ void init_signals();
 
 struct sigaction sigact;
 
-static void signal_handler(int a_Sig)
+/**
+ * Handle signal
+ * @param signal signal to handle
+ */
+static void signal_handler(int signal)
 {
-    if (a_Sig == SIGINT) {
+    if (signal == SIGINT) {
         oric->get_machine().stop();
         oric->do_break();
     }
 }
 
-
+/**
+ * Initialize signal handler.
+ */
 void init_signals()
 {
     sigact.sa_handler = signal_handler;

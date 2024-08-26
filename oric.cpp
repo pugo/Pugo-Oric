@@ -124,35 +124,36 @@ void Oric::do_quit()
 }
 
 
-uint16_t Oric::string_to_word(std::string& a_Addr)
+uint16_t Oric::string_to_word(std::string& addr)
 {
     uint16_t x;
     std::stringstream ss;
-    ss << std::hex << a_Addr;
+    ss << std::hex << addr;
     ss >> x;
     return x;
 }
 
 
-Oric::State Oric::handle_command(std::string& a_Cmd)
+Oric::State Oric::handle_command(std::string& command_line)
 {
-    if (a_Cmd.length() == 0) {
+    if (command_line.length() == 0) {
         if (last_command.length() == 0) {
             return STATE_MON;
         }
-        a_Cmd = last_command;
+        command_line = last_command;
     }
     else {
-        last_command = a_Cmd;
+        last_command = command_line;
     }
 
     std::vector<std::string> parts;
-    boost::split(parts, a_Cmd, boost::is_any_of("\t "));
+    boost::split(parts, command_line, boost::is_any_of("\t "));
     std::string cmd = parts[0];
 
     if (cmd == "h") {
         std::cout << "Available monitor commands:" << std::endl << std::endl;
         std::cout << "h              : help (showing this text)" << std::endl;
+        std::cout << "g              : go (continue)" << std::endl;
         std::cout << "g <address>    : go to address and run" << std::endl;
         std::cout << "pc <address>   : set program counter to address" << std::endl;
         std::cout << "s [n]          : step one or possible n steps" << std::endl;
@@ -185,7 +186,7 @@ Oric::State Oric::handle_command(std::string& a_Cmd)
         }
         else {
             bool brk = false;
-            machine->cpu->exec_instruction(brk);
+            while (! machine->cpu->exec(brk)) {}
             if (brk) {
                 std::cout << "Instruction BRK executed." << std::endl;
             }

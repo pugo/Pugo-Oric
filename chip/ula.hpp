@@ -27,10 +27,12 @@
 #include "machine.hpp"
 
 
-
 class ULA
 {
 public:
+    /**
+     * Oric color palette from color index.
+     */
     uint32_t colors[8] {0xff000000, 0xffff0000, 0xff00ff00, 0xffffff00, 0xff0000ff, 0xffff00ff, 0xff00ffff, 0xffffffff};
 
     enum VideoAttribs

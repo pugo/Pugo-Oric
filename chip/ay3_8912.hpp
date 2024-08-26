@@ -121,22 +121,80 @@ public:
     AY3_8912(Machine& machine);
     ~AY3_8912();
 
+    /**
+     * Reset the AY-3-8912.
+     */
     void reset();
 
+    /**
+     * Save AY-3-8912 state to snapshot.
+     * @param snapshot reference to snapshot
+     */
     void save_to_snapshot(Snapshot& snapshot);
+
+    /**
+     * Load AY-3-8912 state from snapshot.
+     * @param snapshot reference to snapshot
+     */
     void load_from_snapshot(Snapshot& snapshot);
 
+    /**
+     * Execute one clock cycle.
+     */
     short exec();
 
+    /**
+     * Set bus direction pin value.
+     * @param value bus direction pin value
+     */
     void set_bdir(bool value);
+
+    /**
+     * Set BC1 pin value.
+     * @param value BC1 pin value
+     */
     void set_bc1(bool value);
+
+    /**
+     * Set BC2 pin value.
+     * @param value BC1 pin value
+     */
     void set_bc2(bool value);
 
-    uint8_t get_register(Register a_Register) { return state.registers[a_Register]; }
+    /**
+     * Get value of specified register
+     * @param reg register to get
+     * @return register value
+     */
+    uint8_t get_register(Register reg) { return state.registers[reg]; }
 
-    static void set_bdir(Machine& machine, bool a_Value);
-    static void set_bc1(Machine& machine, bool a_Value);
-    static void set_bc2(Machine& machine, bool a_Value);
+    /**
+     * Set bus direction pin value - callback function.
+     * @param machine Machine object for current machine
+     * @param value new value
+     */
+    static void set_bdir_callback(Machine& machine, bool value);
+
+    /**
+     * Set BC1 pin value - callback function.
+     * @param machine Machine object for current machine
+     * @param value new value
+     */
+    static void set_bc1_callback(Machine& machine, bool value);
+
+    /**
+     * Set BC2 pin value - callback function.
+     * @param machine Machine object for current machine
+     * @param value new value
+     */
+    static void set_bc2_callback(Machine& machine, bool value);
+
+    /**
+     * Called by frontend to get audio.
+     * @param user_data pointer to opaque AY3_8912 pointer
+     * @param raw_buffer buffer to fill with data
+     * @param len buffer length
+     */
     static void audio_callback(void* user_data, uint8_t* raw_buffer, int len);
 
     f_read_data_handler m_read_data_handler;

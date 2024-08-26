@@ -29,23 +29,23 @@
 #include "chip/mos6502.hpp"
 
 
-Memory::Memory(uint32_t a_Size) :
+Memory::Memory(uint32_t size) :
     mem(NULL),
-    size(a_Size),
+    size(size),
     mempos(0),
-    memory(a_Size)
+    memory(size)
 {
     mem = memory.data();
-    memset(mem, 0, a_Size);
+    memset(mem, 0, size);
 }
 
 Memory::~Memory()
 {
 }
 
-void error_exit(std::string a_Description)
+void error_exit(std::string description)
 {
-    std::cout << std::endl << "!!! Error: " << a_Description << std::endl << std::endl;
+    std::cout << std::endl << "!!! Error: " << description << std::endl << std::endl;
     exit(1);
 }
 
@@ -100,20 +100,20 @@ void Memory::load_from_snapshot(Snapshot& snapshot)
 }
 
 
-void Memory::show(uint32_t a_Pos, uint32_t a_Length)
+void Memory::show(uint32_t pos, uint32_t length)
 {
-    std::cout << "Showing 0x" << a_Length << " bytes from " << std::hex << a_Pos << std::endl;
+    std::cout << "Showing 0x" << length << " bytes from " << std::hex << pos << std::endl;
     std::ostringstream chars;
 
-    for (uint32_t i=0; i < a_Length; i++) {
+    for (uint32_t i=0; i < length; i++) {
         if ((i % 16) == 0) {
-            std::cout << "    " << chars.str() << std::endl << "[" << a_Pos + i << "] " << std::hex;
+            std::cout << "    " << chars.str() << std::endl << "[" << pos + i << "] " << std::hex;
             chars.str("");
         }
 
-        std::cout << std::setw(2) << std::setfill('0') << (unsigned int)mem[a_Pos + i] << " ";
-        if ((mem[a_Pos + i] & 0x7f) >= 32) {
-            chars << (char)(mem[a_Pos + i] & 0x7f) << " ";
+        std::cout << std::setw(2) << std::setfill('0') << (unsigned int)mem[pos + i] << " ";
+        if ((mem[pos + i] & 0x7f) >= 32) {
+            chars << (char)(mem[pos + i] & 0x7f) << " ";
         }
         else {
             chars << "  ";

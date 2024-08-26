@@ -221,59 +221,34 @@ void MOS6502::set_p(uint8_t p)
     C = !! (p & FLAG_C);
 }
 
-void MOS6502::NMI()
-{
-    nmi_flag = true;
-}
-
-void MOS6502::irq()
-{
-    irq_flag = true;
-}
-
-void MOS6502::irq_clear()
-{
-    irq_flag = false;
-}
-
-int inline MOS6502::signed_byte_to_int(uint8_t b)
-{
-    if (b < 0x80) {
-        return b;
-    }
-    b ^= 0xff;
-    b += 1;
-    return -b;
-}
-
-void MOS6502::ADC(uint8_t a_Val)
+void MOS6502::ADC(uint8_t value)
 {
     if (D) { // Decimal mode
-        uint16_t low = (A & 0x0f) + (a_Val & 0x0f) + (C ? 1 : 0);
+        uint16_t low = (A & 0x0f) + (value & 0x0f) + (C ? 1 : 0);
         if (low > 9) low += 6;    // 11 + 6 = (0xb + 6) = 0x11
-        uint16_t high = (A >> 4) + (a_Val >> 4) + (low > 0x0f);	// remainder from low figure -> high
+        uint16_t high = (A >> 4) + (value >> 4) + (low > 0x0f);	// remainder from low figure -> high
 
-        Z_INTERN = (A + a_Val + (C ? 1 : 0)) & 0xff;
+        Z_INTERN = (A + value + (C ? 1 : 0)) & 0xff;
         N_INTERN = (high & 0x08) ? FLAG_N : 0;
-        V = ~(A ^ a_Val) & (A ^ (high << 4)) & 0x80;
+        V = ~(A ^ value) & (A ^ (high << 4)) & 0x80;
 
         if (high > 9) high += 6;  // 11 + 6 = (0xb + 6) = 0x11
         C = high > 0x0f;
         A = (high << 4) | (low & 0x0f);
     }
     else { // Normal mode
-        uint16_t w = A + a_Val + (C ? 1 : 0);
+        uint16_t w = A + value + (C ? 1 : 0);
         C = w > 0xff;
-        V = ~(A ^ a_Val) & (A ^ w) & 0x80;
+        V = ~(A ^ value) & (A ^ w) & 0x80;
         SET_FLAG_NZ(A = w);
     }
 }
 
-void MOS6502::SBC(uint8_t a_Val)
+void MOS6502::SBC(uint8_t value)
 {
     if (D) {
-        uint16_t low = (A & 0x0f) - (a_Val & 0x0f) - (C ? 0 : 1);
-        uint16_t high = (A >> 4) - (a_Val >> 4);
+        uint16_t low = (A & 0x0f) - (value & 0x0f) - (C ? 0 : 1);
+        uint16_t high = (A >> 4) - (value >> 4);
 
         if (low & 0x10) { // Fix negative
             low -= 6;
@@ -283,15 +258,15 @@ void MOS6502::SBC(uint8_t a_Val)
             high -= 6;
         }
 
-        uint16_t w = SET_FLAG_NZ(A - a_Val - (C ? 0 : 1));
+        uint16_t w = SET_FLAG_NZ(A - value - (C ? 0 : 1));
         C = w < 0x100;
-        V = (A ^ a_Val) & (A ^ w) & 0x80;
+        V = (A ^ value) & (A ^ w) & 0x80;
         A = (high << 4) | (low & 0x0f);
     }
     else {
-        uint16_t w = A - a_Val - (C ? 0 : 1);
+        uint16_t w = A - value - (C ? 0 : 1);
         C = w < 0x100;
-        V = (A ^ a_Val) & (A ^ w) & 0x80;
+        V = (A ^ value) & (A ^ w) & 0x80;
         SET_FLAG_NZ(A = w);
     }
 
@@ -420,7 +395,7 @@ uint8_t MOS6502::time_instruction()
 }
 
 
-bool MOS6502::exec_instruction(bool& a_Brk)
+bool MOS6502::exec(bool& a_Brk)
 {
     if (instruction_load) {
         instruction_load = false;

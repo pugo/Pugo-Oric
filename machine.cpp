@@ -119,12 +119,12 @@ void Machine::init_mos6522()
     mos_6522->orb_changed_handler = via_orb_changed_callback;
 
     // CA2 is connected to AY BC1 line.
-    mos_6522->ca2_changed_handler = AY3_8912::set_bc1;
+    mos_6522->ca2_changed_handler = AY3_8912::set_bc1_callback;
 
     // CB1 is connected to tape connector input, tape_tap.cpp writes directly to CB1.
 
     // CB2 is connected to AY BDIR line.
-    mos_6522->cb2_changed_handler = AY3_8912::set_bdir;
+    mos_6522->cb2_changed_handler = AY3_8912::set_bdir_callback;
 
     mos_6522->irq_handler = irq_callback;
     mos_6522->irq_clear_handler = irq_clear_callback;
@@ -188,7 +188,7 @@ void Machine::run(uint32_t steps, Oric* oric)
             mos_6522->exec();
             ay3->exec();
 
-            if (cpu->exec_instruction(break_exec)) {
+            if (cpu->exec(break_exec)) {
                 update_key_output();
             }
 
@@ -262,14 +262,14 @@ void Machine::run(uint32_t steps, Oric* oric)
     }
 }
 
-void Machine::key_press(uint8_t a_KeyBits, bool a_Down)
+void Machine::key_press(uint8_t key_bits, bool down)
 {
 //	std::cout << "key: " << (int)a_KeyBits << ", " << (a_Down ? "down" : "up") << std::endl;
-    if (a_Down) {
-        key_rows[a_KeyBits >> 3] |= (1 << (a_KeyBits & 0x07));
+    if (down) {
+        key_rows[key_bits >> 3] |= (1 << (key_bits & 0x07));
     }
     else {
-        key_rows[a_KeyBits >> 3] &= ~(1 << (a_KeyBits & 0x07));
+        key_rows[key_bits >> 3] &= ~(1 << (key_bits & 0x07));
     }
 
     // ???
@@ -297,9 +297,9 @@ void Machine::update_key_output()
 }
 
 
-void Machine::via_orb_changed(uint8_t a_Orb)
+void Machine::via_orb_changed(uint8_t orb)
 {
-    bool motor_on = a_Orb & 0x40;
+    bool motor_on = orb & 0x40;
     if (motor_on != tape->do_run_motor) {
         tape->set_motor(motor_on);
     }
