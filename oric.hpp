@@ -40,15 +40,47 @@ public:
     Oric(Config& config);
     ~Oric();
 
+    /**
+     * Initialize Oric.
+     */
     void init();
+
+    /**
+     * Initialize Machine.
+     */
     void init_machine();
 
+    /**
+     * Get current config.
+     * @return reference to config
+     */
     Config& get_config() { return config; }
+
+    /**
+     * Ger current machine.
+     * @return refrence to machine
+     */
     Machine& get_machine() { return *machine; }
+
+    /**
+     * Get current frontend.
+     * @return reference to frontend
+     */
     Frontend& get_frontend() { return *frontend; }
 
+    /**
+     * Run Oric.
+     */
     void run();
+
+    /**
+     * Break Oric.
+     */
     void do_break();
+
+    /**
+     * Quit Oric.
+     */
     void do_quit();
 
 protected:

@@ -39,15 +39,43 @@ public:
     Frontend(Oric* oric);
     ~Frontend();
 
+    /**
+     * Initialize graphics output.
+     * @return true on success
+     */
     bool init_graphics();
+
+    /**
+     * Close graphics output.
+     */
     void close_graphics();
 
+    /**
+     * Initialize sound
+     * @return true on success
+     */
     bool init_sound();
+
+    /**
+     * Pause sound.
+     * @param pause_on true if sound should be paused, false otherwise
+     */
     void pause_sound(bool pause_on);
+
+    /**
+     * Close sound.
+     */
     void close_sound();
 
+    /**
+     * Close SDL.
+     */
     void close_sdl();
 
+    /**
+     * Render graphics.
+     * @param pixels refernce to pixels to render
+     */
     void render_graphics(std::vector<uint8_t>& pixels);
 
 protected:

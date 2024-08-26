@@ -162,7 +162,7 @@ void Machine::reset()
  * run machine.
  * \param steps number of instructions to run. If 0: run infinite (or to BRK).
  */
-void Machine::run(uint32_t steps, Oric* oric)
+void Machine::run(Oric* oric)
 {
     uint32_t instructions = 0;
     uint64_t next_frame = SDL_GetTicks64();

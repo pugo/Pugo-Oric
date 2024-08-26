@@ -45,29 +45,93 @@ class Machine
 {
 public:
     Machine(Oric* oric);
-
     virtual ~Machine();
 
+    /**
+     * Init the machine.
+     * @param frontend pointer to Frontend object
+     */
     void init(Frontend* frontend);
 
+    /**
+     * Init the CPU.
+     */
     void init_cpu();
+
+    /**
+     * Init the MOS 6522 (VIA).
+     */
     void init_mos6522();
+
+    /**
+     * Init the AY3 sound chip.
+     */
     void init_ay3();
+
+    /**
+     * Import the tape support.
+     */
     void init_tape();
 
+    /**
+     * Reset the machine.
+     */
     void reset();
-    void run(uint32_t steps, Oric* oric);
-    void run(uint16_t address, long steps, Oric* oric) { cpu->set_pc(address); run(steps, oric); }
+
+    /**
+     * Run the machine.
+     * @param oric Pointer to Oric object
+     */
+    void run(Oric* oric);
+
+    /**
+     * Run the machine from given address.
+     * @param address address to run from
+     * @param oric Pointer to Oric object
+     */
+    void run(uint16_t address, Oric* oric) { cpu->set_pc(address); run(oric); }
+
+    /**
+     * Stop the machine.
+     */
     void stop() { break_exec = true; }
 
+    /**
+     * Trigger CPU IRQ.
+     */
     void irq() { cpu->irq(); }
+
+    /**
+     * Clear CPU IRQ.
+     */
     void irq_clear() { cpu->irq_clear(); }
 
+    /**
+     * Handle key press.
+     * @param key_bits key code
+     * @param down true if key down, false if key up
+     */
     void key_press(uint8_t key_bits, bool down);
+
+    /**
+     * Update key output to other circuits.
+     */
     void update_key_output();
+
+    /**
+     * Called on VIA ORB changed.
+     * @param orb new ORB value
+     */
     void via_orb_changed(uint8_t orb);
 
+    /**
+     * Save snapshot of all to RAM.
+     */
     void save_snapshot();
+
+    /**
+     * Load snapshot of all from RAM.
+     */
     void load_snapshot();
 
     // --- Memory functions -------------------
@@ -140,7 +204,6 @@ public:
     {
         machine.irq_clear();
     }
-
 
     MOS6502* cpu;
     MOS6522* mos_6522;

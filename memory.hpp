@@ -33,19 +33,53 @@ public:
     Memory(uint32_t size);
     ~Memory();
 
+    /**
+     * Load file from given path to given address.
+     * @param path path to load data from
+     * @param address address to start storing file at
+     */
     void load(const std::string& path, uint32_t address);
+
+    /**
+     * Get size of memory.
+     * @return size of memory
+     */
     uint32_t get_size() { return size; }
 
+    /**
+     * Save memory to snapshot.
+     * @param snapshot snapshot to save to
+     */
     void save_to_snapshot(Snapshot& snapshot);
+
+    /**
+     * Load memory from snapshot.
+     * @param snapshot snapshot to load from
+     */
     void load_from_snapshot(Snapshot& snapshot);
 
+    /**
+     * Set position of memory for later use of << operator.
+     * @param address new memory position
+     */
     void set_mem_pos(uint16_t address) { mempos = address; }
 
+    /**
+     * Save given value to current memory position and increment position
+     * @param os Memory to save to
+     * @param in value to write
+     * @return Memory
+     */
     friend Memory& operator<<(Memory& os, unsigned int in) {
         os.mem[os.mempos++] = static_cast<uint8_t>(in & 0xff);
         return os;
     }
 
+    /**
+     * Show memory at given position, showing given length ammount of bytes.
+     * @param pos position in memory to show from
+     * @param length number of bytes to show
+     */
     void show(uint32_t pos, uint32_t length);
 
     std::vector<uint8_t> memory;
