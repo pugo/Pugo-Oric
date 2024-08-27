@@ -50,9 +50,17 @@ public:
 
     ULA(Machine* machine, Memory* memory, uint8_t texture_width, uint8_t texture_height, uint8_t texture_bpp);
 
+    /**
+     * Paint one raster line.
+     * @return true if screen is finished and should be rendered.
+     */
     bool paint_raster();
 
 private:
+    /**
+     * Update graphics for given raster line.
+     * @param raster_line raster line to update
+     */
     void update_graphics(uint8_t raster_line);
 
     Machine* machine;

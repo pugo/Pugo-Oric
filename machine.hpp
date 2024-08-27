@@ -136,7 +136,7 @@ public:
 
     // --- Memory functions -------------------
 
-    static uint8_t inline read_byte(Machine& machine, uint16_t address)
+    static uint8_t read_byte(Machine& machine, uint16_t address)
     {
         if (address >= 0x300 && address < 0x400) {
             return machine.mos_6522->read_byte(address);
@@ -144,22 +144,22 @@ public:
         return machine.memory.mem[address];
     }
 
-    static uint8_t inline read_byte_zp(Machine &machine, uint8_t address)
+    static uint8_t read_byte_zp(Machine &machine, uint8_t address)
     {
         return machine.memory.mem[address];
     }
 
-    static uint16_t inline read_word(Machine &machine, uint16_t address)
+    static uint16_t read_word(Machine &machine, uint16_t address)
     {
         return machine.memory.mem[address] | machine.memory.mem[address + 1] << 8;
     }
 
-    static uint16_t inline read_word_zp(Machine &machine, uint8_t address)
+    static uint16_t read_word_zp(Machine &machine, uint8_t address)
     {
         return machine.memory.mem[address] | machine.memory.mem[address + 1 & 0xff] << 8;
     }
 
-    static void inline write_byte(Machine &machine, uint16_t address, uint8_t val)
+    static void write_byte(Machine &machine, uint16_t address, uint8_t val)
     {
         if (address >= 0xc000) {
             return;
@@ -172,7 +172,7 @@ public:
         machine.memory.mem[address] = val;
     }
 
-    static void inline write_byte_zp(Machine &machine, uint8_t address, uint8_t val)
+    static void write_byte_zp(Machine &machine, uint8_t address, uint8_t val)
     {
         if (address > 0x00ff) {
             return;
@@ -180,27 +180,27 @@ public:
         machine.memory.mem[address] = val;
     }
 
-    static uint8_t inline read_via_ora(Machine& machine)
+    static uint8_t read_via_ora(Machine& machine)
     {
         return machine.mos_6522->read_ora();
     }
 
-    static uint8_t inline read_via_orb(Machine& machine)
+    static uint8_t read_via_orb(Machine& machine)
     {
         return machine.mos_6522->read_orb();
     }
 
-    static void inline via_orb_changed_callback(Machine& machine, uint8_t orb)
+    static void via_orb_changed_callback(Machine& machine, uint8_t orb)
     {
         machine.via_orb_changed(orb);
     }
 
-    static void inline irq_callback(Machine& machine)
+    static void irq_callback(Machine& machine)
     {
         machine.irq();
     }
 
-    static void inline irq_clear_callback(Machine& machine)
+    static void irq_clear_callback(Machine& machine)
     {
         machine.irq_clear();
     }

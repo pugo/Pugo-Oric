@@ -58,19 +58,19 @@ protected:
         }
     }
 
-    static void inline test_via_orb_changed_callback(Machine& a_Machine, uint8_t orb)
+    static void test_via_orb_changed_callback(Machine& a_Machine, uint8_t orb)
     {}
 
-    static void inline test_ca2_changed_callback(Machine& a_Machine, bool ca2)
+    static void test_ca2_changed_callback(Machine& a_Machine, bool ca2)
     {}
 
-    static void inline test_cb2_changed_callback(Machine& a_Machine, bool cb2)
+    static void test_cb2_changed_callback(Machine& a_Machine, bool cb2)
     {}
 
-    static void inline test_irq_callback(Machine& a_Machine)
+    static void test_irq_callback(Machine& a_Machine)
     {}
 
-    static void inline test_irq_clear_callback(Machine& a_Machine)
+    static void test_irq_clear_callback(Machine& a_Machine)
     {}
 
     Oric* oric;
