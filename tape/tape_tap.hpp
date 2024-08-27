@@ -32,17 +32,44 @@ public:
     TapeTap(MOS6522& via, const std::string& path);
     virtual ~TapeTap();
 
+    /**
+     * Initialize tape.
+     * @return true on success
+     */
     bool init() override;
+
+    /**
+     * Reset tape postion.
+     */
     void reset() override;
 
+    /**
+     * Print tape status to console.
+     */
     void print_stat() override;
 
+    /**
+     * Set motor state.
+     * @param motor_on true if motor is on
+     */
     void set_motor(bool motor_on) override;
+
+    /**
+     * Execute one cycle.
+     */
     void exec() override;
 
-
 protected:
+    /**
+     * Read tape header.
+     * @return true if header is valid
+     */
     bool read_header();
+
+    /**
+     * Get current bit value.
+     * @return current bit value
+     */
     uint8_t get_current_bit();
 
     std::string path;

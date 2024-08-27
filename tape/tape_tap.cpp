@@ -51,7 +51,7 @@ TapeTap::~TapeTap()
 
 void TapeTap::reset()
 {
-    do_run_motor = false;
+    motor_running = false;
     delay = 0;
     duplicate_bytes = 0;
     tape_pos = 0;
@@ -196,14 +196,14 @@ void TapeTap::print_stat()
 
 void TapeTap::set_motor(bool motor_on)
 {
-    if (motor_on == do_run_motor) {
+    if (motor_on == motor_running) {
         return;
     }
     std::cout << "set motor: " << (motor_on ? "on" : "off") << std::endl;
 
-    do_run_motor = motor_on;
+    motor_running = motor_on;
 
-    if (!do_run_motor)
+    if (!motor_running)
     {
         if (bit_count > 0) {
             tape_pos++;
@@ -219,7 +219,7 @@ void TapeTap::set_motor(bool motor_on)
 
 void TapeTap::exec()
 {
-    if (!do_run_motor) {
+    if (!motor_running) {
         return;
     }
 

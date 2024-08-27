@@ -26,18 +26,44 @@ class Tape
 {
 public:
     Tape() :
-        do_run_motor(false)
+        motor_running(false)
     {}
 
+    /**
+     * Initialize tape.
+     * @return true on success
+     */
     virtual bool init() = 0;
+
+    /**
+     * Reset tape postion.
+     */
     virtual void reset() = 0;
 
+    /**
+     * Print tape status to console.
+     */
     virtual void print_stat() = 0;
 
+    /**
+     * Set motor state.
+     * @param motor_on true if motor is on
+     */
     virtual void set_motor(bool motor_on) = 0;
+
+    /**
+     * Execute one cycle.
+     */
     virtual void exec() = 0;
 
-    bool do_run_motor;
+    /**
+     * Check if motor is running.
+     * @return true if motor is running.
+     */
+    bool is_motor_running() { return motor_running; };
+
+protected:
+    bool motor_running;
 };
 
 #endif // TAPE_TAP_H

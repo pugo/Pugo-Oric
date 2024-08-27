@@ -25,6 +25,9 @@
 #include "chip/ay3_8912.hpp"
 
 
+/**
+ * State for MOS6502 (CPU).
+ */
 class MOS6502_state
 {
 public:
@@ -55,7 +58,9 @@ public:
 };
 
 
-
+/**
+ * Snapshot of states for whole machine.
+ */
 class Snapshot
 {
 public:

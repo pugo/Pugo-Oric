@@ -30,10 +30,30 @@ class Config
 public:
     Config();
 
+    /**
+     * Parse command line.
+     * @param argc argc from program start
+     * @param argv argv from program start
+     * @return false if program should exit
+     */
     bool parse(int argc, char **argv);
 
+    /**
+     * Path to tape image.
+     * @return path to tape image
+     */
     std::filesystem::path& tape_path() { return _tape_path; }
+
+    /**
+     * Check if emulator should start in monitor mode.
+     * @return true if emulator should start in monitor mode
+     */
     bool start_in_monitor() { return _start_in_monitor; }
+
+    /**
+     * Check if emulator should start in Oric Atmos mode.
+     * @return true if emulator should start in Oric Atmos mode
+     */
     bool use_atmos_rom() { return _use_atmos_rom; }
 
 protected:

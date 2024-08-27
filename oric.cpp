@@ -88,7 +88,7 @@ void Oric::run()
     while (true) {
         switch (state) {
             case STATE_RUN:
-                machine->run(0, this);
+                machine->run(this);
                 break;
             case STATE_MON:
             {

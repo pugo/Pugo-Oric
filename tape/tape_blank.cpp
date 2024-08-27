@@ -23,39 +23,29 @@
 
 
 TapeBlank::TapeBlank()
-{
-}
-
+{}
 
 TapeBlank::~TapeBlank()
-{
-}
-
+{}
 
 void TapeBlank::reset()
-{
-}
-
+{}
 
 bool TapeBlank::init()
 {
     return true;
 }
 
-
 void TapeBlank::print_stat()
 {
     std::cout << "Blank Tape." << std::endl;
 }
 
-
 void TapeBlank::set_motor(bool motor_on)
 {
-    do_run_motor = motor_on;
+    motor_running = motor_on;
 }
-
 
 void TapeBlank::exec()
-{
-}
+{}
 

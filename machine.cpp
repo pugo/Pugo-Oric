@@ -300,7 +300,7 @@ void Machine::update_key_output()
 void Machine::via_orb_changed(uint8_t orb)
 {
     bool motor_on = orb & 0x40;
-    if (motor_on != tape->do_run_motor) {
+    if (motor_on != tape->is_motor_running()) {
         tape->set_motor(motor_on);
     }
 }

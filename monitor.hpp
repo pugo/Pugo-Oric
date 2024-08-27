@@ -59,7 +59,19 @@ class Monitor
 public:
     Monitor(Memory& memory);
 
+    /**
+     * Disassemble the instruction at given address.
+     * @param address address to disassemble
+     * @return next address, after instruction
+     */
     uint16_t disassemble(uint16_t address);
+
+    /**
+     * Disassemble instruction at given address and instructions up to bytes.
+     * @param address address to disassemble
+     * @param bytes number of bytes to disassemble
+     * @return next address, after last instruction
+     */
     uint16_t disassemble(uint16_t address, size_t bytes);
 
 private:
