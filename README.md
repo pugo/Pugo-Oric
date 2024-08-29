@@ -1,9 +1,15 @@
 # Pugo Oric
 
+<img style="width: 100%;" src="images/oric.jpg"/>
+
 This project implements a basic Oric computer emulator with graphics, sound, etc.
 All code is written from scratch.
 
 It is my absolutely slowest project, just made out of love to programming and to my first computer.
+
+<img style="width: 30%;" src="images/startscreen.png"/>
+<img style="width: 30%;" src="images/hunchback_liana.png"/>
+<img style="width: 30%;" src="images/hunchback_knights.png"/>
 
 ## Background
 
