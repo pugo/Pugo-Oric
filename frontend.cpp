@@ -15,9 +15,22 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
+#include <boost/assign.hpp>
+
 #include "frontend.hpp"
 #include "chip/ay3_8912.hpp"
 #include "oric.hpp"
+
+
+static int32_t keytab[] = {
+    '7'        , 'n'        , '5'        , 'v'        , 0 ,          '1'        , 'x'        , '3'        ,     // 7
+    'j'        , 't'        , 'r'        , 'f'        , 0          , SDLK_ESCAPE, 'q'        , 'd'        ,     // 15
+    'm'        , '6'        , 'b'        , '4'        , SDLK_LCTRL , 'z'        , '2'        , 'c'        ,     // 23
+    'k'        , '9'        , ';'        , '-'        , 0          , 0          , '\\'       , '\''       ,     // 31
+    SDLK_SPACE , ','        , '.'        , SDLK_UP    , SDLK_LSHIFT, SDLK_LEFT  , SDLK_DOWN  , SDLK_RIGHT ,     //
+    'u'        , 'i'        , 'o'        , 'p'        , SDLK_LALT  , SDLK_BACKSPACE, ']'     , '['        ,
+    'y'        , 'h'        , 'g'        , 'e'        , 0          , 'a'        , 's'        , 'w'        ,
+    '8'        , 'l'        , '0'        , '/'        , SDLK_RSHIFT, SDLK_RETURN, 0          , SDLK_EQUALS };
 
 
 Frontend::Frontend(Oric* oric) :
@@ -26,6 +39,19 @@ Frontend::Frontend(Oric* oric) :
     sdl_surface(NULL),
     sdl_renderer(NULL)
 {
+    for (uint8_t i=0; i < 64; ++i) {
+        if (keytab[i] != 0) {
+            key_map[keytab[i]] = i;
+        }
+    }
+
+    boost::assign::insert(key_translations)
+        (std::make_pair(0xe4, false), std::make_pair('/', false))
+        (std::make_pair(0xe4, true), std::make_pair('/', false))
+        (std::make_pair(0xf6, false), std::make_pair(';', false))
+        (std::make_pair(0xf6, true), std::make_pair(';', false))
+        (std::make_pair(0x2b, false), std::make_pair('=', false))
+        (std::make_pair(0x2b, true), std::make_pair('=', false));
 }
 
 Frontend::~Frontend()
@@ -57,27 +83,21 @@ bool Frontend::init_graphics()
         else {
             // Create renderer for window
             sdl_renderer = SDL_CreateRenderer(sdl_window, -1, SDL_RENDERER_ACCELERATED);
+
             if (sdl_renderer == NULL) {
                 std::cout <<  "Renderer could not be created! SDL Error: " << SDL_GetError() << std::endl;
                 return false;
             }
-            else {
-                SDL_RendererInfo info;
-                SDL_GetRendererInfo(sdl_renderer, &info);
-                for (uint32_t i = 0; i < info.num_texture_formats; i++) {
-                    std::cout << SDL_GetPixelFormatName( info.texture_formats[i] ) << std::endl;
-                }
 
-                sdl_texture = SDL_CreateTexture(sdl_renderer,
-                                                SDL_PIXELFORMAT_ARGB8888,
-                                                SDL_TEXTUREACCESS_STREAMING,
-                                                texture_width,
-                                                texture_height);
+            sdl_texture = SDL_CreateTexture(sdl_renderer,
+                                            SDL_PIXELFORMAT_ARGB8888,
+                                            SDL_TEXTUREACCESS_STREAMING,
+                                            texture_width,
+                                            texture_height);
 
-                // Initialize renderer color
-                SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0xff, 0xff, 0xff);
-                SDL_RenderClear(sdl_renderer);
-            }
+            // Initialize renderer color
+            SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0xff, 0xff, 0xff);
+            SDL_RenderClear(sdl_renderer);
         }
     }
 
@@ -161,6 +181,57 @@ void Frontend::close_sdl()
     SDL_Quit(); // Quit all SDL subsystems
 }
 
+bool Frontend::handle_frame()
+{
+    SDL_Event event;
+
+    while (SDL_PollEvent(&event)) {
+        switch (event.type)
+        {
+            case SDL_KEYDOWN:
+            case SDL_KEYUP:
+            {
+                auto sym = event.key.keysym.sym;
+
+                if (event.type == SDL_KEYDOWN) {
+                    if (event.key.keysym.sym == SDLK_F12) {
+                        oric->get_machine().toggle_warp_mode();
+                    }
+
+                    else if (event.key.keysym.sym == SDLK_F10) {
+                        oric->get_machine().cpu->NMI();
+                    }
+
+                    else if (event.key.keysym.sym == SDLK_F4) {
+                        oric->get_machine().save_snapshot();
+                    }
+
+                    else if (event.key.keysym.sym == SDLK_F5) {
+                        oric->get_machine().load_snapshot();
+                    }
+                }
+
+                auto trans = key_translations.find(std::make_pair(sym, event.key.keysym.mod));
+                if (trans != key_translations.end()) {
+                    sym = trans->second.first;
+                }
+
+                auto key = key_map.find(sym);
+                if (key != key_map.end()) {
+                    oric->get_machine().key_press(key->second, event.type == SDL_KEYDOWN);
+                }
+                break;
+            }
+
+            case SDL_WINDOWEVENT:
+                if (event.window.event == SDL_WINDOWEVENT_CLOSE) {
+                    oric->do_quit();
+                    return false;
+                }
+        }
+    }
+    return true;
+}
 
 void Frontend::render_graphics(std::vector<uint8_t>& pixels)
 {

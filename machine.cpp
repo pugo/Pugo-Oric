@@ -16,9 +16,9 @@
 // =========================================================================
 
 #include <iostream>
-#include <sstream>
 #include <cstdlib>
 #include <boost/assign.hpp>
+#include <SDL.h>
 
 #include "machine.hpp"
 #include "oric.hpp"
@@ -39,19 +39,7 @@
 // CB2              PSG BDIR line
 
 
-static int32_t keytab[] = {
-    '7'        , 'n'        , '5'        , 'v'        , 0 ,          '1'        , 'x'        , '3'        ,     // 7
-    'j'        , 't'        , 'r'        , 'f'        , 0          , SDLK_ESCAPE, 'q'        , 'd'        ,     // 15
-    'm'        , '6'        , 'b'        , '4'        , SDLK_LCTRL , 'z'        , '2'        , 'c'        ,     // 23
-    'k'        , '9'        , ';'        , '-'        , 0          , 0          , '\\'       , '\''       ,     // 31
-    SDLK_SPACE , ','        , '.'        , SDLK_UP    , SDLK_LSHIFT, SDLK_LEFT  , SDLK_DOWN  , SDLK_RIGHT ,     //
-    'u'        , 'i'        , 'o'        , 'p'        , SDLK_LALT  , SDLK_BACKSPACE, ']'     , '['        ,
-    'y'        , 'h'        , 'g'        , 'e'        , 0          , 'a'        , 's'        , 'w'        ,
-    '8'        , 'l'        , '0'        , '/'        , SDLK_RSHIFT, SDLK_RETURN, 0          , SDLK_EQUALS };
-
-
 constexpr uint8_t cycles_per_raster = 64;
-
 constexpr uint32_t sound_pause_target = 1000;
 
 
@@ -61,6 +49,7 @@ Machine::Machine(Oric* oric) :
     memory(65535),
     tape(nullptr),
     cycle_count(0),
+    next_frame(0),
     warpmode_on(false),
     break_exec(false),
     sound_paused(true),
@@ -70,14 +59,6 @@ Machine::Machine(Oric* oric) :
     for (uint8_t i=0; i < 8; i++) {
         key_rows[i] = 0;
     }
-
-    boost::assign::insert(key_translations)
-        (std::make_pair(0xe4, false), std::make_pair('/', false))
-        (std::make_pair(0xe4, true), std::make_pair('/', false))
-        (std::make_pair(0xf6, false), std::make_pair(';', false))
-        (std::make_pair(0xf6, true), std::make_pair(';', false))
-        (std::make_pair(0x2b, false), std::make_pair('=', false))
-        (std::make_pair(0x2b, true), std::make_pair('=', false));
 }
 
 Machine::~Machine()
@@ -91,11 +72,7 @@ void Machine::init(Frontend* frontend)
     init_ay3();
     init_tape();
 
-    for (uint8_t i=0; i < 64; ++i) {
-        if (keytab[i] != 0) {
-            key_map[keytab[i]] = i;
-        }
-    }
+
 }
 
 void Machine::init_cpu()
@@ -165,7 +142,7 @@ void Machine::reset()
 void Machine::run(Oric* oric)
 {
     uint32_t instructions = 0;
-    uint64_t next_frame = SDL_GetTicks64();
+    next_frame = SDL_GetTicks64();
     SDL_Event event;
 
     break_exec = false;
@@ -198,52 +175,8 @@ void Machine::run(Oric* oric)
         if (ula.paint_raster()) {
             next_frame += 20;
 
-            while (SDL_PollEvent(&event)) {
-                switch (event.type)
-                {
-                    case SDL_KEYDOWN:
-                    case SDL_KEYUP:
-                    {
-                        auto sym = event.key.keysym.sym;
-
-                        if (event.key.keysym.sym == SDLK_F12 && event.type == SDL_KEYDOWN) {
-                            warpmode_on = !warpmode_on;
-                            std::cout << "Warp mode: " << (warpmode_on ? "on" : "off") << std::endl;
-                            if (! warpmode_on) {
-                                next_frame = SDL_GetTicks64();
-                            }
-                        }
-
-                        if (event.key.keysym.sym == SDLK_F10 && event.type == SDL_KEYDOWN) {
-                            cpu->NMI();
-                        }
-
-                        if (event.key.keysym.sym == SDLK_F4 && event.type == SDL_KEYDOWN) {
-                            save_snapshot();
-                        }
-
-                        if (event.key.keysym.sym == SDLK_F5 && event.type == SDL_KEYDOWN) {
-                            load_snapshot();
-                        }
-
-                        auto trans = key_translations.find(std::make_pair(sym, event.key.keysym.mod));
-                        if (trans != key_translations.end()) {
-                            sym = trans->second.first;
-                        }
-
-                        auto key = key_map.find(sym);
-                        if (key != key_map.end()) {
-                            key_press(key->second, event.type == SDL_KEYDOWN);
-                        }
-                        break;
-                    }
-
-                    case SDL_WINDOWEVENT:
-                        if (event.window.event == SDL_WINDOWEVENT_CLOSE) {
-                            oric->do_quit();
-                            break_exec = true;
-                        }
-                }
+            if (! frontend->handle_frame()) {
+                break_exec = true;
             }
 
             uint64_t now = SDL_GetTicks64();
@@ -271,11 +204,6 @@ void Machine::key_press(uint8_t key_bits, bool down)
     else {
         key_rows[key_bits >> 3] &= ~(1 << (key_bits & 0x07));
     }
-
-    // ???
-//	if (current_key_row == (a_KeyBits >> 3)) {
-//		update_key_output();
-//	}
 }
 
 void Machine::update_key_output()
@@ -327,3 +255,12 @@ void Machine::load_snapshot()
 
 
 
+bool Machine::toggle_warp_mode()
+{
+    warpmode_on = !warpmode_on;
+    if (! warpmode_on) {
+        next_frame = SDL_GetTicks64();
+    }
+    std::cout << "Warp mode: " << (warpmode_on ? "on" : "off") << std::endl;
+    return warpmode_on;
+}

@@ -18,6 +18,7 @@
 #ifndef FRONTEND_H
 #define FRONTEND_H
 
+#include <map>
 #include <memory>
 #include <iostream>
 #include <ostream>
@@ -27,6 +28,10 @@
 
 class Oric;
 class Memory;
+
+typedef std::map<int32_t, uint8_t> KeyMap_t;
+typedef std::pair<int32_t, bool> KeyPress_t;
+typedef std::map<KeyPress_t, KeyPress_t> KeyTranslation_t;
 
 
 class Frontend
@@ -73,6 +78,12 @@ public:
     void close_sdl();
 
     /**
+     * Perform all tasks happening each frame.
+     * @return true if machine should continue.
+     */
+    bool handle_frame();
+
+    /**
      * Render graphics.
      * @param pixels refernce to pixels to render
      */
@@ -86,8 +97,10 @@ protected:
     SDL_Renderer* sdl_renderer;
     SDL_Texture* sdl_texture;
     SDL_AudioDeviceID audio_device;
-
     SDL_AudioDeviceID sound_audio_device_id;
+
+    KeyMap_t key_map;
+    KeyTranslation_t key_translations;
 };
 
 

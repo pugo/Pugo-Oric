@@ -20,7 +20,6 @@
 
 #include <iostream>
 #include <memory>
-#include <map>
 
 #include "chip/mos6502.hpp"
 #include "chip/mos6522.hpp"
@@ -36,10 +35,6 @@ class Oric;
 class Frontend;
 class AY3_8912;
 
-typedef std::map<int32_t, uint8_t> KeyMap_t;
-
-typedef std::pair<int32_t, bool> KeyPress_t;
-typedef std::map<KeyPress_t, KeyPress_t> KeyTranslation_t;
 
 class Machine
 {
@@ -134,6 +129,8 @@ public:
      */
     void load_snapshot();
 
+    bool toggle_warp_mode();
+
     // --- Memory functions -------------------
 
     static uint8_t read_byte(Machine& machine, uint16_t address)
@@ -219,12 +216,10 @@ protected:
     Tape* tape;
 
     int32_t cycle_count;
+    uint64_t next_frame;
 
     bool sound_paused;
     uint32_t sound_pause_counter;
-
-    KeyMap_t key_map;
-    KeyTranslation_t key_translations;
 
     uint8_t current_key_row;
     uint8_t key_rows[8];
