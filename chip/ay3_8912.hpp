@@ -74,6 +74,7 @@ public:
     uint8_t shape_counter;
     uint8_t out_level;
 
+    bool cont;
     bool hold;
     bool holding;
 };

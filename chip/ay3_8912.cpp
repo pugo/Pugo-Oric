@@ -151,6 +151,7 @@ void Envelope::reset()
     shape = 0;
     shape_counter = 0;
     out_level = 0;
+    cont = false;
     hold = false;
     holding = false;
 }
@@ -221,8 +222,6 @@ void AY3_8912::load_from_snapshot(Snapshot& snapshot)
 short AY3_8912::exec()
 {
     uint32_t c;
-//    std::cout << "-- cycles: " << std::dec << (int)cycles <<  std::endl;
-
     int32_t cycle_diff_change = 0;
 
     // Tones
@@ -248,9 +247,11 @@ short AY3_8912::exec()
         state.envelope.counter = 0;
 
         if (! state.envelope.holding) {
-            state.envelope.shape_counter = (state.envelope.shape_counter + 1) & 0x1f;
-            if (state.envelope.hold && (state.envelope.shape_counter == 0x1f)) {
-                state.envelope.holding = true;
+            state.envelope.shape_counter = (state.envelope.shape_counter + 1) % 0x20;
+            if (state.envelope.shape_counter == 0x1f) {
+                if (! state.envelope.cont || state.envelope.hold) {
+                    state.envelope.holding = true;
+                }
             }
         }
 
@@ -432,10 +433,8 @@ inline void AY3_8912::write_to_psg(uint8_t value)
             state.envelope.counter = 0;
             state.envelope.shape_counter = 0;
 
-            // 0x08 = continue, 0x01 = hold
-            if (!(value & 0x08) || (value & 0x01)) {
-                state.envelope.hold = true;
-            }
+            state.envelope.cont = value & 0x08;
+            state.envelope.hold = value & 0x01;
 
             for (uint8_t channel = 0; channel < 3; channel++) {
                 if (state.channels[channel].use_envelope) {
