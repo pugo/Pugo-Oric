@@ -103,6 +103,8 @@ void Machine::init_mos6522()
     // CB2 is connected to AY BDIR line.
     mos_6522->cb2_changed_handler = AY3_8912::set_bdir_callback;
 
+    mos_6522->psg_changed_handler = AY3_8912::update_state_callback;
+
     mos_6522->irq_handler = irq_callback;
     mos_6522->irq_clear_handler = irq_clear_callback;
 }

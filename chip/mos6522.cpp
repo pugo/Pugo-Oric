@@ -109,7 +109,7 @@ void MOS6522::State::print()
     std::cout << "  -   ACR: " << (int)acr << std::endl;
     std::cout << "  -   PCR: " << (int)pcr << std::endl;
     std::cout << "  -   IFR: " << (int)ifr << std::endl;
-    std::cout << "  -   IER: " << (int)(ier | 0x80) << std::endl;
+    std::cout << "  -   IER: " << (int)ier << std::endl;
     std::cout << "  - IORA2: " << (int)ora << std::endl;
 }
 
@@ -130,6 +130,7 @@ MOS6522::MOS6522(Machine& a_Machine) :
     orb_changed_handler(nullptr),
     ca2_changed_handler(nullptr),
     cb2_changed_handler(nullptr),
+    psg_changed_handler(nullptr),
     irq_handler(nullptr),
     irq_clear_handler(nullptr)
 {
@@ -449,15 +450,15 @@ void MOS6522::write_byte(uint16_t offset, uint8_t value)
                 case 0x08:
                     // set CA2 to low on read/write of ORA if CA2-ctrl is 100.
                     state.ca2 = false;
-                    if (ca2_changed_handler) { ca2_changed_handler(machine, state.ca2); }
                     break;
                 case 0x0a:
                     // pulse low for one cycle if CA2-ctrl is 101.
                     state.ca2 = false;
                     state.ca2_do_pulse = true;
-                    if (ca2_changed_handler) { ca2_changed_handler(machine, state.ca2); }
                     break;
             }
+            if (ca2_changed_handler) { ca2_changed_handler(machine, state.ca2); }
+            if (psg_changed_handler) { psg_changed_handler(machine); }
             break;
         case DDRB:
             state.ddrb = value;
@@ -512,21 +513,26 @@ void MOS6522::write_byte(uint16_t offset, uint8_t value)
         case PCR:
             state.pcr = value;
             // Manual output modes
-            if ((state.pcr & 0x0c) == 0x0c) {
-                state.ca2 = !!(state.pcr & 0x02);
-                if (!state.ca2) {
-                    state.ca2_do_pulse = false;
-                }
-                if (ca2_changed_handler) { ca2_changed_handler(machine, state.ca2); }
+
+            if ((state.pcr & 0x0e) == 0x0c) {
+                state.ca2 = false;
+                state.ca2_do_pulse = false;
+            }
+            else if ((state.pcr & 0x0e) == 0x0e) {
+                state.ca2 = true;
             }
 
-            if ((state.pcr & 0xc0) == 0xc0) {
-                state.cb2 = !!(state.pcr & 0x20);
-                if (!state.cb2) {
-                    state.cb2_do_pulse = false;
-                }
-                if (cb2_changed_handler) { cb2_changed_handler(machine, state.cb2); }
+            if ((state.pcr & 0xe0) == 0xc0) {
+                state.cb2 = false;
+                state.cb2_do_pulse = false;
             }
+            else if ((state.pcr & 0xe0) == 0xe0) {
+                state.cb2 = true;
+            }
+
+            if (ca2_changed_handler) { ca2_changed_handler(machine, state.ca2); }
+            if (cb2_changed_handler) { cb2_changed_handler(machine, state.cb2); }
+            if (psg_changed_handler) { psg_changed_handler(machine); }
             break;
         case IFR:
             // Interrupt flag bits are cleared by writing 1:s for corresponding bit.
@@ -550,6 +556,9 @@ void MOS6522::write_byte(uint16_t offset, uint8_t value)
             break;
         case IORA2:
             state.ora = value;
+            if (ca2_changed_handler) { ca2_changed_handler(machine, state.ca2); }
+            if (cb2_changed_handler) { cb2_changed_handler(machine, state.cb2); }
+            if (psg_changed_handler) { psg_changed_handler(machine); }
             break;
     }
 }
@@ -573,6 +582,7 @@ void MOS6522::set_irb_bit(const uint8_t bit, const bool value)
         if (bit == 6 && (original_bit_6 & 0x40) && !value) {
             state.t2_counter--;
             if (state.t2_run && (state.t2_counter == 0)) {
+
                 irq_set(IRQ_T2);
                 state.t2_run = false;
             }
@@ -609,6 +619,7 @@ void MOS6522::irq_set(uint8_t bits)
     if ((state.ifr & state.ier) & 0x7f) {
         state.ifr |= 0x80;
     }
+
     if (bits & state.ier) {
         if (irq_handler) { irq_handler(machine); }
     }

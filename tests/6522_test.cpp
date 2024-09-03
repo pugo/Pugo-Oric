@@ -41,8 +41,11 @@ TEST_F(MOS6522TestRegisters, WriteReadDDRA)
 // Set data direction to input for all bits. Expect no result from ORA.
 TEST_F(MOS6522TestRegisters, ReadORAAllInputs)
 {
+    std::cout << "-- 1" << std::endl;
     mos6522->write_byte(MOS6522::DDRA, 0x00);
+    std::cout << "-- 2" << std::endl;
     mos6522->write_byte(MOS6522::ORA, 0xff);
+    std::cout << "-- 3" << std::endl;
     ASSERT_EQ(mos6522->read_byte(MOS6522::ORA), 0x00);
 }
 

@@ -35,6 +35,7 @@ public:
     Channel();
 
     void reset();
+    void print_status(uint8_t channel);
 
     uint16_t volume;
     uint32_t tone_period;
@@ -52,6 +53,7 @@ public:
     Noise();
 
     void reset();
+    void print_status();
 
     uint16_t period;
     uint16_t counter;
@@ -106,6 +108,7 @@ public:
     struct State
     {
         void reset();
+        void print_status();
 
         bool bdir;
         bool bc1;
@@ -128,6 +131,11 @@ public:
     void reset();
 
     /**
+     * Print AY-3-8912 state to console.
+     */
+    void print_status();
+
+    /**
      * Save AY-3-8912 state to snapshot.
      * @param snapshot reference to snapshot
      */
@@ -143,6 +151,11 @@ public:
      * Execute one clock cycle.
      */
     short exec();
+
+    /**
+     * Update AY state based on BC1 and BDIR.
+     */
+    void update_state();
 
     /**
      * Set bus direction pin value.
@@ -189,6 +202,12 @@ public:
      * @param value new value
      */
     static void set_bc2_callback(Machine& machine, bool value);
+
+    /**
+     * Update state - callback function.
+     * @param machine Machine object for current machine
+     */
+    static void update_state_callback(Machine& machine);
 
     /**
      * Called by frontend to get audio.

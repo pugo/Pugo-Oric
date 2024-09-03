@@ -42,6 +42,7 @@ protected:
         mos6522->orb_changed_handler = test_via_orb_changed_callback;
         mos6522->ca2_changed_handler = test_ca2_changed_callback;
         mos6522->cb2_changed_handler = test_cb2_changed_callback;
+        mos6522->psg_changed_handler = test_psg_changed_callback;
         mos6522->irq_handler = test_irq_callback;
         mos6522->irq_clear_handler = test_irq_clear_callback;
     }
@@ -65,6 +66,9 @@ protected:
     {}
 
     static void test_cb2_changed_callback(Machine& a_Machine, bool cb2)
+    {}
+
+    static void test_psg_changed_callback(Machine& a_Machine)
     {}
 
     static void test_irq_callback(Machine& a_Machine)

@@ -135,6 +135,7 @@ public:
     typedef void (*f_orb_changed_handler)(Machine &machine, uint8_t orb);
     typedef void (*f_ca2_changed_handler)(Machine &machine, bool value);
     typedef void (*f_cb2_changed_handler)(Machine &machine, bool aValue);
+    typedef void (*f_psg_changed_handler)(Machine &machine);
 
     typedef void (*f_irq_handler)(Machine &machine);
     typedef void (*f_irq_clear_handler)(Machine &machine);
@@ -257,6 +258,8 @@ public:
     f_orb_changed_handler orb_changed_handler;
     f_ca2_changed_handler ca2_changed_handler;
     f_cb2_changed_handler cb2_changed_handler;
+
+    f_psg_changed_handler psg_changed_handler;
 
     f_irq_handler irq_handler;
     f_irq_clear_handler irq_clear_handler;

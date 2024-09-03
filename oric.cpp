@@ -157,6 +157,7 @@ Oric::State Oric::handle_command(std::string& command_line)
         std::cout << "g <address>    : go to address and run" << std::endl;
         std::cout << "pc <address>   : set program counter to address" << std::endl;
         std::cout << "s [n]          : step one or possible n steps" << std::endl;
+        std::cout << "ay             : print AY-3-8912 sound chip info" << std::endl;
         std::cout << "i              : print machine info" << std::endl;
         std::cout << "v              : print VIA (6522) info" << std::endl;
         std::cout << "d              : disassemble from PC" << std::endl;
@@ -192,6 +193,9 @@ Oric::State Oric::handle_command(std::string& command_line)
             }
         }
         machine->cpu->PrintStat();
+    }
+    else if (cmd == "ay") { // info
+        machine->ay3->print_status();
     }
     else if (cmd == "i") { // info
         std::cout << "PC: " << machine->cpu->get_pc() << std::endl;

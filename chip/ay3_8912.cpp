@@ -127,6 +127,18 @@ void Channel::reset()
     use_envelope = false;
 }
 
+void Channel::print_status(uint8_t channel)
+{
+    std::cout << " ------- Channel " << (int)channel << " -------------------------" << std::endl;
+    std::cout << "    -         Volume: " << (int)volume << std::endl;
+    std::cout << "    -    Tome period: " << (int)tone_period << std::endl;
+    std::cout << "    -        Counter: " << (int)counter << std::endl;
+    std::cout << "    -          Value: " << (int)value << std::endl;
+    std::cout << "    -       Disabled: " << (disabled ? "true" : "false") << std::endl;
+    std::cout << "    - Noise disabled: " << (noise_diabled ? "true" : "false") << std::endl;
+    std::cout << "    -   Use envelope: " << (use_envelope ? "true" : "false") << std::endl;
+    std::cout << std::endl;
+}
 
 Noise::Noise() :
     period(0), counter(0), bit(0), rng(1)
@@ -136,6 +148,16 @@ void Noise::reset()
 {
     period = 0;
     counter = 0;
+}
+
+void Noise::print_status()
+{
+    std::cout << " ------- Noise -------------------------" << std::endl;
+    std::cout << "    -  Period: " << (int)period << std::endl;
+    std::cout << "    - Counter: " << (int)counter << std::endl;
+    std::cout << "    -     Bit: " << (int)bit << std::endl;
+    std::cout << "    -     Rng: " << (int)rng << std::endl;
+    std::cout << std::endl;
 }
 
 
@@ -173,6 +195,14 @@ void AY3_8912::State::reset()
     noise.reset();
 }
 
+void AY3_8912::State::print_status()
+{
+    std::cout << "AY-3-8912 state:" << std::endl;
+    for(uint8_t c=0; c < 3; c++) {
+        channels[c].print_status(c);
+    }
+    noise.print_status();
+}
 
 AY3_8912::AY3_8912(Machine& machine) :
     machine(machine),
@@ -207,6 +237,11 @@ void AY3_8912::reset()
     for (uint32_t i = 0; i < 32768; i++) {
         sound_buffer[i] = 0;
     }
+}
+
+void AY3_8912::print_status()
+{
+    state.print_status();
 }
 
 void AY3_8912::save_to_snapshot(Snapshot& snapshot)
@@ -301,8 +336,8 @@ short AY3_8912::exec()
         uint32_t out = 0;
 
         for (uint8_t channel = 0; channel < 3; channel++) {
-            out += ((state.channels[channel].value | state.channels[channel].disabled) & ((state.noise.rng & 1) |
-                state.channels[channel].noise_diabled)) * state.channels[channel].volume;
+            out += ((state.channels[channel].value | state.channels[channel].disabled) &
+                    ((state.noise.rng & 1) | state.channels[channel].noise_diabled)) * state.channels[channel].volume;
         }
 
         if (out > 32767) { out = 32767; }
@@ -325,33 +360,6 @@ short AY3_8912::exec()
 
     return 0;
 }
-
-
-void AY3_8912::set_bdir(bool value)
-{
-    if (state.bdir != value) {
-        state.bdir = value;
-        if (state.bdir) {
-            if (state.bc1) {  // 1 ? 1
-                // Latch address: read address from data bus.
-                if (uint8_t new_curr = m_read_data_handler(machine); new_curr < NUM_REGS) {
-                    state.current_register = new_curr;
-                }
-            }
-            else {  // 1 ? 0
-                // Write to PSG: read value from data bus to current register.
-                write_to_psg(m_read_data_handler(machine));
-            }
-        }
-        else {
-            if (state.bc1) {
-                // Read from PSG.
-                std::cout << "-- not yet supported read from PSG (AY)." << std::endl;
-            }
-        }
-    }
-}
-
 
 inline void AY3_8912::write_to_psg(uint8_t value)
 {
@@ -448,6 +456,31 @@ inline void AY3_8912::write_to_psg(uint8_t value)
     };
 }
 
+void AY3_8912::update_state()
+{
+    if (state.bdir) {
+        if (state.bc1) {  // 1 ? 1
+            // Latch address: read address from data bus.
+            if (uint8_t new_curr = m_read_data_handler(machine); new_curr < NUM_REGS) {
+                state.current_register = new_curr;
+            }
+        }
+        else {  // 1 ? 0
+            // Write to PSG: read value from data bus to current register.
+            write_to_psg(m_read_data_handler(machine));
+        }
+    }
+    else {
+        if (state.bc1) {
+            // Read from PSG. -- not yet implemented
+        }
+    }
+}
+
+void AY3_8912::set_bdir(bool value)
+{
+    state.bdir = value;
+}
 
 void AY3_8912::set_bc1(bool value)
 {
@@ -471,6 +504,11 @@ void AY3_8912::set_bc1_callback(Machine& machine, bool value)
 void AY3_8912::set_bc2_callback(Machine& machine, bool value)
 {
     machine.ay3->set_bc2(value);
+}
+
+void AY3_8912::update_state_callback(Machine& machine)
+{
+    machine.ay3->update_state();
 }
 
 void AY3_8912::audio_callback(void* user_data, uint8_t* raw_buffer, int len)
