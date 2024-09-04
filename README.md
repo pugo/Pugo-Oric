@@ -32,6 +32,8 @@ by learning more about the computer I got as a kid.
 
 The project should be possible to compile on Linux and macOS using CMake.
 
+It can be built with local libraries as well as with vcpkg.
+
 ### Dependencies
 
 The following dependencies are required.
@@ -40,7 +42,38 @@ The following dependencies are required.
  * `sdl2`
  * `sdl2_image`
 
-### Compile with CMake
+If building with vcpkg the dependencies does not need not exist as system-wide
+packages, such as DEB or brew packages.
+
+### Compile with CMake using vcpkg
+
+It is possible to build the emulator using the vcpkg dependency manager.
+
+#### Prerequisites
+
+This requires a working vcpkg installation. 
+
+The environment variable `VCPKG_ROOT` should point to the root of the vcpkg installation.
+
+#### Install dependencies
+
+The `vcpkg.json` file contains all the dependencies. To install them, do as follows.
+
+```
+$ vcpkg install
+$ vcpkg integrate install
+```
+
+There is a predefined CMake preset for using vcpkg, use it as follows.
+
+```
+$ mkdir build
+$ cd build
+$ cmake --preset=vcpkg ..
+$ make -j10
+```
+
+### Compile with CMake with existing dependencies
 
 This should typically be done like the following.
 
@@ -124,9 +157,11 @@ The monitor has commands like the following.
 Available monitor commands:
 
 h              : help (showing this text)
+g              : go (continue)
 g <address>    : go to address and run
 pc <address>   : set program counter to address
 s [n]          : step one or possible n steps
+ay             : print AY-3-8912 sound chip info
 i              : print machine info
 v              : print VIA (6522) info
 d              : disassemble from PC

@@ -21,8 +21,19 @@ add_definitions(-DBOOST_LOG_DYN_LINK -DBOOST_SPIRIT_DEBUG -DBOOST_SPIRIT_DEBUG_ 
 
 project(oric)
 find_package(Boost 1.71.0 COMPONENTS program_options log)
-find_package(SDL2 REQUIRED)
-find_package(SDL2_image REQUIRED)
+
+if (DEFINED CMAKE_TOOLCHAIN_FILE)
+    message("Using vcpkg")
+    find_package(SDL2 CONFIG REQUIRED)
+    find_package(SDL2_image CONFIG REQUIRED)
+    set(SDL_LIBRARIES SDL2::SDL2 SDL2_image::SDL2_image-static)
+else ()
+    message("Not using vcpkg")
+    find_package(SDL2 REQUIRED)
+    find_package(SDL2_image REQUIRED)
+    set(SDL_LIBRARIES ${SDL2_LIBRARIES} ${SDL2_IMAGE_LIBRARIES})
+endif ()
+
 
 set (LIB_SOURCES
         oric.cpp
@@ -42,10 +53,20 @@ include(chip/CMakeLists.txt)
 include(tape/CMakeLists.txt)
 
 add_executable(oric main.cpp ${LIB_SOURCES} )
-target_link_libraries(oric ${Boost_LIBRARIES} ${SDL2_LIBRARIES} ${SDL2_IMAGE_LIBRARIES})
+target_link_libraries(oric
+        PRIVATE
+        ${Boost_LIBRARIES} ${SDL_LIBRARIES}
+)
 
 add_library(oric_lib STATIC ${LIB_SOURCES})
-target_link_libraries(oric_lib ${Boost_LIBRARIES} ${SDL2_LIBRARIES} ${SDL2_IMAGE_LIBRARIES})
+target_link_libraries(oric_lib ${Boost_LIBRARIES} ${SDL_LIBRARIES})
+#
+#target_link_libraries(oric
+#        PRIVATE
+#        $<TARGET_NAME_IF_EXISTS:SDL2::SDL2main>
+#        $<IF:$<TARGET_EXISTS:SDL2::SDL2>,SDL2::SDL2,SDL2::SDL2-static>
+#)
+#target_link_libraries(oric PRIVATE $<IF:$<TARGET_EXISTS:SDL2_image::SDL2_image>,SDL2_image::SDL2_image,SDL2_image::SDL2_image-static>)
 
 install(TARGETS oric RUNTIME DESTINATION bin)
 
