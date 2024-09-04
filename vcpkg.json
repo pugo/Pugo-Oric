@@ -1,6 +1,10 @@
 {
   "dependencies": [
+    "boost-assign",
+    "boost-log",
+    "boost-program-options",
+    "sdl2",
     "sdl2-image",
-    "sdl2"
+    "boost-circular-buffer"
   ]
 }
