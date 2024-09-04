@@ -11,6 +11,8 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
+
 #set(CMAKE_CXX_FLAGS "-O3 -Wno-unsequenced")
 set(CMAKE_CXX_FLAGS "-O3 -pg")
 
@@ -34,16 +36,16 @@ set (LIB_SOURCES
 )
 
 
-include_directories(${Boost_INCLUDE_DIRS} ${SDL2_INCLUDE_DIRS} .)
+include_directories(${Boost_INCLUDE_DIRS} ${SDL2_INCLUDE_DIRS} ${SDL2_IMAGE_INCLUDE_DIRS} .)
 
 include(chip/CMakeLists.txt)
 include(tape/CMakeLists.txt)
 
 add_executable(oric main.cpp ${LIB_SOURCES} )
-target_link_libraries(oric ${Boost_LIBRARIES} ${SDL2_LIBRARIES} SDL2_image)
+target_link_libraries(oric ${Boost_LIBRARIES} ${SDL2_LIBRARIES} ${SDL2_IMAGE_LIBRARIES})
 
 add_library(oric_lib STATIC ${LIB_SOURCES})
-target_link_libraries(oric_lib ${Boost_LIBRARIES} ${SDL2_LIBRARIES} SDL2_image)
+target_link_libraries(oric_lib ${Boost_LIBRARIES} ${SDL2_LIBRARIES} ${SDL2_IMAGE_LIBRARIES})
 
 install(TARGETS oric RUNTIME DESTINATION bin)
 
