@@ -16,6 +16,7 @@
 // =========================================================================
 
 #include <boost/assign.hpp>
+#include <SDL_image.h>
 
 #include "frontend.hpp"
 #include "chip/ay3_8912.hpp"
@@ -63,43 +64,53 @@ Frontend::~Frontend()
 
 bool Frontend::init_graphics()
 {
+
     // Initialize SDL
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         std::cout << "SDL could not initialize! SDL_Error: " << SDL_GetError() << std::endl;
         return false;
     }
-    else {
-        // Set texture filtering to linear
-        if (!SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1")) {
-            std::cout <<  "Warning: Linear texture filtering not enabled!" << std::endl;
-        }
 
-        // Create window (240x224)
-        sdl_window = SDL_CreateWindow("Pugo-Oric", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 800, SDL_WINDOW_SHOWN);
-        if (sdl_window == NULL) {
-            std::cout << "Window could not be created! SDL_Error: " << SDL_GetError() << std::endl;
-            return false;
-        }
-        else {
-            // Create renderer for window
-            sdl_renderer = SDL_CreateRenderer(sdl_window, -1, SDL_RENDERER_ACCELERATED);
-
-            if (sdl_renderer == NULL) {
-                std::cout <<  "Renderer could not be created! SDL Error: " << SDL_GetError() << std::endl;
-                return false;
-            }
-
-            sdl_texture = SDL_CreateTexture(sdl_renderer,
-                                            SDL_PIXELFORMAT_ARGB8888,
-                                            SDL_TEXTUREACCESS_STREAMING,
-                                            texture_width,
-                                            texture_height);
-
-            // Initialize renderer color
-            SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0xff, 0xff, 0xff);
-            SDL_RenderClear(sdl_renderer);
-        }
+    if (!(IMG_Init(IMG_INIT_PNG) & IMG_INIT_PNG)) {
+        fprintf(stderr, "could not initialize sdl2_image: %s\n", IMG_GetError());
+        return false;
     }
+
+    // Set texture filtering to linear
+    if (!SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1")) {
+        std::cout <<  "Warning: Linear texture filtering not enabled!" << std::endl;
+    }
+
+    // Create window (240x224)
+    sdl_window = SDL_CreateWindow("Pugo-Oric", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 800, SDL_WINDOW_SHOWN);
+    if (sdl_window == NULL) {
+        std::cout << "Window could not be created! SDL_Error: " << SDL_GetError() << std::endl;
+        return false;
+    }
+
+    // Try to load window icon.
+    SDL_Surface* icon = IMG_Load("images/window_icon.png");
+    if (icon) {
+        SDL_SetWindowIcon(sdl_window, icon);
+    }
+
+    // Create renderer for window
+    sdl_renderer = SDL_CreateRenderer(sdl_window, -1, SDL_RENDERER_ACCELERATED);
+
+    if (sdl_renderer == NULL) {
+        std::cout <<  "Renderer could not be created! SDL Error: " << SDL_GetError() << std::endl;
+        return false;
+    }
+
+    sdl_texture = SDL_CreateTexture(sdl_renderer,
+                                    SDL_PIXELFORMAT_ARGB8888,
+                                    SDL_TEXTUREACCESS_STREAMING,
+                                    texture_width,
+                                    texture_height);
+
+    // Initialize renderer color
+    SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0xff, 0xff, 0xff);
+    SDL_RenderClear(sdl_renderer);
 
     return true;
 }
