@@ -232,7 +232,7 @@ void AY3_8912::reset()
     old_length_counter = 0;
     old_length = 0;
 
-    cycles_per_sample = ((1000000 * cycle_multiplier) / 44100);
+    cycles_per_sample = ((998400 * cycle_multiplier) / 44100);
 
     for (uint32_t i = 0; i < 32768; i++) {
         sound_buffer[i] = 0;

@@ -64,7 +64,6 @@ Frontend::~Frontend()
 
 bool Frontend::init_graphics()
 {
-
     // Initialize SDL
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         std::cout << "SDL could not initialize! SDL_Error: " << SDL_GetError() << std::endl;
@@ -82,7 +81,8 @@ bool Frontend::init_graphics()
     }
 
     // Create window (240x224)
-    sdl_window = SDL_CreateWindow("Pugo-Oric", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 800, SDL_WINDOW_SHOWN);
+    sdl_window = SDL_CreateWindow("Pugo-Oric", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+                                  texture_width*3, texture_height*3, SDL_WINDOW_SHOWN);
     if (sdl_window == NULL) {
         std::cout << "Window could not be created! SDL_Error: " << SDL_GetError() << std::endl;
         return false;
@@ -168,8 +168,6 @@ bool Frontend::init_sound()
     std::cout << "samples: " << (int) audio_spec.samples << std::endl;
 
     SDL_PauseAudioDevice(sound_audio_device_id, 1);
-//    SDL_Delay(2000); // wait while sound is playing
-//    SDL_PauseAudioDevice(sound_audio_device_id, 1);
 
     return true;
 }

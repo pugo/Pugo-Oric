@@ -17,6 +17,10 @@
 
 #include <iostream>
 #include <cstdlib>
+#include <thread>
+#include <sys/time.h>
+#include <unistd.h>
+
 #include <boost/assign.hpp>
 #include <SDL.h>
 
@@ -38,7 +42,7 @@
 // CB1              tape connector input
 // CB2              PSG BDIR line
 
-
+// 19968 cycles per frame / 312 lines = 64 cycles per raster
 constexpr uint8_t cycles_per_raster = 64;
 constexpr uint32_t sound_pause_target = 1000;
 
@@ -71,8 +75,6 @@ void Machine::init(Frontend* frontend)
     init_mos6522();
     init_ay3();
     init_tape();
-
-
 }
 
 void Machine::init_cpu()
@@ -137,15 +139,14 @@ void Machine::reset()
     cpu->Reset();
 }
 
-/**
- * run machine.
- * \param steps number of instructions to run. If 0: run infinite (or to BRK).
- */
+
 void Machine::run(Oric* oric)
 {
     uint32_t instructions = 0;
-    next_frame = SDL_GetTicks64();
-    SDL_Event event;
+
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    next_frame = tv.tv_sec * 1000000 + tv.tv_usec;
 
     break_exec = false;
     uint8_t ran = 0;
@@ -171,24 +172,25 @@ void Machine::run(Oric* oric)
                 update_key_output();
             }
 
-            cycle_count -= 1;
+            --cycle_count;
         }
 
         if (ula.paint_raster()) {
-            next_frame += 20;
+            frontend->unlock_audio();
+            next_frame += 20000;
 
             if (! frontend->handle_frame()) {
                 break_exec = true;
             }
 
-            uint64_t now = SDL_GetTicks64();
-
+            gettimeofday(&tv, NULL);
+            uint64_t now = tv.tv_sec * 1000000 + tv.tv_usec + 20000;
             if (now > next_frame) {
                 next_frame = now;
             }
             else {
                 if (! warpmode_on) {
-                    SDL_Delay(next_frame - now);
+                    usleep(next_frame - now);
                 }
             }
         }
@@ -199,7 +201,6 @@ void Machine::run(Oric* oric)
 
 void Machine::key_press(uint8_t key_bits, bool down)
 {
-//	std::cout << "key: " << (int)a_KeyBits << ", " << (a_Down ? "down" : "up") << std::endl;
     if (down) {
         key_rows[key_bits >> 3] |= (1 << (key_bits & 0x07));
     }
@@ -261,7 +262,9 @@ bool Machine::toggle_warp_mode()
 {
     warpmode_on = !warpmode_on;
     if (! warpmode_on) {
-        next_frame = SDL_GetTicks64();
+        struct timeval tv;
+        gettimeofday(&tv, NULL);
+        next_frame = tv.tv_sec * 1000000 + tv.tv_usec;
     }
     std::cout << "Warp mode: " << (warpmode_on ? "on" : "off") << std::endl;
     return warpmode_on;

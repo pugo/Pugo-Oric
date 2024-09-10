@@ -228,10 +228,6 @@ void TapeTap::exec()
 
         if (delay > 0) {
             --delay;
-//            if (delay < 0) {
-//                delay = 1;
-//            }
-            std::cout << "Delay: " << delay << std::endl;
         }
         return;
     }

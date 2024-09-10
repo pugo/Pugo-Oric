@@ -129,6 +129,10 @@ public:
      */
     void load_snapshot();
 
+    /**
+     * Toggle warp mode on and off.
+     * @return true if warp mode is on
+     */
     bool toggle_warp_mode();
 
     // --- Memory functions -------------------

@@ -68,6 +68,26 @@ public:
     void pause_sound(bool pause_on);
 
     /**
+     * Lock the audio device.
+     */
+    void lock_audio_device() { SDL_LockAudioDevice(sound_audio_device_id); }
+
+    /**
+     * Unlock the audio device.
+     */
+    void unlock_audio_device() { SDL_UnlockAudioDevice(sound_audio_device_id); }
+
+    /**
+     * Lock audio playback.
+     */
+    void lock_audio() { SDL_LockAudio(); }
+
+    /**
+     * Unlock audio playback.
+     */
+    void unlock_audio() { SDL_UnlockAudio(); }
+
+    /**
      * Close sound.
      */
     void close_sound();

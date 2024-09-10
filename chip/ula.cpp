@@ -53,9 +53,12 @@ bool ULA::paint_raster()
 {
     bool render_screen = false;
 
+    if ((raster_current >= raster_visible_first) && (raster_current <= raster_visible_last)) {
+        update_graphics(raster_current - raster_visible_first);
+    }
+
     if (++raster_current == raster_max) {
         raster_current = 0;
-
         if (machine->warpmode_on) {
             warpmode_counter = (warpmode_counter + 1) % 10;
             if (warpmode_counter) {
@@ -68,11 +71,6 @@ bool ULA::paint_raster()
         frame_count++;
     }
 
-    if ((raster_current < raster_visible_first) || (raster_current >= raster_visible_last)) {
-        return render_screen;
-    }
-
-    update_graphics(raster_current - raster_visible_first);
     return render_screen;
 }
 
