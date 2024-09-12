@@ -109,7 +109,9 @@ static const uint8_t _ay38910_shapes[16][32] = {
     { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
 };
 
-constexpr uint8_t cycle_multiplier = 128;
+constexpr uint8_t cycle_shift = 10;
+constexpr uint32_t cycles_per_second = 998400;
+constexpr uint32_t audio_frequency = 44100;
 
 
 Channel::Channel() :
@@ -127,18 +129,6 @@ void Channel::reset()
     use_envelope = false;
 }
 
-void Channel::print_status(uint8_t channel)
-{
-    std::cout << " ------- Channel " << (int)channel << " -------------------------" << std::endl;
-    std::cout << "    -         Volume: " << (int)volume << std::endl;
-    std::cout << "    -    Tome period: " << (int)tone_period << std::endl;
-    std::cout << "    -        Counter: " << (int)counter << std::endl;
-    std::cout << "    -          Value: " << (int)value << std::endl;
-    std::cout << "    -       Disabled: " << (disabled ? "true" : "false") << std::endl;
-    std::cout << "    - Noise disabled: " << (noise_diabled ? "true" : "false") << std::endl;
-    std::cout << "    -   Use envelope: " << (use_envelope ? "true" : "false") << std::endl;
-    std::cout << std::endl;
-}
 
 Noise::Noise() :
     period(0), counter(0), bit(0), rng(1)
@@ -148,16 +138,6 @@ void Noise::reset()
 {
     period = 0;
     counter = 0;
-}
-
-void Noise::print_status()
-{
-    std::cout << " ------- Noise -------------------------" << std::endl;
-    std::cout << "    -  Period: " << (int)period << std::endl;
-    std::cout << "    - Counter: " << (int)counter << std::endl;
-    std::cout << "    -     Bit: " << (int)bit << std::endl;
-    std::cout << "    -     Rng: " << (int)rng << std::endl;
-    std::cout << std::endl;
 }
 
 
@@ -186,9 +166,11 @@ void AY3_8912::State::reset()
     bc2 = false;
 
     current_register = 0;
+    audio_out = 0;
 
     // Reset all registers.
     for (auto& i : registers) { i = 0; }
+    for (auto& i : audio_registers) { i = 0; }
 
     // Reset all tone and noise periods.
     for (auto& c : channels) { c.reset(); }
@@ -207,36 +189,36 @@ void AY3_8912::State::print_status()
 AY3_8912::AY3_8912(Machine& machine) :
     machine(machine),
     m_read_data_handler(nullptr),
-    cycle_count(0),
-    sound_buffer_index(0)
+    shifted_cycle_count(0),
+    register_changes_count(0),
+    register_changes_cycle(0),
+    last_cycle(0),
+    handle_key_change(0),
+    new_log_cycle(0),
+    log_cycle(0),
+    update_log_cycle(false)
 {
     reset();
 }
 
-
 AY3_8912::~AY3_8912()
 {}
-
 
 void AY3_8912::reset()
 {
     state.reset();
 
-    cycle_count = 0;
-    sound_buffer_next_play_index = 0;
-    sound_buffer_index = 0;
-    move_sound_data = false;
-    start_play = false;
-    cycle_diff = -25;
-    cycle_diffs_buffer.set_capacity(40);
-    old_length_counter = 0;
-    old_length = 0;
+    shifted_cycle_count = 0;
+    register_changes_count = 0;
+    register_changes_cycle = 0;
+    last_cycle = 0;
+    handle_key_change = 0;
 
-    cycles_per_sample = ((998400 * cycle_multiplier) / 44100);
+    new_log_cycle = 0;
+    log_cycle = 0;
+    update_log_cycle = false;
 
-    for (uint32_t i = 0; i < 32768; i++) {
-        sound_buffer[i] = 0;
-    }
+    shifted_cycles_per_sample = ((cycles_per_second << cycle_shift) / audio_frequency);
 }
 
 void AY3_8912::print_status()
@@ -256,202 +238,158 @@ void AY3_8912::load_from_snapshot(Snapshot& snapshot)
 
 short AY3_8912::exec()
 {
-    uint32_t c;
-    int32_t cycle_diff_change = 0;
-
-    // Tones
-    for (uint8_t channel = 0; channel < 3; channel++) {
-        if (++state.channels[channel].counter >= state.channels[channel].tone_period) {
-            state.channels[channel].counter = 0;
-            state.channels[channel].value ^= 1;
-        }
+    if (update_log_cycle) {
+        log_cycle = new_log_cycle;
+        update_log_cycle = false;
     }
 
-    // Noise
-    if (++state.noise.counter >= state.noise.period) {
-        state.noise.counter = 0;
-        state.noise.bit ^= 1;
-        if (state.noise.bit) {
-            state.noise.rng ^= (((state.noise.rng & 1) ^ ((state.noise.rng >> 3) & 1)) << 17);
-            state.noise.rng >>= 1;
-        }
-    }
-
-    // Envelope
-    if (++state.envelope.counter >= state.envelope.period) {
-        state.envelope.counter = 0;
-
-        if (! state.envelope.holding) {
-            state.envelope.shape_counter = (state.envelope.shape_counter + 1) % 0x20;
-            if (state.envelope.shape_counter == 0x1f) {
-                if (! state.envelope.cont || state.envelope.hold) {
-                    state.envelope.holding = true;
-                }
-            }
-        }
-
-        for (uint8_t channel = 0; channel < 3; channel++) {
-            if (state.channels[channel].use_envelope) {
-                state.channels[channel].volume = voltab[_ay38910_shapes[state.envelope.shape][state.envelope.shape_counter]];
-            }
-        }
-    }
-
-    if (cycle_count >= (cycles_per_sample + cycle_diff)) {
-        if (move_sound_data) {
-//                buffer_mutex.lock();
-            uint32_t len = sound_buffer_index - sound_buffer_next_play_index;
-//    std::cout << "-- sound_buffer_index: " << std::dec << (int)sound_buffer_index << ", sound_buffer_next_play_index: " <<  (int)sound_buffer_next_play_index << ", len: " << (int)len << std::endl;
-
-            memmove(sound_buffer, &sound_buffer[sound_buffer_next_play_index], len * 2);
-            sound_buffer_index = len;
-            sound_buffer_next_play_index = 0;
-            move_sound_data = false;
-
-            cycle_diffs_buffer.push_back(len);
-
-            if (old_length_counter++ == 100) {
-                old_length_counter = 0;
-
-                if (cycle_diffs_buffer.size() == 40) {
-                    int16_t avg = std::accumulate(cycle_diffs_buffer.begin(), cycle_diffs_buffer.end(), 0) / cycle_diffs_buffer.size();
-                    if (old_length == 0) {
-                        old_length = avg;
-                    }
-
-                    if (avg > old_length) {
-                        cycle_diff_change = 1;
-                    }
-                    else if (avg < old_length) {
-                        cycle_diff_change = -1;
-                    }
-
-                    old_length = avg;
-                }
-            }
-
-//                buffer_mutex.unlock();
-        }
-
-        uint32_t out = 0;
-
-        for (uint8_t channel = 0; channel < 3; channel++) {
-            out += ((state.channels[channel].value | state.channels[channel].disabled) &
-                    ((state.noise.rng & 1) | state.channels[channel].noise_diabled)) * state.channels[channel].volume;
-        }
-
-        if (out > 32767) { out = 32767; }
-
-        if ((sound_buffer_index + 2) < 32768) {
-            sound_buffer[sound_buffer_index++] = out;
-            sound_buffer[sound_buffer_index++] = out;
-        }
-        cycle_count -= (cycles_per_sample + cycle_diff);
-    }
-    else {
-        cycle_count += cycle_multiplier;
-    }
-
-    cycle_diff += cycle_diff_change;
-
-    if (sound_buffer_index > 5000) {
-        start_play = true;
-    }
-
+    log_cycle++;
     return 0;
 }
 
-inline void AY3_8912::write_to_psg(uint8_t value)
+short AY3_8912::exec_audio(uint16_t cycles)
 {
-    switch (state.current_register) {
-        case CH_A_PERIOD_LOW:
-        case CH_A_PERIOD_HIGH:
-            state.registers[state.current_register] = value;
-            state.channels[0].tone_period = (((state.registers[CH_A_PERIOD_HIGH] & 0x0f) << 8) + state.registers[CH_A_PERIOD_LOW]) * 8;
-            if (state.channels[0].tone_period == 0) { state.channels[0].tone_period = 1; }
-            break;
-        case CH_B_PERIOD_LOW:
-        case CH_B_PERIOD_HIGH:
-            state.registers[state.current_register] = value;
-            state.channels[1].tone_period = (((state.registers[CH_B_PERIOD_HIGH] & 0x0f) << 8) + state.registers[CH_B_PERIOD_LOW]) * 8;
-            if (state.channels[1].tone_period == 0) { state.channels[1].tone_period = 1; }
-            break;
-        case CH_C_PERIOD_LOW:
-        case CH_C_PERIOD_HIGH:
-            state.registers[state.current_register] = value;
-            state.channels[2].tone_period = (((state.registers[CH_C_PERIOD_HIGH] & 0x0f) << 8) + state.registers[CH_C_PERIOD_LOW]) * 8;
-            if (state.channels[2].tone_period == 0) { state.channels[2].tone_period = 1; }
-            break;
+    for (uint16_t c = 0; c < cycles; c++) {
+        // Tones
+        for (uint8_t channel = 0; channel < 3; channel++) {
+            if (++state.channels[channel].counter >= state.channels[channel].tone_period) {
+                state.channels[channel].counter = 0;
+                state.channels[channel].value ^= 1;
+            }
+        }
 
-        case NOICE_PERIOD:
-            state.registers[state.current_register] = value;
-            state.noise.period = (value & 0x1f) * 8;
-            break;
+        // Noise
+        if (++state.noise.counter >= state.noise.period) {
+            state.noise.counter = 0;
+            state.noise.bit ^= 1;
+            if (state.noise.bit) {
+                state.noise.rng ^= (((state.noise.rng & 1) ^ ((state.noise.rng >> 3) & 1)) << 17);
+                state.noise.rng >>= 1;
+            }
+        }
 
-        case ENABLE:
-            state.registers[state.current_register] = value;
-            state.channels[0].disabled = (value & 0x01) ? 1 : 0;
-            state.channels[1].disabled = (value & 0x02) ? 1 : 0;
-            state.channels[2].disabled = (value & 0x04) ? 1 : 0;
-            state.channels[0].noise_diabled = (value & 0x08) ? 1 : 0;
-            state.channels[1].noise_diabled = (value & 0x10) ? 1 : 0;
-            state.channels[2].noise_diabled = (value & 0x20) ? 1 : 0;
-            break;
-
-        case CH_A_AMPLITUDE:
-            state.registers[state.current_register] = value;
-            state.channels[0].use_envelope = (value & 0x10) != 0;
-            if (state.channels[0].use_envelope) {
-                state.channels[0].volume = voltab[_ay38910_shapes[state.envelope.shape][state.envelope.shape_counter]];
-            }
-            else {
-                state.channels[0].volume = voltab[value & 0x0f];
-            }
-            break;
-        case CH_B_AMPLITUDE:
-            state.registers[state.current_register] = value;
-            state.channels[1].use_envelope = (value & 0x10) != 0;
-            if (state.channels[1].use_envelope) {
-                state.channels[1].volume = voltab[_ay38910_shapes[state.envelope.shape][state.envelope.shape_counter]];
-            }
-            else {
-                state.channels[1].volume = voltab[value & 0x0f];
-            }
-            break;
-        case CH_C_AMPLITUDE:
-            state.registers[state.current_register] = value;
-            state.channels[2].use_envelope = (value & 0x10) != 0;
-            if (state.channels[2].use_envelope) {
-                state.channels[2].volume = voltab[_ay38910_shapes[state.envelope.shape][state.envelope.shape_counter]];
-            }
-            else {
-                state.channels[2].volume = voltab[value & 0x0f];
-            }
-            break;
-        case ENV_DURATION_LOW:
-        case ENV_DURATION_HIGH:
-            state.registers[state.current_register] = value;
-            state.envelope.period = ((state.registers[ENV_DURATION_HIGH] << 8) + state.registers[CH_A_PERIOD_LOW]) * 16;
-            if (state.envelope.period == 0) { state.envelope.period = 1; }
-            break;
-        case ENV_SHAPE:
-            state.registers[state.current_register] = value;
-            state.envelope.shape = value & 0x0f;
-            state.envelope.holding = false;
+        // Envelope
+        if (++state.envelope.counter >= state.envelope.period) {
             state.envelope.counter = 0;
-            state.envelope.shape_counter = 0;
 
-            state.envelope.cont = value & 0x08;
-            state.envelope.hold = value & 0x01;
+            if (! state.envelope.holding) {
+                state.envelope.shape_counter = (state.envelope.shape_counter + 1) % 0x20;
+                if (state.envelope.shape_counter == 0x1f) {
+                    if (! state.envelope.cont || state.envelope.hold) {
+                        state.envelope.holding = true;
+                    }
+                }
+            }
 
             for (uint8_t channel = 0; channel < 3; channel++) {
                 if (state.channels[channel].use_envelope) {
                     state.channels[channel].volume = voltab[_ay38910_shapes[state.envelope.shape][state.envelope.shape_counter]];
                 }
             }
+        }
+
+        uint32_t out = 0;
+        for (uint8_t channel = 0; channel < 3; channel++) {
+            out += ((state.channels[channel].value | state.channels[channel].disabled) &
+                    ((state.noise.rng & 1) | state.channels[channel].noise_diabled)) * state.channels[channel].volume;
+        }
+
+        if (out > 32767) { out = 32767; }
+        state.audio_out = out;
+    }
+
+    return 0;
+}
+
+
+void AY3_8912::write_register_change(AY3_8912::RegisterChange& register_change)
+{
+    switch (register_change.register_index) {
+        case CH_A_PERIOD_LOW:
+        case CH_A_PERIOD_HIGH:
+            state.audio_registers[register_change.register_index] = register_change.value;
+            state.channels[0].tone_period = (((state.audio_registers[CH_A_PERIOD_HIGH] & 0x0f) << 8) + state.audio_registers[CH_A_PERIOD_LOW]) * 8;
+            if (state.channels[0].tone_period == 0) { state.channels[0].tone_period = 1; }
             break;
-        case IO_PORT_A:
-            state.registers[state.current_register] = value;
+        case CH_B_PERIOD_LOW:
+        case CH_B_PERIOD_HIGH:
+            state.audio_registers[register_change.register_index] = register_change.value;
+            state.channels[1].tone_period = (((state.audio_registers[CH_B_PERIOD_HIGH] & 0x0f) << 8) + state.audio_registers[CH_B_PERIOD_LOW]) * 8;
+            if (state.channels[1].tone_period == 0) { state.channels[1].tone_period = 1; }
+            break;
+        case CH_C_PERIOD_LOW:
+        case CH_C_PERIOD_HIGH:
+            state.audio_registers[register_change.register_index] = register_change.value;
+            state.channels[2].tone_period = (((state.audio_registers[CH_C_PERIOD_HIGH] & 0x0f) << 8) + state.audio_registers[CH_C_PERIOD_LOW]) * 8;
+            if (state.channels[2].tone_period == 0) { state.channels[2].tone_period = 1; }
+            break;
+
+        case NOICE_PERIOD:
+            state.audio_registers[register_change.register_index] = register_change.value;
+            state.noise.period = (register_change.value & 0x1f) * 8;
+            break;
+
+        case ENABLE:
+            state.audio_registers[register_change.register_index] = register_change.value;
+            state.channels[0].disabled = (register_change.value & 0x01) ? 1 : 0;
+            state.channels[1].disabled = (register_change.value & 0x02) ? 1 : 0;
+            state.channels[2].disabled = (register_change.value & 0x04) ? 1 : 0;
+            state.channels[0].noise_diabled = (register_change.value & 0x08) ? 1 : 0;
+            state.channels[1].noise_diabled = (register_change.value & 0x10) ? 1 : 0;
+            state.channels[2].noise_diabled = (register_change.value & 0x20) ? 1 : 0;
+            break;
+
+        case CH_A_AMPLITUDE:
+            state.audio_registers[register_change.register_index] = register_change.value;
+            state.channels[0].use_envelope = (register_change.value & 0x10) != 0;
+            if (state.channels[0].use_envelope) {
+                state.channels[0].volume = voltab[_ay38910_shapes[state.envelope.shape][state.envelope.shape_counter]];
+            }
+            else {
+                state.channels[0].volume = voltab[register_change.value & 0x0f];
+            }
+            break;
+        case CH_B_AMPLITUDE:
+            state.audio_registers[register_change.register_index] = register_change.value;
+            state.channels[1].use_envelope = (register_change.value & 0x10) != 0;
+            if (state.channels[1].use_envelope) {
+                state.channels[1].volume = voltab[_ay38910_shapes[state.envelope.shape][state.envelope.shape_counter]];
+            }
+            else {
+                state.channels[1].volume = voltab[register_change.value & 0x0f];
+            }
+            break;
+        case CH_C_AMPLITUDE:
+            state.audio_registers[register_change.register_index] = register_change.value;
+            state.channels[2].use_envelope = (register_change.value & 0x10) != 0;
+            if (state.channels[2].use_envelope) {
+                state.channels[2].volume = voltab[_ay38910_shapes[state.envelope.shape][state.envelope.shape_counter]];
+            }
+            else {
+                state.channels[2].volume = voltab[register_change.value & 0x0f];
+            }
+            break;
+        case ENV_DURATION_LOW:
+        case ENV_DURATION_HIGH:
+            state.audio_registers[register_change.register_index] = register_change.value;
+            state.envelope.period = ((state.audio_registers[ENV_DURATION_HIGH] << 8) + state.audio_registers[CH_A_PERIOD_LOW]) * 16;
+            if (state.envelope.period == 0) { state.envelope.period = 1; }
+            break;
+        case ENV_SHAPE:
+            state.audio_registers[register_change.register_index] = register_change.value;
+            state.envelope.shape = register_change.value & 0x0f;
+            state.envelope.holding = false;
+            state.envelope.counter = 0;
+            state.envelope.shape_counter = 0;
+
+            state.envelope.cont = register_change.value & 0x08;
+            state.envelope.hold = register_change.value & 0x01;
+
+            for (uint8_t channel = 0; channel < 3; channel++) {
+                if (state.channels[channel].use_envelope) {
+                    state.channels[channel].volume = voltab[_ay38910_shapes[state.envelope.shape][state.envelope.shape_counter]];
+                }
+            }
             break;
     };
 }
@@ -466,8 +404,48 @@ void AY3_8912::update_state()
             }
         }
         else {  // 1 ? 0
+            uint8_t value = m_read_data_handler(machine);
             // Write to PSG: read value from data bus to current register.
-            write_to_psg(m_read_data_handler(machine));
+
+            state.registers[state.current_register] = value;
+
+            if (machine.warpmode_on)
+                return;
+
+            switch (state.current_register) {
+                case ENABLE:
+                case CH_A_PERIOD_LOW:
+                case CH_A_PERIOD_HIGH:
+                case CH_B_PERIOD_LOW:
+                case CH_B_PERIOD_HIGH:
+                case CH_C_PERIOD_LOW:
+                case CH_C_PERIOD_HIGH:
+                case NOICE_PERIOD:
+                case CH_A_AMPLITUDE:
+                case CH_B_AMPLITUDE:
+                case CH_C_AMPLITUDE:
+                case ENV_DURATION_LOW:
+                case ENV_DURATION_HIGH:
+                case ENV_SHAPE:
+                    machine.frontend->lock_audio();
+
+                    if (update_log_cycle) {
+                        log_cycle = new_log_cycle;
+                        update_log_cycle = false;
+                    }
+
+                    register_changes[register_changes_count].cycle = log_cycle;
+                    register_changes[register_changes_count].register_index = state.current_register;
+                    register_changes[register_changes_count].value = value;
+                    ++register_changes_count;
+                    machine.frontend->unlock_audio();
+
+                    break;
+                case IO_PORT_A:
+                    handle_key_change = 3;
+                    break;
+            };
+
         }
     }
     else {
@@ -516,29 +494,63 @@ void AY3_8912::audio_callback(void* user_data, uint8_t* raw_buffer, int len)
     AY3_8912* ay = (AY3_8912*)user_data;
     uint16_t* buffer = (uint16_t*)raw_buffer;
 
-    uint16_t samples = len/2;
-//    std::cout << "-- underrun? Want: " << std::dec << (int)samples << " samples, got: " <<  (int)ay->sound_buffer_index << std::endl;
+    uint16_t samples = len/4;
 
-    if (! ay->start_play) {
+    uint32_t register_changes_played = 0;
+    uint32_t current_sample = 0;
+
+    if (ay->machine.warpmode_on)
         return;
+
+    for (size_t sample = 0; sample < samples; sample++) {
+        uint32_t current_cycle = ay->shifted_cycle_count >> cycle_shift;
+
+        while ((register_changes_played < ay->register_changes_count) &&
+                (current_cycle >= ay->register_changes[register_changes_played].cycle))
+        {
+            ay->write_register_change(ay->register_changes[register_changes_played++]);
+        }
+
+        if (current_cycle > ay->last_cycle) {
+            ay->exec_audio(current_cycle - ay->last_cycle);
+            ay->last_cycle = current_cycle;
+        }
+
+        buffer[current_sample++] = ay->state.audio_out;
+        buffer[current_sample++] = ay->state.audio_out;
+
+        ay->shifted_cycle_count += ay->shifted_cycles_per_sample;
     }
 
-    bool underrun = false;
+    if (ay->register_changes_count > register_changes_played) {
+        // Move yet not played register changes to beginning of array.
+        memmove(&ay->register_changes[0], &ay->register_changes[register_changes_played],
+                (ay->register_changes_count - register_changes_played) * sizeof(ay->register_changes[0]));
 
-//    ay->buffer_mutex.lock();
-    uint32_t first = ay->sound_buffer_next_play_index;
-    if (ay->sound_buffer_index - first < samples) {
-        underrun = true;
-        samples = ay->sound_buffer_index - first;
-//        std::cout << "-- underrun!" << std::endl;
+        // Change change cycles to be relative to local counting.
+        ay->register_changes_count -= register_changes_played;
+        for (size_t i = 0; i < ay->register_changes_count; i++) {
+            if (ay->register_changes[i].cycle > ay->last_cycle)
+                ay->register_changes[i].cycle -= ay->last_cycle;
+            else
+                ay->register_changes[i].cycle -= 0;
+        }
+
+        if (ay->register_changes_count > 150) {
+            for (uint32_t i = 0; i < ay->register_changes_count; i++) {
+                ay->write_register_change(ay->register_changes[i]);
+            }
+            ay->register_changes_count = 0;
+        }
+
+    }
+    else {
+        ay->register_changes_count = 0;
     }
 
-    memcpy(buffer, &ay->sound_buffer[first], samples * 2);
+    ay->shifted_cycle_count -= ay->last_cycle << cycle_shift;
+    ay->last_cycle = 0;
 
-    if (! underrun) {
-        ay->sound_buffer_next_play_index += samples;
-        ay->move_sound_data = true;
-    }
-
-//    ay->buffer_mutex.unlock();
+    ay->new_log_cycle = ay->shifted_cycle_count >> cycle_shift;
+    ay->update_log_cycle = true;
 }

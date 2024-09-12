@@ -170,13 +170,14 @@ void Machine::run(Oric* oric)
 
             if (cpu->exec(break_exec)) {
                 update_key_output();
+//                frontend->unlock_audio();
             }
 
             --cycle_count;
         }
 
         if (ula.paint_raster()) {
-            frontend->unlock_audio();
+//            frontend->unlock_audio();
             next_frame += 20000;
 
             if (! frontend->handle_frame()) {

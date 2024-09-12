@@ -19,8 +19,7 @@
 #define AY3_8912_H
 
 #include <memory>
-#include <mutex>
-#include <boost/circular_buffer.hpp>
+#include <array>
 
 class Snapshot;
 class Machine;
@@ -28,6 +27,7 @@ class Machine;
 typedef uint8_t (*f_read_data_handler)(Machine &oric);
 typedef uint8_t (*f_write_data_handler)(Machine &oric);
 
+constexpr size_t register_changes_size = 32768;
 
 class Channel
 {
@@ -35,7 +35,18 @@ public:
     Channel();
 
     void reset();
-    void print_status(uint8_t channel);
+
+    void print_status(uint8_t channel) {
+        std::cout << " ------- Channel " << (int)channel << " -------------------------" << std::endl;
+        std::cout << "    -         Volume: " << (int)volume << std::endl;
+        std::cout << "    -    Tome period: " << (int)tone_period << std::endl;
+        std::cout << "    -        Counter: " << (int)counter << std::endl;
+        std::cout << "    -          Value: " << (int)value << std::endl;
+        std::cout << "    -       Disabled: " << (disabled ? "true" : "false") << std::endl;
+        std::cout << "    - Noise disabled: " << (noise_diabled ? "true" : "false") << std::endl;
+        std::cout << "    -   Use envelope: " << (use_envelope ? "true" : "false") << std::endl;
+        std::cout << std::endl;
+    }
 
     uint16_t volume;
     uint32_t tone_period;
@@ -53,7 +64,15 @@ public:
     Noise();
 
     void reset();
-    void print_status();
+
+    void print_status() {
+        std::cout << " ------- Noise -------------------------" << std::endl;
+        std::cout << "    -  Period: " << (int)period << std::endl;
+        std::cout << "    - Counter: " << (int)counter << std::endl;
+        std::cout << "    -     Bit: " << (int)bit << std::endl;
+        std::cout << "    -     Rng: " << (int)rng << std::endl;
+        std::cout << std::endl;
+    }
 
     uint16_t period;
     uint16_t counter;
@@ -116,10 +135,19 @@ public:
 
         uint8_t current_register;
         uint8_t registers[NUM_REGS];
+        uint8_t audio_registers[NUM_REGS];
+        uint32_t audio_out;
 
         Channel channels[3];
         Noise noise;
         Envelope envelope;
+    };
+
+    struct RegisterChange
+    {
+        uint32_t cycle;
+        uint8_t register_index;
+        uint8_t value;
     };
 
     AY3_8912(Machine& machine);
@@ -148,9 +176,14 @@ public:
     void load_from_snapshot(Snapshot& snapshot);
 
     /**
-     * Execute one clock cycle.
+     * Execute a number of clock cycles.
      */
     short exec();
+
+    /**
+     * Execute audio a number of clock cycles.
+     */
+    short exec_audio(uint16_t cycles);
 
     /**
      * Update AY state based on BC1 and BDIR.
@@ -217,29 +250,27 @@ public:
      */
     static void audio_callback(void* user_data, uint8_t* raw_buffer, int len);
 
+    void write_register_change(AY3_8912::RegisterChange& register_change);
+
     f_read_data_handler m_read_data_handler;
     f_write_data_handler m_write_data_handler;
 
-    uint32_t sound_buffer_index;
-    uint32_t sound_buffer_next_play_index;
-    int16_t sound_buffer[32768];
-    std::mutex buffer_mutex;
-    bool start_play;
+    uint32_t register_changes_count;
+    uint32_t register_changes_cycle;
+    std::array<RegisterChange, register_changes_size> register_changes;
+
+    uint32_t shifted_cycles_per_sample;
+    uint32_t shifted_cycle_count;
+    uint32_t last_cycle;
+    uint8_t handle_key_change;
+
+    uint32_t new_log_cycle;
+    uint32_t log_cycle;
+    bool update_log_cycle;
 
 private:
-    inline void write_to_psg(uint8_t value);
-
     Machine& machine;
     AY3_8912::State state;
-
-    uint32_t cycles_per_sample;
-    uint32_t cycle_count;
-    bool move_sound_data;
-
-    int16_t cycle_diff;
-    boost::circular_buffer<uint32_t> cycle_diffs_buffer;
-    uint32_t old_length;
-    uint8_t old_length_counter;
 };
 
 #endif // AY3_8912_H

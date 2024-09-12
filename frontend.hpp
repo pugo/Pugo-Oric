@@ -80,12 +80,22 @@ public:
     /**
      * Lock audio playback.
      */
-    void lock_audio() { SDL_LockAudio(); }
+    void lock_audio() {
+        if (! audio_locked) {
+            SDL_LockAudio();
+            audio_locked = true;
+        }
+    }
 
     /**
      * Unlock audio playback.
      */
-    void unlock_audio() { SDL_UnlockAudio(); }
+    void unlock_audio() {
+        if (audio_locked) {
+            SDL_UnlockAudio();
+            audio_locked = false;
+        }
+    }
 
     /**
      * Close sound.
@@ -121,6 +131,8 @@ protected:
 
     KeyMap_t key_map;
     KeyTranslation_t key_translations;
+
+    bool audio_locked;
 };
 
 
