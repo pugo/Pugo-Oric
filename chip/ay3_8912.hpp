@@ -109,7 +109,6 @@ struct RegisterChange
     uint8_t value;
 };
 
-class State;
 
 class RegisterChanges
 {
@@ -120,7 +119,7 @@ public:
     void exec();
 
     std::array<RegisterChange, register_changes_size> changes;
-    uint32_t changes_count;
+    uint32_t size;
 
     uint32_t new_log_cycle;
     uint32_t log_cycle;
@@ -156,23 +155,41 @@ public:
         void reset();
         void print_status();
 
+        /**
+         * Write a register change to array of changes.
+         * @param value register change to write
+         */
         void write_register_change(uint8_t value);
 
+        /**
+         * Execute register changes.
+         * @param changes_written changes written this far
+         * @param cycle current cycle
+         */
         void exec_register_changes(uint32_t& changes_written, uint32_t cycle) {
-            while ((changes_written < changes.changes_count) &&
+            while ((changes_written < changes.size) &&
                    (cycle >= changes.changes[changes_written].cycle))
             {
                 exec_register_change(changes.changes[changes_written++]);
             }
         }
 
-        void exec_register_change(RegisterChange& register_change);
+        /**
+         * Execute one register change
+         * @param change change to execute
+         */
+        void exec_register_change(RegisterChange& change);
 
-        void trim_register_changes(uint32_t& changes_written);
+        /**
+         * Trim the array of register changes.
+         * @param changes_written number of changes that were written.
+         */
+        void trim_register_changes(uint32_t changes_written);
 
         /**
          * Execute audio a number of clock cycles.
-          */
+         * @param cycle number of cycles to execute.
+         */
         void exec_audio(uint32_t cycle);
 
         bool bdir;

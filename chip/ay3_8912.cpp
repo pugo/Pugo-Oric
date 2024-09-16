@@ -109,7 +109,7 @@ static const uint8_t _ay38910_shapes[16][32] = {
     { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
 };
 
-constexpr uint8_t cycle_shift = 10;
+constexpr uint8_t cycle_shift = 12;
 constexpr uint32_t cycles_per_second = 998400;
 constexpr uint32_t audio_frequency = 44100;
 
@@ -157,7 +157,6 @@ Envelope::Envelope() :
     holding(false)
 {}
 
-
 void Envelope::reset()
 {
     period = 0;
@@ -171,23 +170,20 @@ void Envelope::reset()
 }
 
 
-
 RegisterChanges::RegisterChanges() :
-    changes_count(0),
+    size(0),
     log_cycle(0),
     new_log_cycle(0),
     update_log_cycle(false)
 {}
 
-
 void RegisterChanges::reset()
 {
-    changes_count = 0;
+    size = 0;
     log_cycle = 0;
     new_log_cycle = 0;
     update_log_cycle = false;
 }
-
 
 void RegisterChanges::exec()
 {
@@ -198,7 +194,6 @@ void RegisterChanges::exec()
 
     log_cycle++;
 }
-
 
 
 void AY3_8912::SoundState::reset()
@@ -240,123 +235,122 @@ void AY3_8912::SoundState::write_register_change(uint8_t value)
         changes.update_log_cycle = false;
     }
 
-    changes.changes[changes.changes_count].cycle = changes.log_cycle;
-    changes.changes[changes.changes_count].register_index = current_register;
-    changes.changes[changes.changes_count].value = value;
-    ++changes.changes_count;
+    changes.changes[changes.size].cycle = changes.log_cycle;
+    changes.changes[changes.size].register_index = current_register;
+    changes.changes[changes.size].value = value;
+    ++changes.size;
 }
 
-void AY3_8912::SoundState::trim_register_changes(uint32_t& changes_written)
+void AY3_8912::SoundState::trim_register_changes(uint32_t changes_written)
 {
-    if (changes.changes_count > changes_written) {
+    if (changes.size > changes_written) {
         // Move yet not written register changes to beginning of array.
         memmove(&changes.changes[0], &changes.changes[changes_written],
-                (changes.changes_count - changes_written) * sizeof(changes.changes[0]));
+                (changes.size - changes_written) * sizeof(RegisterChange));
 
         // Change change cycles to be relative to local counting.
-        changes.changes_count -= changes_written;
-        for (size_t i = 0; i < changes.changes_count; i++) {
+        changes.size -= changes_written;
+        for (size_t i = 0; i < changes.size; i++) {
             if (changes.changes[i].cycle > last_cycle)
                 changes.changes[i].cycle -= last_cycle;
             else
                 changes.changes[i].cycle = 0;
         }
 
-        if (changes.changes_count > 200) {
-            for (uint32_t i = 0; i < changes.changes_count; i++) {
+        if (changes.size > 200) {
+            for (uint32_t i = 0; i < changes.size; i++) {
                 exec_register_change(changes.changes[i]);
             }
-            changes.changes_count = 0;
+            changes.size = 0;
         }
     }
     else {
-        changes.changes_count = 0;
+        changes.size = 0;
     }
 }
 
-
-void AY3_8912::SoundState::exec_register_change(RegisterChange& register_change)
+void AY3_8912::SoundState::exec_register_change(RegisterChange& change)
 {
-    switch (register_change.register_index) {
+    switch (change.register_index) {
         case CH_A_PERIOD_LOW:
         case CH_A_PERIOD_HIGH:
-            audio_registers[register_change.register_index] = register_change.value;
+            audio_registers[change.register_index] = change.value;
             channels[0].tone_period = (((audio_registers[CH_A_PERIOD_HIGH] & 0x0f) << 8) + audio_registers[CH_A_PERIOD_LOW]) * 8;
             if (channels[0].tone_period == 0) { channels[0].tone_period = 1; }
             break;
         case CH_B_PERIOD_LOW:
         case CH_B_PERIOD_HIGH:
-            audio_registers[register_change.register_index] = register_change.value;
+            audio_registers[change.register_index] = change.value;
             channels[1].tone_period = (((audio_registers[CH_B_PERIOD_HIGH] & 0x0f) << 8) + audio_registers[CH_B_PERIOD_LOW]) * 8;
             if (channels[1].tone_period == 0) { channels[1].tone_period = 1; }
             break;
         case CH_C_PERIOD_LOW:
         case CH_C_PERIOD_HIGH:
-            audio_registers[register_change.register_index] = register_change.value;
+            audio_registers[change.register_index] = change.value;
             channels[2].tone_period = (((audio_registers[CH_C_PERIOD_HIGH] & 0x0f) << 8) + audio_registers[CH_C_PERIOD_LOW]) * 8;
             if (channels[2].tone_period == 0) { channels[2].tone_period = 1; }
             break;
 
         case NOICE_PERIOD:
-            audio_registers[register_change.register_index] = register_change.value;
-            noise.period = (register_change.value & 0x1f) * 8;
+            audio_registers[change.register_index] = change.value;
+            noise.period = (change.value & 0x1f) * 8;
             break;
 
         case ENABLE:
-            audio_registers[register_change.register_index] = register_change.value;
-            channels[0].disabled = (register_change.value & 0x01) ? 1 : 0;
-            channels[1].disabled = (register_change.value & 0x02) ? 1 : 0;
-            channels[2].disabled = (register_change.value & 0x04) ? 1 : 0;
-            channels[0].noise_diabled = (register_change.value & 0x08) ? 1 : 0;
-            channels[1].noise_diabled = (register_change.value & 0x10) ? 1 : 0;
-            channels[2].noise_diabled = (register_change.value & 0x20) ? 1 : 0;
+            audio_registers[change.register_index] = change.value;
+            channels[0].disabled = (change.value & 0x01) ? 1 : 0;
+            channels[1].disabled = (change.value & 0x02) ? 1 : 0;
+            channels[2].disabled = (change.value & 0x04) ? 1 : 0;
+            channels[0].noise_diabled = (change.value & 0x08) ? 1 : 0;
+            channels[1].noise_diabled = (change.value & 0x10) ? 1 : 0;
+            channels[2].noise_diabled = (change.value & 0x20) ? 1 : 0;
             break;
 
         case CH_A_AMPLITUDE:
-            audio_registers[register_change.register_index] = register_change.value;
-            channels[0].use_envelope = (register_change.value & 0x10) != 0;
+            audio_registers[change.register_index] = change.value;
+            channels[0].use_envelope = (change.value & 0x10) != 0;
             if (channels[0].use_envelope) {
                 channels[0].volume = voltab[_ay38910_shapes[envelope.shape][envelope.shape_counter]];
             }
             else {
-                channels[0].volume = voltab[register_change.value & 0x0f];
+                channels[0].volume = voltab[change.value & 0x0f];
             }
             break;
         case CH_B_AMPLITUDE:
-            audio_registers[register_change.register_index] = register_change.value;
-            channels[1].use_envelope = (register_change.value & 0x10) != 0;
+            audio_registers[change.register_index] = change.value;
+            channels[1].use_envelope = (change.value & 0x10) != 0;
             if (channels[1].use_envelope) {
                 channels[1].volume = voltab[_ay38910_shapes[envelope.shape][envelope.shape_counter]];
             }
             else {
-                channels[1].volume = voltab[register_change.value & 0x0f];
+                channels[1].volume = voltab[change.value & 0x0f];
             }
             break;
         case CH_C_AMPLITUDE:
-            audio_registers[register_change.register_index] = register_change.value;
-            channels[2].use_envelope = (register_change.value & 0x10) != 0;
+            audio_registers[change.register_index] = change.value;
+            channels[2].use_envelope = (change.value & 0x10) != 0;
             if (channels[2].use_envelope) {
                 channels[2].volume = voltab[_ay38910_shapes[envelope.shape][envelope.shape_counter]];
             }
             else {
-                channels[2].volume = voltab[register_change.value & 0x0f];
+                channels[2].volume = voltab[change.value & 0x0f];
             }
             break;
         case ENV_DURATION_LOW:
         case ENV_DURATION_HIGH:
-            audio_registers[register_change.register_index] = register_change.value;
+            audio_registers[change.register_index] = change.value;
             envelope.period = ((audio_registers[ENV_DURATION_HIGH] << 8) + audio_registers[CH_A_PERIOD_LOW]) * 16;
             if (envelope.period == 0) { envelope.period = 1; }
             break;
         case ENV_SHAPE:
-            audio_registers[register_change.register_index] = register_change.value;
-            envelope.shape = register_change.value & 0x0f;
+            audio_registers[change.register_index] = change.value;
+            envelope.shape = change.value & 0x0f;
             envelope.holding = false;
             envelope.counter = 0;
             envelope.shape_counter = 0;
 
-            envelope.cont = register_change.value & 0x08;
-            envelope.hold = register_change.value & 0x01;
+            envelope.cont = change.value & 0x08;
+            envelope.hold = change.value & 0x01;
 
             for (uint8_t channel = 0; channel < 3; channel++) {
                 if (channels[channel].use_envelope) {
