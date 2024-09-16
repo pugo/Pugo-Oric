@@ -151,18 +151,29 @@ public:
         NUM_REGS
     };
 
-    struct State
+    struct SoundState
     {
         void reset();
         void print_status();
 
         void write_register_change(uint8_t value);
+
+        void exec_register_changes(uint32_t& changes_written, uint32_t cycle) {
+            while ((changes_written < changes.changes_count) &&
+                   (cycle >= changes.changes[changes_written].cycle))
+            {
+                exec_register_change(changes.changes[changes_written++]);
+            }
+        }
+
         void exec_register_change(RegisterChange& register_change);
+
+        void trim_register_changes(uint32_t& changes_written);
 
         /**
          * Execute audio a number of clock cycles.
           */
-        short exec_audio(uint16_t cycles);
+        void exec_audio(uint32_t cycle);
 
         bool bdir;
         bool bc1;
@@ -286,7 +297,7 @@ public:
 
 private:
     Machine& machine;
-    State state;
+    SoundState state;
 };
 
 #endif // AY3_8912_H
