@@ -68,24 +68,24 @@ public:
     void pause_sound(bool pause_on);
 
     /**
-     * Lock the audio device.
-     */
-    void lock_audio_device() { SDL_LockAudioDevice(sound_audio_device_id); }
-
-    /**
-     * Unlock the audio device.
-     */
-    void unlock_audio_device() { SDL_UnlockAudioDevice(sound_audio_device_id); }
-
-    /**
      * Lock audio playback.
      */
-    void lock_audio() { SDL_LockAudio(); }
+    void lock_audio() {
+        if (! audio_locked) {
+            SDL_LockAudioDevice(sound_audio_device_id);
+            audio_locked = true;
+        }
+    }
 
     /**
      * Unlock audio playback.
      */
-    void unlock_audio() { SDL_UnlockAudio(); }
+    void unlock_audio() {
+        if (audio_locked) {
+            SDL_UnlockAudioDevice(sound_audio_device_id);
+            audio_locked = false;
+        }
+    }
 
     /**
      * Close sound.
@@ -121,6 +121,8 @@ protected:
 
     KeyMap_t key_map;
     KeyTranslation_t key_translations;
+
+    bool audio_locked;
 };
 
 

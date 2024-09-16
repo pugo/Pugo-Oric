@@ -170,13 +170,13 @@ void Machine::run(Oric* oric)
 
             if (cpu->exec(break_exec)) {
                 update_key_output();
+//                frontend->unlock_audio();
             }
 
             --cycle_count;
         }
 
         if (ula.paint_raster()) {
-            frontend->unlock_audio();
             next_frame += 20000;
 
             if (! frontend->handle_frame()) {
@@ -265,7 +265,12 @@ bool Machine::toggle_warp_mode()
         struct timeval tv;
         gettimeofday(&tv, NULL);
         next_frame = tv.tv_sec * 1000000 + tv.tv_usec;
+        frontend->unlock_audio();
     }
+    else {
+        frontend->lock_audio();
+    }
+
     std::cout << "Warp mode: " << (warpmode_on ? "on" : "off") << std::endl;
     return warpmode_on;
 }

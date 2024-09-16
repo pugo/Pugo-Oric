@@ -69,7 +69,7 @@ public:
 
     MOS6502_state mos6502;
     MOS6522::State mos6522;
-    AY3_8912::State ay3_8919;
+    AY3_8912::SoundState ay3_8919;
 
     std::vector<uint8_t> memory;
 };

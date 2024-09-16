@@ -140,7 +140,7 @@ bool Frontend::init_sound()
     audio_spec_want.freq     = 44100;
     audio_spec_want.format   = AUDIO_S16SYS;
     audio_spec_want.channels = 2;
-    audio_spec_want.samples  = 1024;
+    audio_spec_want.samples  = 2048;
     AY3_8912* ay3 = oric->get_machine().ay3;
     audio_spec_want.callback = ay3->audio_callback;
     audio_spec_want.userdata = (void*) ay3;
@@ -167,7 +167,7 @@ bool Frontend::init_sound()
     std::cout << "channels: " << (int) audio_spec.channels << std::endl;
     std::cout << "samples: " << (int) audio_spec.samples << std::endl;
 
-    SDL_PauseAudioDevice(sound_audio_device_id, 1);
+//    SDL_PauseAudioDevice(sound_audio_device_id, 1);
 
     return true;
 }
