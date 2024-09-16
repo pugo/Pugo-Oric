@@ -114,6 +114,13 @@ void Oric::do_break()
 {
     last_command = "";
     last_address = 0;
+
+    std::cout << std::endl;
+    std::cout << "* Oric Monitor *" << std::endl << std::endl;
+    std::cout << "        Ctrl-c : to exit the emulator" << std::endl;
+    std::cout << "    g <return> : to continue the emulation" << std::endl;
+    std::cout << "    h <return> : for help" << std::endl << std::endl;
+
     state = STATE_MON;
 }
 
@@ -152,20 +159,20 @@ Oric::State Oric::handle_command(std::string& command_line)
 
     if (cmd == "h") {
         std::cout << "Available monitor commands:" << std::endl << std::endl;
-        std::cout << "h              : help (showing this text)" << std::endl;
-        std::cout << "g              : go (continue)" << std::endl;
-        std::cout << "g <address>    : go to address and run" << std::endl;
-        std::cout << "pc <address>   : set program counter to address" << std::endl;
-        std::cout << "s [n]          : step one or possible n steps" << std::endl;
-        std::cout << "ay             : print AY-3-8912 sound chip info" << std::endl;
-        std::cout << "i              : print machine info" << std::endl;
-        std::cout << "v              : print VIA (6522) info" << std::endl;
-        std::cout << "d              : disassemble from PC" << std::endl;
-        std::cout << "d <address> <n>: disassemble from address and n bytes ahead" << std::endl;
-        std::cout << "m <address> <n>: dump memory from address and n bytes ahead" << std::endl;
-        std::cout << "quiet          : prevent debug output at run time" << std::endl;
-        std::cout << "debug          : show debug output at run time" << std::endl;
-        std::cout << "sr, softreset  : soft reset oric" << std::endl;
+        std::cout << "h               : help (showing this text)" << std::endl;
+        std::cout << "g               : go (continue)" << std::endl;
+        std::cout << "g <address>     : go to address and run" << std::endl;
+        std::cout << "pc <address>    : set program counter to address" << std::endl;
+        std::cout << "s [n]           : step one or possible n steps" << std::endl;
+        std::cout << "ay              : print AY-3-8912 sound chip info" << std::endl;
+        std::cout << "i               : print machine info" << std::endl;
+        std::cout << "v               : print VIA (6522) info" << std::endl;
+        std::cout << "d               : disassemble from PC" << std::endl;
+        std::cout << "d <address> <n> : disassemble from address and n bytes ahead" << std::endl;
+        std::cout << "m <address> <n> : dump memory from address and n bytes ahead" << std::endl;
+        std::cout << "quiet           : prevent debug output at run time" << std::endl;
+        std::cout << "debug           : show debug output at run time" << std::endl;
+        std::cout << "sr, softreset   : soft reset oric" << std::endl;
         std::cout << "" << std::endl;
         return STATE_MON;
     }
