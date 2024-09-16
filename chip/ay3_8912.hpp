@@ -29,6 +29,7 @@ typedef uint8_t (*f_write_data_handler)(Machine &oric);
 
 constexpr size_t register_changes_size = 32768;
 
+
 class Channel
 {
 public:
@@ -101,6 +102,32 @@ public:
 };
 
 
+struct RegisterChange
+{
+    uint32_t cycle;
+    uint8_t register_index;
+    uint8_t value;
+};
+
+class State;
+
+class RegisterChanges
+{
+public:
+    RegisterChanges();
+
+    void reset();
+    void exec();
+
+    std::array<RegisterChange, register_changes_size> changes;
+    uint32_t changes_count;
+
+    uint32_t new_log_cycle;
+    uint32_t log_cycle;
+    bool update_log_cycle;
+};
+
+
 class AY3_8912
 {
 public:
@@ -129,6 +156,14 @@ public:
         void reset();
         void print_status();
 
+        void write_register_change(uint8_t value);
+        void exec_register_change(RegisterChange& register_change);
+
+        /**
+         * Execute audio a number of clock cycles.
+          */
+        short exec_audio(uint16_t cycles);
+
         bool bdir;
         bool bc1;
         bool bc2;
@@ -138,17 +173,16 @@ public:
         uint8_t audio_registers[NUM_REGS];
         uint32_t audio_out;
 
+        RegisterChanges changes;
         Channel channels[3];
         Noise noise;
         Envelope envelope;
+
+        uint32_t cycles_per_sample;
+        uint32_t cycle_count;
+        uint32_t last_cycle;
     };
 
-    struct RegisterChange
-    {
-        uint32_t cycle;
-        uint8_t register_index;
-        uint8_t value;
-    };
 
     AY3_8912(Machine& machine);
     ~AY3_8912();
@@ -179,11 +213,6 @@ public:
      * Execute a number of clock cycles.
      */
     short exec();
-
-    /**
-     * Execute audio a number of clock cycles.
-     */
-    short exec_audio(uint16_t cycles);
 
     /**
      * Update AY state based on BC1 and BDIR.
@@ -250,27 +279,14 @@ public:
      */
     static void audio_callback(void* user_data, uint8_t* raw_buffer, int len);
 
-    void write_register_change(AY3_8912::RegisterChange& register_change);
+//    void write_register_change(RegisterChange& register_change);
 
     f_read_data_handler m_read_data_handler;
     f_write_data_handler m_write_data_handler;
 
-    uint32_t register_changes_count;
-    uint32_t register_changes_cycle;
-    std::array<RegisterChange, register_changes_size> register_changes;
-
-    uint32_t shifted_cycles_per_sample;
-    uint32_t shifted_cycle_count;
-    uint32_t last_cycle;
-    uint8_t handle_key_change;
-
-    uint32_t new_log_cycle;
-    uint32_t log_cycle;
-    bool update_log_cycle;
-
 private:
     Machine& machine;
-    AY3_8912::State state;
+    State state;
 };
 
 #endif // AY3_8912_H

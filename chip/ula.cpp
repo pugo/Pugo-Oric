@@ -60,7 +60,7 @@ bool ULA::paint_raster()
     if (++raster_current == raster_max) {
         raster_current = 0;
         if (machine->warpmode_on) {
-            warpmode_counter = (warpmode_counter + 1) % 10;
+            warpmode_counter = (warpmode_counter + 1) % 25;
             if (warpmode_counter) {
                 return false;
             }
