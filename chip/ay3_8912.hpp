@@ -20,6 +20,7 @@
 
 #include <memory>
 #include <array>
+#include <boost/circular_buffer.hpp>
 
 class Snapshot;
 class Machine;
@@ -118,8 +119,7 @@ public:
     void reset();
     void exec();
 
-    std::array<RegisterChange, register_changes_size> changes;
-    uint32_t size;
+    boost::circular_buffer<RegisterChange> buffer;
 
     uint32_t new_log_cycle;
     uint32_t log_cycle;
@@ -163,14 +163,12 @@ public:
 
         /**
          * Execute register changes.
-         * @param changes_written changes written this far
          * @param cycle current cycle
          */
-        void exec_register_changes(uint32_t& changes_written, uint32_t cycle) {
-            while ((changes_written < changes.size) &&
-                   (cycle >= changes.changes[changes_written].cycle))
-            {
-                exec_register_change(changes.changes[changes_written++]);
+        void exec_register_changes(uint32_t cycle) {
+            while (cycle >= changes.buffer[0].cycle && !changes.buffer.empty()) {
+                exec_register_change(changes.buffer[0]);
+                changes.buffer.pop_front();
             }
         }
 
@@ -182,9 +180,8 @@ public:
 
         /**
          * Trim the array of register changes.
-         * @param changes_written number of changes that were written.
          */
-        void trim_register_changes(uint32_t changes_written);
+        void trim_register_changes();
 
         /**
          * Execute audio a number of clock cycles.

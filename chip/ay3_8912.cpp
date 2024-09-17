@@ -171,18 +171,19 @@ void Envelope::reset()
 
 
 RegisterChanges::RegisterChanges() :
-    size(0),
     log_cycle(0),
     new_log_cycle(0),
     update_log_cycle(false)
-{}
+{
+    buffer.set_capacity(register_changes_size);
+}
 
 void RegisterChanges::reset()
 {
-    size = 0;
     log_cycle = 0;
     new_log_cycle = 0;
     update_log_cycle = false;
+    buffer.set_capacity(register_changes_size);
 }
 
 void RegisterChanges::exec()
@@ -235,37 +236,24 @@ void AY3_8912::SoundState::write_register_change(uint8_t value)
         changes.update_log_cycle = false;
     }
 
-    changes.changes[changes.size].cycle = changes.log_cycle;
-    changes.changes[changes.size].register_index = current_register;
-    changes.changes[changes.size].value = value;
-    ++changes.size;
+    changes.buffer.push_back({changes.log_cycle, current_register, value});
 }
 
-void AY3_8912::SoundState::trim_register_changes(uint32_t changes_written)
+void AY3_8912::SoundState::trim_register_changes()
 {
-    if (changes.size > changes_written) {
-        // Move yet not written register changes to beginning of array.
-        memmove(&changes.changes[0], &changes.changes[changes_written],
-                (changes.size - changes_written) * sizeof(RegisterChange));
-
-        // Change change cycles to be relative to local counting.
-        changes.size -= changes_written;
-        for (size_t i = 0; i < changes.size; i++) {
-            if (changes.changes[i].cycle > last_cycle)
-                changes.changes[i].cycle -= last_cycle;
-            else
-                changes.changes[i].cycle = 0;
-        }
-
-        if (changes.size > 200) {
-            for (uint32_t i = 0; i < changes.size; i++) {
-                exec_register_change(changes.changes[i]);
-            }
-            changes.size = 0;
-        }
+    // Change change cycles to be relative to local counting.
+    for (auto& rc : changes.buffer) {
+        if (rc.cycle > last_cycle)
+            rc.cycle -= last_cycle;
+        else
+            rc.cycle = 0;
     }
-    else {
-        changes.size = 0;
+
+    if (changes.buffer.size() > 200) {
+        for (auto& rc : changes.buffer) {
+            exec_register_change(rc);
+        }
+        changes.buffer.clear();
     }
 }
 
@@ -486,9 +474,11 @@ void AY3_8912::update_state()
                 case ENV_DURATION_LOW:
                 case ENV_DURATION_HIGH:
                 case ENV_SHAPE:
-                    machine.frontend->lock_audio();
-                    state.write_register_change(value);
-                    machine.frontend->unlock_audio();
+                    if (! machine.warpmode_on) {
+                        machine.frontend->lock_audio();
+                        state.write_register_change(value);
+                        machine.frontend->unlock_audio();
+                    }
                     break;
                 case IO_PORT_A:
                     break;
@@ -543,7 +533,6 @@ void AY3_8912::audio_callback(void* user_data, uint8_t* raw_buffer, int len)
     uint16_t* buffer = (uint16_t*)raw_buffer;
     uint16_t samples = len/4;
 
-    uint32_t changes_written = 0;
     uint32_t current_sample = 0;
 
     if (ay->machine.warpmode_on) return;
@@ -551,7 +540,7 @@ void AY3_8912::audio_callback(void* user_data, uint8_t* raw_buffer, int len)
     for (size_t sample = 0; sample < samples; sample++) {
         uint32_t current_cycle = ay->state.cycle_count >> cycle_shift;
 
-        ay->state.exec_register_changes(changes_written, current_cycle);
+        ay->state.exec_register_changes(current_cycle);
         ay->state.exec_audio(current_cycle);
 
         buffer[current_sample++] = ay->state.audio_out;
@@ -560,7 +549,7 @@ void AY3_8912::audio_callback(void* user_data, uint8_t* raw_buffer, int len)
         ay->state.cycle_count += ay->state.cycles_per_sample;
     }
 
-    ay->state.trim_register_changes(changes_written);
+    ay->state.trim_register_changes();
 
     ay->state.cycle_count -= ay->state.last_cycle << cycle_shift;
     ay->state.last_cycle = 0;
