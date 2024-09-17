@@ -215,8 +215,47 @@
 #define TXS         0x9A
 #define TYA         0x98
 
+#define ILL_NOP_IMP_1A  0x1A
+#define ILL_NOP_IMP_3A  0x3A
+#define ILL_NOP_IMP_5A  0x5A
+#define ILL_NOP_IMP_7A  0x7A
+#define ILL_NOP_IMP_DA  0xDA
+#define ILL_NOP_IMP_FA  0xFA
+
+#define ILL_NOP_IMM_80  0x80
+#define ILL_NOP_IMM_82  0x82
+#define ILL_NOP_IMM_89  0x89
+#define ILL_NOP_IMM_C2  0xC2
+#define ILL_NOP_IMM_E2  0xE2
+
+#define ILL_NOP_ZP_04   0x04
+#define ILL_NOP_ZP_44   0x44
+#define ILL_NOP_ZP_64   0x64
+
+#define ILL_NOP_ZPX_14  0x14
+#define ILL_NOP_ZPX_34  0x34
+#define ILL_NOP_ZPX_54  0x54
+#define ILL_NOP_ZPX_74  0x74
+#define ILL_NOP_ZPX_D4  0xD4
+#define ILL_NOP_ZPX_F4  0xF4
+
+#define ILL_NOP_ABS_0C  0x0C
+
+#define ILL_NOP_ABS_X_1C  0x1C
+#define ILL_NOP_ABS_X_3C  0x3C
+#define ILL_NOP_ABS_X_5C  0x5C
+#define ILL_NOP_ABS_X_7C  0x7C
+#define ILL_NOP_ABS_X_DC  0xDC
+#define ILL_NOP_ABS_X_FC  0xFC
+
 #define ILL_SLO_IND_X 0x03
+#define ILL_SLO_IND_Y 0x13
 
 #define ILL_RLA_IND_Y 0x33
+
+#define ILL_SBX       0xCB
+
+#define ILL_ISC_ABS_X 0xFF
+
 
 #endif // MOS6502_OPCODES_H

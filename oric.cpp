@@ -115,11 +115,17 @@ void Oric::do_break()
     last_command = "";
     last_address = 0;
 
-    std::cout << std::endl;
-    std::cout << "* Oric Monitor *" << std::endl << std::endl;
-    std::cout << "        Ctrl-c : to exit the emulator" << std::endl;
-    std::cout << "    g <return> : to continue the emulation" << std::endl;
-    std::cout << "    h <return> : for help" << std::endl << std::endl;
+    if (state == STATE_MON) {
+        std::cout << std::endl << std::endl << " - Bye! -" << std::endl << std::endl;
+    }
+    else
+    {
+        std::cout << std::endl;
+        std::cout << "* Oric Monitor *" << std::endl << std::endl;
+        std::cout << "        Ctrl-c : to exit the emulator" << std::endl;
+        std::cout << "    g <return> : to continue the emulation" << std::endl;
+        std::cout << "    h <return> : for help" << std::endl << std::endl;
+    }
 
     state = STATE_MON;
 }

@@ -307,6 +307,12 @@ uint8_t MOS6502::time_instruction()
         case ORA_ABS_X:
         case EOR_ABS_X:
         case CMP_ABS_X:
+        case ILL_NOP_ABS_X_1C:
+        case ILL_NOP_ABS_X_3C:
+        case ILL_NOP_ABS_X_5C:
+        case ILL_NOP_ABS_X_7C:
+        case ILL_NOP_ABS_X_DC:
+        case ILL_NOP_ABS_X_FC:
             addr = PEEK_ADDR_ABS();
             extra += PAGECHECK(X) ? 1 : 0;
             break;
@@ -938,8 +944,8 @@ bool MOS6502::exec(bool& a_Brk)
             else
                 ++PC;
             break;
-
         case BVC:
+
             if (!V) {
                 PC = READ_JUMP_ADDR();
             }
@@ -1144,8 +1150,23 @@ bool MOS6502::exec(bool& a_Brk)
             SET_FLAG_NZ(X = SP);
             break;
 
+//        case ILL_SBX:
+//            i = (A & X) - READ_BYTE_IMM();
+//            SET_FLAG_NZ(i);
+//            C = i >= 0;
+//            X = i;
+//            break;
+
         case ILL_SLO_IND_X:
             b1 = memory_read_byte_handler(machine, addr = READ_ADDR_IND_X());
+            C = (b1 & 0x80) != 0;
+            b1 <<= 1;
+            memory_write_byte_handler(machine, addr, b1);
+            SET_FLAG_NZ(A |= b1);
+            break;
+
+        case ILL_SLO_IND_Y:
+            b1 = memory_read_byte_handler(machine, addr = READ_ADDR_IND_Y());
             C = (b1 & 0x80) != 0;
             b1 <<= 1;
             memory_write_byte_handler(machine, addr, b1);
@@ -1162,8 +1183,53 @@ bool MOS6502::exec(bool& a_Brk)
             SET_FLAG_NZ(A &= b1);
             break;
 
+        case ILL_NOP_IMP_1A:
+        case ILL_NOP_IMP_3A:
+        case ILL_NOP_IMP_5A:
+        case ILL_NOP_IMP_7A:
+        case ILL_NOP_IMP_DA:
+        case ILL_NOP_IMP_FA:
+            break;
+
+        case ILL_NOP_IMM_80:
+        case ILL_NOP_IMM_82:
+        case ILL_NOP_IMM_89:
+        case ILL_NOP_IMM_C2:
+        case ILL_NOP_IMM_E2:
+            i = READ_BYTE_IMM();
+            break;
+
+        case ILL_NOP_ZP_04:
+        case ILL_NOP_ZP_44:
+        case ILL_NOP_ZP_64:
+            addr = READ_ADDR_ZP();
+            break;
+
+        case ILL_NOP_ZPX_14:
+        case ILL_NOP_ZPX_34:
+        case ILL_NOP_ZPX_54:
+        case ILL_NOP_ZPX_74:
+        case ILL_NOP_ZPX_D4:
+        case ILL_NOP_ZPX_F4:
+            addr = READ_ADDR_ZP_X();
+            break;
+
+        case ILL_NOP_ABS_0C:
+            addr = READ_ADDR_ABS();
+            break;
+
+        case ILL_NOP_ABS_X_1C:
+        case ILL_NOP_ABS_X_3C:
+        case ILL_NOP_ABS_X_5C:
+        case ILL_NOP_ABS_X_7C:
+        case ILL_NOP_ABS_X_DC:
+        case ILL_NOP_ABS_X_FC:
+            addr = READ_ADDR_ABS_X();
+            break;
+
         default:
-            PrintStat(pc_initial);
+            std::cout << "Unhandled illegal opcode: $" << std::hex << (int)current_instruction << std::endl << std::endl;
+//            PrintStat(pc_initial);
             a_Brk = true;
             break;
     };
