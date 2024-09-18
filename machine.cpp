@@ -173,6 +173,11 @@ void Machine::run(Oric* oric)
 //                frontend->unlock_audio();
             }
 
+            if (break_exec) {
+                oric->do_break();
+                return;
+            }
+
             --cycle_count;
         }
 

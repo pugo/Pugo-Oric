@@ -98,7 +98,8 @@ MOS6502::MOS6502(Machine& a_Machine) :
     instruction_cycles(0),
     current_instruction(0),
     current_cycle(0),
-    monitor(memory)
+    monitor(memory),
+    has_breakpoints(false)
 {
 }
 
@@ -179,6 +180,13 @@ void MOS6502::load_from_snapshot(Snapshot& snapshot)
     instruction_cycles = snapshot.mos6502.instruction_cycles;
     current_instruction = snapshot.mos6502.current_instruction;
     current_cycle = snapshot.mos6502.current_cycle;
+}
+
+void MOS6502::set_breakpoint(uint16_t address)
+{
+    breakpoints.insert(address);
+    has_breakpoints = true;
+    std::cout << "Set breakpoint at $" << std::hex << address << std::endl;
 }
 
 void MOS6502::PrintStat()
@@ -401,7 +409,7 @@ uint8_t MOS6502::time_instruction()
 }
 
 
-bool MOS6502::exec(bool& a_Brk)
+bool MOS6502::exec(bool& do_break)
 {
     if (instruction_load) {
         instruction_load = false;
@@ -427,7 +435,12 @@ bool MOS6502::exec(bool& a_Brk)
                 PC = memory_read_word_handler(machine, IRQ_VECTOR_L);
                 irq_flag = false;
             }
+        }
 
+        if (has_breakpoints && breakpoints.contains(PC)) {
+            std::cout << "Found breakpoint at $" << std::hex << PC << std::endl;
+            do_break = true;
+            return false;
         }
     }
 
@@ -1105,7 +1118,7 @@ bool MOS6502::exec(bool& a_Brk)
             I = true;
             D = false;
             PC = memory_read_word_handler(machine, IRQ_VECTOR_L);
-            a_Brk = true;
+            do_break = true;
             break;
 
         case RTI:  // Return from interrupt
@@ -1230,7 +1243,7 @@ bool MOS6502::exec(bool& a_Brk)
         default:
             std::cout << "Unhandled illegal opcode: $" << std::hex << (int)current_instruction << std::endl << std::endl;
 //            PrintStat(pc_initial);
-            a_Brk = true;
+            do_break = true;
             break;
     };
 

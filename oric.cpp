@@ -165,25 +165,65 @@ Oric::State Oric::handle_command(std::string& command_line)
 
     if (cmd == "h") {
         std::cout << "Available monitor commands:" << std::endl << std::endl;
-        std::cout << "h               : help (showing this text)" << std::endl;
-        std::cout << "g               : go (continue)" << std::endl;
-        std::cout << "g <address>     : go to address and run" << std::endl;
-        std::cout << "pc <address>    : set program counter to address" << std::endl;
-        std::cout << "s [n]           : step one or possible n steps" << std::endl;
         std::cout << "ay              : print AY-3-8912 sound chip info" << std::endl;
-        std::cout << "i               : print machine info" << std::endl;
-        std::cout << "v               : print VIA (6522) info" << std::endl;
+        std::cout << "bs <address>    : set breakpoint for address" << std::endl;
         std::cout << "d               : disassemble from PC" << std::endl;
         std::cout << "d <address> <n> : disassemble from address and n bytes ahead" << std::endl;
-        std::cout << "m <address> <n> : dump memory from address and n bytes ahead" << std::endl;
-        std::cout << "quiet           : prevent debug output at run time" << std::endl;
         std::cout << "debug           : show debug output at run time" << std::endl;
+        std::cout << "g               : go (continue)" << std::endl;
+        std::cout << "g <address>     : go to address and run" << std::endl;
+        std::cout << "h               : help (showing this text)" << std::endl;
+        std::cout << "i               : print machine info" << std::endl;
+        std::cout << "m <address> <n> : dump memory from address and n bytes ahead" << std::endl;
+        std::cout << "pc <address>    : set program counter to address" << std::endl;
+        std::cout << "quiet           : prevent debug output at run time" << std::endl;
+        std::cout << "q               : quit" << std::endl;
+        std::cout << "s [n]           : step one or possible n steps" << std::endl;
         std::cout << "sr, softreset   : soft reset oric" << std::endl;
+        std::cout << "v               : print VIA (6522) info" << std::endl;
         std::cout << "" << std::endl;
         return STATE_MON;
     }
+    else if (cmd == "ay") { // info
+        machine->ay3->print_status();
+    }
+    else if (cmd == "bs") { // set breakpoint <address>
+        if (parts.size() < 2) {
+            std::cout << "Error: missing address" << std::endl;
+            return STATE_MON;
+        }
+        uint16_t addr = string_to_word(parts[1]);
+        machine->cpu->set_breakpoint(addr);
+    }
+    else if (cmd == "d") { // info
+        if (parts.size() == 1) {
+            uint16_t addr = (last_address == 0) ? machine->cpu->get_pc() : last_address;
+            last_address = machine->cpu->get_monitor().disassemble(addr, 30);
+            return STATE_MON;
+        }
+        if (parts.size() < 3) {
+            std::cout << "Use: d <start address> <length>" << std::endl;
+            return STATE_MON;
+        }
+        last_address = machine->cpu->get_monitor().disassemble(string_to_word(parts[1]), string_to_word(parts[2]));
+    }
+    else if (cmd == "debug") {
+        machine->cpu->set_quiet(false);
+        std::cout << "Debug mode enabled" << std::endl;
+    }
     else if (cmd == "g") { // go <address>
         return STATE_RUN;
+    }
+    else if (cmd == "i") { // info
+        std::cout << "PC: " << machine->cpu->get_pc() << std::endl;
+        machine->cpu->PrintStat();
+    }
+    else if (cmd == "m") { // info
+        if (parts.size() < 3) {
+            std::cout << "Use: m <start address> <length>" << std::endl;
+            return STATE_MON;
+        }
+        machine->memory.show(string_to_word(parts[1]), string_to_word(parts[2]));
     }
     else if (cmd == "pc") { // set pc
         if (parts.size() < 2) {
@@ -193,6 +233,14 @@ Oric::State Oric::handle_command(std::string& command_line)
         uint16_t addr = string_to_word(parts[1]);
         machine->cpu->set_pc(addr);
         machine->cpu->PrintStat();
+    }
+    else if (cmd == "q") { // quit
+        std::cout << "quit" << std::endl;
+        return STATE_QUIT;
+    }
+    else if (cmd == "quiet") {
+        machine->cpu->set_quiet(true);
+        std::cout << "Quiet mode enabled" << std::endl;
     }
     else if (cmd == "s") { // step
         if (parts.size() == 2) {
@@ -207,52 +255,12 @@ Oric::State Oric::handle_command(std::string& command_line)
         }
         machine->cpu->PrintStat();
     }
-    else if (cmd == "ay") { // info
-        machine->ay3->print_status();
-    }
-    else if (cmd == "i") { // info
-        std::cout << "PC: " << machine->cpu->get_pc() << std::endl;
-        machine->cpu->PrintStat();
-    }
-    else if (cmd == "d") { // info
-        if (parts.size() == 1) {
-            uint16_t addr = (last_address == 0) ? machine->cpu->get_pc() : last_address;
-            last_address = machine->cpu->get_monitor().disassemble(addr, 30);
-            return STATE_MON;
-        }
-        if (parts.size() < 3) {
-            std::cout << "Use: d <start address> <length>" << std::endl;
-            return STATE_MON;
-        }
-        last_address = machine->cpu->get_monitor().disassemble(string_to_word(parts[1]), string_to_word(parts[2]));
-    }
-    else if (cmd == "v") { // info
-        machine->mos_6522->get_state().print();
-    }
-    else if (cmd == "m") { // info
-        if (parts.size() < 3) {
-            std::cout << "Use: m <start address> <length>" << std::endl;
-            return STATE_MON;
-        }
-        machine->memory.show(string_to_word(parts[1]), string_to_word(parts[2]));
-    }
-    else if (cmd == "quiet") {
-        machine->cpu->set_quiet(true);
-        std::cout << "Quiet mode enabled" << std::endl;
-    }
-    else if (cmd == "debug") {
-        machine->cpu->set_quiet(false);
-        std::cout << "Debug mode enabled" << std::endl;
-    }
-
     else if (cmd == "sr" || cmd == "softreset") {
         machine->cpu->NMI();
         std::cout << "NMI triggered" << std::endl;
     }
-
-    else if (cmd == "q") { // quit
-        std::cout << "quit" << std::endl;
-        return STATE_QUIT;
+    else if (cmd == "v") { // info
+        machine->mos_6522->get_state().print();
     }
 
     return STATE_MON;

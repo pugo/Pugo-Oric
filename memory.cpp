@@ -22,6 +22,7 @@
 #include <sstream>
 #include <iomanip>
 #include <string.h>
+#include <algorithm>
 
 #include "memory.hpp"
 #include "snapshot.hpp"
@@ -36,7 +37,8 @@ Memory::Memory(uint32_t size) :
     memory(size)
 {
     mem = memory.data();
-    memset(mem, 0, size);
+
+    std::fill(memory.begin(), memory.end(), 0x00);
 }
 
 Memory::~Memory()

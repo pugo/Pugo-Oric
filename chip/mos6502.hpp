@@ -32,6 +32,7 @@
 #include "snapshot.hpp"
 
 #include <memory>
+#include <set>
 
 
 #define STACK_BOTTOM 0x0100
@@ -125,10 +126,10 @@ public:
 
     /**
      * Execute instruction *cycle*.
-     * @param a_Brk reference to varianble set to true if break is triggered
+     * @param do_break reference to varianble set to true if break is triggered
      * @return true if instruction was executed (not all cycles execute full instruction)
      */
-    bool exec(bool& a_Brk);
+    bool exec(bool& do_break);
 
     /**
      * Save CPU state to snapshot.
@@ -141,6 +142,8 @@ public:
      * @param snapshot reference to snapshot
      */
     void load_from_snapshot(Snapshot& snapshot);
+
+    void set_breakpoint(uint16_t address);
 
     // The public exposure of variables like below is uncommon for normal projects,
     // but this is an emulator where the chips must be able to quickly access each
@@ -217,6 +220,9 @@ protected:
     uint8_t current_cycle;
 
     Monitor monitor;
+
+    std::set<uint16_t> breakpoints;
+    bool has_breakpoints;
 };
 
 #endif // MOS6502_H
