@@ -189,7 +189,7 @@ void Machine::run(Oric* oric)
             }
 
             gettimeofday(&tv, NULL);
-            uint64_t now = tv.tv_sec * 1000000 + tv.tv_usec + 20000;
+            uint64_t now = tv.tv_sec * 1000000 + tv.tv_usec;
             if (now > next_frame) {
                 next_frame = now;
             }

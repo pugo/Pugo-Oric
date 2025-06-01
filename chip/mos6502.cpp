@@ -1118,7 +1118,6 @@ bool MOS6502::exec(bool& do_break)
             I = true;
             D = false;
             PC = memory_read_word_handler(machine, IRQ_VECTOR_L);
-            do_break = true;
             break;
 
         case RTI:  // Return from interrupt
