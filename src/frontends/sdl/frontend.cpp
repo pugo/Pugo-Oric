@@ -68,7 +68,9 @@ Frontend::Frontend(Oric& oric) :
     gui(oric),
     oric_texture(texture_width, texture_height, texture_bpp),
     sound_audio_stream(nullptr),
-    audio_locked(false)
+    audio_locked(false),
+    current_window_width(0),
+    current_window_height(0)
 {
     for (uint8_t i = 0; i < 64; ++i) {
         if (scancode_map[i] != 0) {
@@ -98,16 +100,19 @@ bool Frontend::init_graphics()
         return false;
     }
 
-    auto zoom = oric.get_config().zoom();
-    BOOST_LOG_TRIVIAL(debug) << "Setting zoom to: " << static_cast<int>(zoom);
+    auto initial_zoom = oric.get_config().zoom();
+    BOOST_LOG_TRIVIAL(debug) << "Setting initial zoom to: " << static_cast<int>(initial_zoom);
 
-    oric_texture.set_render_zoom(zoom);
+    // Calculate initial window size based on zoom multiplier
+    uint16_t content_width = texture_width * initial_zoom;
+    uint16_t content_height = texture_height * initial_zoom;
 
-    oric_texture.render_rect.x = border_size_horizontal;
-    oric_texture.render_rect.y = border_size_vertical;
+    uint16_t width = content_width + (border_size_horizontal * 2);
+    uint16_t height = content_height + status_bar_height + (border_size_vertical * 2);
 
-    uint16_t width = oric_texture.render_rect.w + (border_size_horizontal * 2);
-    uint16_t height = oric_texture.render_rect.h + status_bar_height + (border_size_vertical * 2);
+    // Store initial window dimensions for tracking resizes
+    current_window_width = width;
+    current_window_height = height;
 
     gui.status_bar().set_size(width, status_bar_height);
     gui.status_bar().set_position(0, height - status_bar_height);
@@ -122,6 +127,11 @@ bool Frontend::init_graphics()
         BOOST_LOG_TRIVIAL(error) << "Window could not be created! SDL_Error: " << SDL_GetError();
         return false;
     }
+
+    // Set minimum window size to ensure content is always visible
+    uint16_t min_width = texture_width + (border_size_horizontal * 2);
+    uint16_t min_height = texture_height + status_bar_height + (border_size_vertical * 2);
+    SDL_SetWindowMinimumSize(sdl_window, min_width, min_height);
 
     gl_context = SDL_GL_CreateContext(sdl_window);
     if (gl_context == nullptr) {
@@ -151,53 +161,7 @@ bool Frontend::init_graphics()
         }
     }
 
-    gl_program = create_screen_program();
-    if (gl_program == 0) {
-        return false;
-    }
-    const GLint pos_attr = glGetAttribLocation(gl_program, "a_pos");
-    const GLint uv_attr = glGetAttribLocation(gl_program, "a_uv");
-    if (pos_attr < 0 || uv_attr < 0) {
-        BOOST_LOG_TRIVIAL(error) << "Failed to resolve OpenGL shader attributes";
-        return false;
-    }
-    gl_u_texture = glGetUniformLocation(gl_program, "u_texture");
-    if (gl_u_texture < 0) {
-        BOOST_LOG_TRIVIAL(error) << "Failed to resolve OpenGL shader uniforms";
-        return false;
-    }
-
-    gl_u_enable_scanlines = glGetUniformLocation(gl_program, "u_enable_scanlines");
-    gl_u_enable_vertical_lines = glGetUniformLocation(gl_program, "u_enable_vertical_lines");
-    gl_u_enable_vignette = glGetUniformLocation(gl_program, "u_enable_vignette");
-    gl_u_vignette_strength = glGetUniformLocation(gl_program, "u_vignette_strength");
-    gl_u_texture_height = glGetUniformLocation(gl_program, "u_texture_height");
-
-    glGenVertexArrays(1, &gl_vao);
-    glBindVertexArray(gl_vao);
-    glGenBuffers(1, &gl_vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, gl_vbo);
-    glBufferData(GL_ARRAY_BUFFER, 16 * sizeof(float), nullptr, GL_DYNAMIC_DRAW);
-    glEnableVertexAttribArray(static_cast<GLuint>(pos_attr));
-    glVertexAttribPointer(static_cast<GLuint>(pos_attr), 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), reinterpret_cast<void*>(0));
-    glEnableVertexAttribArray(static_cast<GLuint>(uv_attr));
-    glVertexAttribPointer(static_cast<GLuint>(uv_attr), 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), reinterpret_cast<void*>(2 * sizeof(float)));
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
-
-    if (! oric_texture.create_texture()) {
-        return false;
-    }
-
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
-    SDL_GL_SwapWindow(sdl_window);
-
-    // Initialize Dear Imgui GUI.
-    gui.set_video_params(enable_scanlines > 0, enable_vertical_lines > 0, enable_vignette > 0, vignette_strength);
-    gui.init(sdl_window, gl_context);
-
-    return true;
+    return init_gl();
 }
 
 
@@ -321,6 +285,12 @@ bool Frontend::handle_frame()
         if (!wanted_mouse) {
             switch (event.type)
             {
+                case SDL_EVENT_WINDOW_RESIZED:
+                    if (event.window.windowID == SDL_GetWindowID(sdl_window)) {
+                        // Window was resized, dimensions will be recalculated in render_graphics
+                    }
+                    break;
+
                 case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
                     if (event.window.windowID == SDL_GetWindowID(sdl_window)) {
                         oric.do_quit();
@@ -339,6 +309,11 @@ void Frontend::render_graphics(std::vector<uint8_t>& pixels)
     int window_width = 0;
     int window_height = 0;
     SDL_GetWindowSizeInPixels(sdl_window, &window_width, &window_height);
+
+    // Check if window size has changed and recalculate render rect
+    if (window_width != current_window_width || window_height != current_window_height) {
+        handle_window_resize(window_width, window_height);
+    }
 
     glViewport(0, 0, window_width, window_height);
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -383,33 +358,55 @@ void Frontend::render_graphics(std::vector<uint8_t>& pixels)
 }
 
 
-void SDLCALL open_file_callback(void *userdata, const char *const *filelist, int filter)
+bool Frontend::init_gl()
 {
-    if (!filelist) {
-        printf("No file selected\n");
-        return;
+    gl_program = create_screen_program();
+    if (gl_program == 0) {
+        return false;
+    }
+    const GLint pos_attr = glGetAttribLocation(gl_program, "a_pos");
+    const GLint uv_attr = glGetAttribLocation(gl_program, "a_uv");
+    if (pos_attr < 0 || uv_attr < 0) {
+        BOOST_LOG_TRIVIAL(error) << "Failed to resolve OpenGL shader attributes";
+        return false;
+    }
+    gl_u_texture = glGetUniformLocation(gl_program, "u_texture");
+    if (gl_u_texture < 0) {
+        BOOST_LOG_TRIVIAL(error) << "Failed to resolve OpenGL shader uniforms";
+        return false;
     }
 
-    printf("Selected files:\n");
+    gl_u_enable_scanlines = glGetUniformLocation(gl_program, "u_enable_scanlines");
+    gl_u_enable_vertical_lines = glGetUniformLocation(gl_program, "u_enable_vertical_lines");
+    gl_u_enable_vignette = glGetUniformLocation(gl_program, "u_enable_vignette");
+    gl_u_vignette_strength = glGetUniformLocation(gl_program, "u_vignette_strength");
+    gl_u_texture_height = glGetUniformLocation(gl_program, "u_texture_height");
 
-    for (int i = 0; filelist[i]; i++) {
-        printf("  %s\n", filelist[i]);
+    glGenVertexArrays(1, &gl_vao);
+    glBindVertexArray(gl_vao);
+    glGenBuffers(1, &gl_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, gl_vbo);
+    glBufferData(GL_ARRAY_BUFFER, 16 * sizeof(float), nullptr, GL_DYNAMIC_DRAW);
+    glEnableVertexAttribArray(static_cast<GLuint>(pos_attr));
+    glVertexAttribPointer(static_cast<GLuint>(pos_attr), 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), reinterpret_cast<void*>(0));
+    glEnableVertexAttribArray(static_cast<GLuint>(uv_attr));
+    glVertexAttribPointer(static_cast<GLuint>(uv_attr), 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), reinterpret_cast<void*>(2 * sizeof(float)));
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+    if (! oric_texture.create_texture()) {
+        return false;
     }
-}
 
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+    SDL_GL_SwapWindow(sdl_window);
 
-std::optional<std::filesystem::path> Frontend::select_file(const std::string& title)
-{
-    auto result = FileSelectDialog::open(sdl_window, {"tap", "dsk", "rom"});
-    return result;
-}
+    // Initialize Dear Imgui GUI.
+    gui.set_video_params(enable_scanlines > 0, enable_vertical_lines > 0, enable_vignette > 0, vignette_strength);
+    gui.init(sdl_window, gl_context);
 
-
-void Frontend::close_sound() const
-{
-    if (sound_audio_stream) {
-        SDL_DestroyAudioStream(sound_audio_stream);
-    }
+    return true;
 }
 
 
@@ -452,3 +449,69 @@ void Frontend::close_sdl()
 {
     SDL_Quit(); // Quit all SDL subsystems
 }
+
+
+void Frontend::handle_window_resize(int32_t window_width, int32_t window_height)
+{
+    current_window_width = window_width;
+    current_window_height = window_height;
+
+    // Calculate available space for emulator output (excluding borders and status bar)
+    int available_width = window_width - (border_size_horizontal * 2);
+    int available_height = window_height - status_bar_height - (border_size_vertical * 2);
+
+    // Calculate zoom to fit available space (maintain aspect ratio)
+    float zoom_x = static_cast<float>(available_width) / texture_width;
+    float zoom_y = static_cast<float>(available_height) / texture_height;
+    float dynamic_zoom = std::min(zoom_x, zoom_y);
+
+    // Calculate new render dimensions
+    uint16_t new_width = static_cast<uint16_t>(texture_width * dynamic_zoom);
+    uint16_t new_height = static_cast<uint16_t>(texture_height * dynamic_zoom);
+
+    // Update render rect with new dimensions, centered horizontally
+    int total_border_width_available = window_width - new_width;
+    float x_offset = (total_border_width_available > 0) ? total_border_width_available / 2.0f : border_size_horizontal;
+
+    oric_texture.render_rect = {
+        x_offset,
+        static_cast<float>(border_size_vertical),
+        static_cast<float>(new_width),
+        static_cast<float>(new_height)
+    };
+
+    // Update status bar
+    gui.status_bar().set_position(0, window_height - status_bar_height);
+    gui.status_bar().set_size(window_width, status_bar_height);
+}
+
+
+void SDLCALL open_file_callback(void *userdata, const char *const *filelist, int filter)
+{
+    if (!filelist) {
+        printf("No file selected\n");
+        return;
+    }
+
+    printf("Selected files:\n");
+
+    for (int i = 0; filelist[i]; i++) {
+        printf("  %s\n", filelist[i]);
+    }
+}
+
+
+std::optional<std::filesystem::path> Frontend::select_file(const std::string& title)
+{
+    auto result = FileSelectDialog::open(sdl_window, {"tap", "dsk", "rom"});
+    return result;
+}
+
+
+void Frontend::close_sound() const
+{
+    if (sound_audio_stream) {
+        SDL_DestroyAudioStream(sound_audio_stream);
+    }
+}
+

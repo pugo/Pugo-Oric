@@ -130,6 +130,19 @@ public:
 
 protected:
     /**
+     * Initialize the OpenGL context and related resources.
+     * @return true on success, false on failure
+     */
+    bool init_gl();
+
+    /**
+     * Handle window resize, recalculating render rect and status bar position.
+     * @param window_width new window width in pixels
+     * @param window_height new window height in pixels
+     */
+    void handle_window_resize(int32_t window_width, int32_t window_height);
+
+    /**
      * Close graphics output.
      */
     void close_graphics();
@@ -169,6 +182,10 @@ protected:
     int32_t enable_vertical_lines;
     int32_t enable_vignette;
     float vignette_strength;
+
+    // Dynamic window resizing
+    int32_t current_window_width;
+    int32_t current_window_height;
 };
 
 
