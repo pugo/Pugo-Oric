@@ -128,6 +128,8 @@ bool Frontend::init_graphics()
         return false;
     }
 
+    handle_window_resize(width, height);
+
     // Set minimum window size to ensure content is always visible
     uint16_t min_width = texture_width + (border_size_horizontal * 2);
     uint16_t min_height = texture_height + status_bar_height + (border_size_vertical * 2);
