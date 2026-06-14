@@ -45,8 +45,6 @@ std::unordered_map<SDL_Scancode, uint8_t> oric_key_map;
 // ----- Frontend ----------------
 
 constexpr uint16_t status_bar_height = 20;
-constexpr uint16_t border_size_horizontal = 100;
-constexpr uint16_t border_size_vertical = 50;
 
 constexpr std::string window_title = "Auric";
 constexpr std::string window_icon_name = "window_icon.png";
@@ -100,39 +98,28 @@ bool Frontend::init_graphics()
         return false;
     }
 
-    auto initial_zoom = oric.get_config().zoom();
-    BOOST_LOG_TRIVIAL(debug) << "Setting initial zoom to: " << static_cast<int>(initial_zoom);
+    auto window_width = oric.get_config().window_width();
+    auto window_height = oric.get_config().window_height();
 
-    // Calculate initial window size based on zoom multiplier
-    uint16_t content_width = texture_width * initial_zoom;
-    uint16_t content_height = texture_height * initial_zoom;
-
-    uint16_t width = content_width + (border_size_horizontal * 2);
-    uint16_t height = content_height + status_bar_height + (border_size_vertical * 2);
-
-    // Store initial window dimensions for tracking resizes
-    current_window_width = width;
-    current_window_height = height;
-
-    gui.status_bar().set_size(width, status_bar_height);
-    gui.status_bar().set_position(0, height - status_bar_height);
+    gui.status_bar().set_size(window_width, status_bar_height);
+    gui.status_bar().set_position(0, window_height - status_bar_height);
 
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
-    sdl_window = SDL_CreateWindow(window_title.c_str(), width, height, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+    sdl_window = SDL_CreateWindow(window_title.c_str(), window_width, window_height, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
     if (sdl_window == nullptr) {
         BOOST_LOG_TRIVIAL(error) << "Window could not be created! SDL_Error: " << SDL_GetError();
         return false;
     }
 
-    handle_window_resize(width, height);
+    handle_window_resize(window_width, window_height);
 
     // Set minimum window size to ensure content is always visible
-    uint16_t min_width = texture_width + (border_size_horizontal * 2);
-    uint16_t min_height = texture_height + status_bar_height + (border_size_vertical * 2);
+    uint16_t min_width = texture_width * 1.10;
+    uint16_t min_height = texture_height * 1.10;
     SDL_SetWindowMinimumSize(sdl_window, min_width, min_height);
 
     gl_context = SDL_GL_CreateContext(sdl_window);
@@ -458,13 +445,15 @@ void Frontend::handle_window_resize(int32_t window_width, int32_t window_height)
     current_window_width = window_width;
     current_window_height = window_height;
 
-    // Calculate available space for emulator output (excluding borders and status bar)
-    int available_width = window_width - (border_size_horizontal * 2);
-    int available_height = window_height - status_bar_height - (border_size_vertical * 2);
+    uint16_t border_width = window_width * 0.05f;
+    uint16_t border_height = window_height * 0.05f;
+
+    uint16_t content_width = window_width - (border_width * 2);
+    uint16_t content_height = window_height - (border_height * 2);
 
     // Calculate zoom to fit available space (maintain aspect ratio)
-    float zoom_x = static_cast<float>(available_width) / texture_width;
-    float zoom_y = static_cast<float>(available_height) / texture_height;
+    float zoom_x = static_cast<float>(content_width) / texture_width;
+    float zoom_y = static_cast<float>(content_height) / texture_height;
     float dynamic_zoom = std::min(zoom_x, zoom_y);
 
     // Calculate new render dimensions
@@ -473,11 +462,11 @@ void Frontend::handle_window_resize(int32_t window_width, int32_t window_height)
 
     // Update render rect with new dimensions, centered horizontally
     int total_border_width_available = window_width - new_width;
-    float x_offset = (total_border_width_available > 0) ? total_border_width_available / 2.0f : border_size_horizontal;
+    float x_offset = (total_border_width_available > 0) ? total_border_width_available / 2.0f : border_width;
 
     oric_texture.render_rect = {
         x_offset,
-        static_cast<float>(border_size_vertical),
+        static_cast<float>(border_height),
         static_cast<float>(new_width),
         static_cast<float>(new_height)
     };

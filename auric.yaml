@@ -17,8 +17,9 @@ media:
   fonts_path: ./fonts
 
 video:
-  # Controls the zoom level of the display (1-10).
-  zoom: 3
+  # Controls the window width and height
+  window_width: 800
+  window_height: 600
 
   # Enable/disable CRT scan line artifacts.
   enable_scanlines: true

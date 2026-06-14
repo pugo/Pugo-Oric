@@ -84,6 +84,18 @@ public:
     uint8_t zoom() const { return _zoom; }
 
     /**
+     * Return window width in pixels.
+     * @return window width in pixels
+     */
+    uint16_t window_width() const { return _window_width; }
+
+    /**
+     * Return window height in pixels.
+     * @return window height in pixels
+     */
+    uint16_t window_height() const { return _window_height; }
+
+    /**
      * Return verbose mode.
      * @return true if verbose mode is enabled
      */
@@ -126,6 +138,8 @@ protected:
     bool _use_oric1_rom;
     std::filesystem::path _disk_path;
     std::filesystem::path _tape_path;
+    uint16_t _window_width;
+    uint16_t _window_height;
     uint8_t _zoom;
     bool _verbose;
 

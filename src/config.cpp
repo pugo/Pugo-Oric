@@ -66,7 +66,8 @@ bool Config::parse(int argc, char **argv)
 
         desc.add_options()
             ("help,?", "produce help message")
-            ("zoom,z", po::value<int>(&zoom_arg), "window zoom 1-10")
+            ("width,w", po::value<uint16_t>(&_window_width), "window width in pixels")
+            ("height,h", po::value<uint16_t>(&_window_height), "window height in pixels")
             ("monitor,m", po::bool_switch(&_start_in_monitor), "start in monitor mode")
             ("oric1,1", po::bool_switch(&_use_oric1_rom), "use Oric 1 mode (default: Atmos mode)")
             ("disk,d", po::value<std::filesystem::path>(&_disk_path), "disk image file to use")
@@ -83,10 +84,11 @@ bool Config::parse(int argc, char **argv)
             return false;
         }
 
-        // Read zoom only if provided.
-        if (!vm["zoom"].empty()) {
-            zoom_arg = std::clamp<int>(zoom_arg, 1, 10);  // Clamp zoom to 1-10.
-            _zoom = static_cast<uint8_t>(zoom_arg);
+        if (!vm["width"].empty()) {
+            _window_width = vm["width"].as<uint16_t>();
+        }
+        if (!vm["height"].empty()) {
+            _window_height = vm["height"].as<uint16_t>();
         }
 
         if (_verbose) {
@@ -158,10 +160,12 @@ bool Config::read_config_file(std::filesystem::path config_path)
     }
 
     if (yaml_config["video"]) {
-        if (yaml_config["video"]["zoom"]) {
-            int zoom_arg = yaml_config["video"]["zoom"].as<int>();
-            zoom_arg = std::clamp<int>(zoom_arg, 1, 10);
-            _zoom = static_cast<uint8_t>(zoom_arg);
+        if (yaml_config["video"]["window_width"]) {
+            _window_width = yaml_config["video"]["window_width"].as<uint16_t>();
+        }
+
+        if (yaml_config["video"]["window_height"]) {
+            _window_height = yaml_config["video"]["window_height"].as<uint16_t>();
         }
 
         if (yaml_config["video"]["enable_scanlines"]) {
