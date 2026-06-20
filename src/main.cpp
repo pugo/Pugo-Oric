@@ -21,7 +21,7 @@
 #include "oric.hpp"
 
 
-std::unique_ptr<Oric> oric;
+extern volatile std::sig_atomic_t sigint_received;
 
 #ifndef _WIN32
 struct sigaction sigact;
@@ -34,8 +34,7 @@ struct sigaction sigact;
 static void signal_handler(int signal)
 {
     if (signal == SIGINT) {
-        oric->get_machine().stop();
-        oric->do_break();
+        sigint_received = 1;
     }
 }
 
@@ -76,7 +75,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    oric = std::make_unique<Oric>(config);
+    auto oric = std::make_unique<Oric>(config);
     init_signals();
 
     try {

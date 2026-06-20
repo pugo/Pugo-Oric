@@ -84,6 +84,7 @@ Frontend::Frontend(Oric& oric) :
 
 Frontend::~Frontend()
 {
+    close_sound();
     close_graphics();
     close_sdl();
 }
@@ -405,6 +406,8 @@ void Frontend::close_graphics()
         SDL_GL_MakeCurrent(sdl_window, gl_context);
     }
 
+    gui.close();
+
     oric_texture.destroy_texture();
 
     if (gl_vbo != 0) {
@@ -419,8 +422,6 @@ void Frontend::close_graphics()
         glDeleteProgram(gl_program);
         gl_program = 0;
     }
-
-    gui.close();
 
     if (gl_context != nullptr) {
         SDL_GL_DestroyContext(gl_context);
@@ -499,10 +500,14 @@ std::optional<std::filesystem::path> Frontend::select_file(const std::string& ti
 }
 
 
-void Frontend::close_sound() const
+void Frontend::close_sound()
 {
     if (sound_audio_stream) {
+        if (audio_locked) {
+            SDL_UnlockAudioStream(sound_audio_stream);
+            audio_locked = false;
+        }
         SDL_DestroyAudioStream(sound_audio_stream);
+        sound_audio_stream = nullptr;
     }
 }
-

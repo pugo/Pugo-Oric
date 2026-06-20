@@ -82,6 +82,12 @@ public:
      */
     void do_quit();
 
+    /**
+     * Handle pending SIGINT from the main thread.
+     * @return true if the current run loop should stop immediately.
+     */
+    bool handle_sigint();
+
 protected:
     State handle_command(std::string& command_line);
     uint16_t string_to_word(std::string& addr);

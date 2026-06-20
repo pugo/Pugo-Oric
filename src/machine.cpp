@@ -221,6 +221,10 @@ void Machine::run(Oric* oric)
     cycle_count += cycles_per_raster;
 
     while (! break_exec) {
+        if (oric->handle_sigint()) {
+            return;
+        }
+
         if (sound_paused) {
             sound_pause_counter += 1;
 

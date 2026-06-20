@@ -104,7 +104,7 @@ public:
     /**
      * Close sound.
      */
-    void close_sound() const;
+    void close_sound();
 
     /**
      * Set artifact lines settings.

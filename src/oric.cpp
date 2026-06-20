@@ -17,6 +17,7 @@
 
 
 #include <format>
+#include <csignal>
 #include <iostream>
 #include <print>
 #include <sstream>
@@ -34,6 +35,8 @@
 
 namespace po = boost::program_options;
 
+volatile std::sig_atomic_t sigint_received = 0;
+
 
 Oric::Oric(Config& config) :
     config(config),
@@ -49,6 +52,11 @@ Oric::Oric(Config& config) :
 
 Oric::~Oric()
 {
+    if (frontend) {
+        frontend->close_sound();
+        frontend.reset();
+    }
+    machine.reset();
 }
 
 void check_rom_exists(std::filesystem::path path)
@@ -112,6 +120,10 @@ void Oric::run()
     bool do_run{true};
 
     while (do_run) {
+        if (handle_sigint()) {
+            continue;
+        }
+
         switch (state) {
             case STATE_RUN:
                 machine->run(this);
@@ -135,6 +147,24 @@ void Oric::run()
         }
     }
     frontend->close_sound();
+}
+
+bool Oric::handle_sigint()
+{
+    if (!sigint_received) {
+        return false;
+    }
+
+    sigint_received = 0;
+
+    if (state == STATE_MON) {
+        state = STATE_QUIT;
+        return true;
+    }
+
+    machine->stop();
+    do_break();
+    return true;
 }
 
 
