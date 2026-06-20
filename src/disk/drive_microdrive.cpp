@@ -36,13 +36,16 @@ DriveMicrodrive::DriveMicrodrive(Machine& machine) :
 
 DriveMicrodrive::~DriveMicrodrive()
 {
-    if (disk_image) {
-        disk_image->flush_if_dirty();
+    for (auto& disk_image : disk_images) {
+        if (disk_image) {
+            disk_image->flush_if_dirty(true);
+        }
     }
 }
 
 void DriveMicrodrive::State::reset()
 {
+    drive_number = 0;
     status = 0;
     interrupt_request = 0x80;
     data_request = 0x80;
@@ -53,25 +56,58 @@ bool DriveMicrodrive::init()
     return true;
 }
 
-bool DriveMicrodrive::insert_disk(const std::filesystem::path& path)
+bool DriveMicrodrive::insert_disk(const std::filesystem::path& path, uint8_t drive_number)
 {
+    if (drive_number >= disk_images.size()) {
+        BOOST_LOG_TRIVIAL(warning) << "Invalid drive number: " << (int)drive_number;
+        return false;
+    }
+
+    auto& disk_image = disk_images[drive_number];
+
     if (!std::filesystem::exists(path)) {
         BOOST_LOG_TRIVIAL(warning) << "Disk image not found: " << path.string();
         machine.frontend->get_status_bar().show_text_for(std::format("Disk image not found: {}", path.string()), 5s);
+        if (disk_image) {
+            disk_image->flush_if_dirty(true);
+        }
         disk_image = nullptr;
+        if (drive_number == state.drive_number) {
+            wd1793.selected_drive_changed();
+        }
+        return false;
+    }
+
+    if (disk_image) {
+        disk_image->flush_if_dirty(true);
+    }
+
+    auto new_disk_image = std::make_unique<DiskImage>(path);
+    if (!new_disk_image->init()) {
+        BOOST_LOG_TRIVIAL(warning) << "Failed to initialize disk image: " << path.string();
+        disk_image = nullptr;
+        if (drive_number == state.drive_number) {
+            wd1793.selected_drive_changed();
+        }
         return false;
     }
 
     disk_image_path = path;
-    disk_image = std::make_unique<DiskImage>(disk_image_path);
-    disk_image->init();
+    disk_image = std::move(new_disk_image);
+    if (drive_number == state.drive_number) {
+        wd1793.selected_drive_changed();
+    }
 
     return true;
 }
 
 DiskImage* DriveMicrodrive::get_disk_image()
 {
-    return disk_image.get();
+    if (state.drive_number >= disk_images.size()) {
+        return nullptr;
+    }
+
+    return disk_images[state.drive_number].get();
 }
 
 void DriveMicrodrive::reset()
@@ -92,8 +128,10 @@ void DriveMicrodrive::exec(uint8_t cycles)
 
 void DriveMicrodrive::exec_once_per_frame()
 {
-    if (disk_image) {
-        disk_image->flush_if_dirty();
+    for (auto& disk_image : disk_images) {
+        if (disk_image) {
+            disk_image->flush_if_dirty();
+        }
     }
 }
 
@@ -140,14 +178,32 @@ uint8_t DriveMicrodrive::read_byte(uint16_t offset)
 
 void DriveMicrodrive::write_byte(uint16_t offset, uint8_t value)
 {
-    // std::println("Microdrive write: {:04x} <- {:02x}", offset, value);
     if (offset == 0x4) {
+        const auto old_status = state.status;
         state.status = value;
 
-        wd1793.set_side_number((value & 0x10) ? 1 : 0);
-        wd1793.set_drive_number((value & 0x60) >> 5);
-        machine.set_oric_rom_enabled(value & 0x02);
-        machine.set_diskdrive_rom_enabled(!(value & 0x80));
+        const auto old_drive = state.drive_number;
+        const auto new_drive = (value & 0x60) >> 5;
+
+        if (new_drive != old_drive) {
+            state.drive_number = new_drive;
+            wd1793.selected_drive_changed();
+        }
+
+        const auto old_side = (old_status & 0x10) ? 1 : 0;
+        const auto new_side = (value & 0x10) ? 1 : 0;
+
+        if (new_side != old_side) {
+            wd1793.set_side_number(new_side);
+        }
+
+        if ((old_status ^ value) & 0x02) {
+            machine.set_oric_rom_enabled(value & 0x02);
+        }
+
+        if ((old_status ^ value) & 0x80) {
+            machine.set_diskdrive_rom_enabled(!(value & 0x80));
+        }
 
         if (state.status & MdInterruptEnabled && state.interrupt_request == 0) {
             machine.cpu->set_irq_source(IRQ_SOURCE_FDC);

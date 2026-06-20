@@ -18,6 +18,7 @@
 #ifndef CHIP_WD1793_H
 #define CHIP_WD1793_H
 
+#include <array>
 #include <cstdint>
 
 #include "disk/disk_image.hpp"
@@ -133,7 +134,6 @@ public:
 
         // Registers.
         unsigned char data;
-        uint8_t drive;
         uint8_t side;
         uint8_t track;                   // Desired track, not the current_track.
         uint8_t sector;                  // Desired sector, not the current_sector.
@@ -153,6 +153,7 @@ public:
         DiskTrack* current_track;
         DiskSector* current_sector;
         uint16_t offset;                 // Position within current sector data.
+        std::array<uint8_t, 6> address_data;
 
         void reset();
 
@@ -179,16 +180,15 @@ public:
     void reset();
 
     /**
-     * Set drive number.
-     * @param drive
-     */
-    void set_drive_number(uint8_t drive) { state.drive = drive; }
-
-    /**
      * Set side number.
      * @param drive
      */
     void set_side_number(uint8_t side);
+
+    /**
+     * Indicate that selected drive has changed.
+     */
+    void selected_drive_changed();
 
     /**
      * Read register value.
@@ -231,6 +231,7 @@ public:
 
 private:
     void do_command(uint8_t command);
+    void fail_type2_command(uint8_t status);
 
     bool set_track(uint8_t track);
     bool set_sector(uint8_t sector);

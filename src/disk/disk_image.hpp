@@ -59,6 +59,17 @@ public:
      * @return Pointer to the disk sector if found, nullptr otherwise.
      */
     DiskSector* get_sector(uint16_t sector_number);
+
+    /**
+     * Get first sector from the disk track.
+     * @return Pointer to the disk sector if found, nullptr otherwise.
+     */
+    DiskSector* get_first_sector();
+
+    /**
+     * Get number of sectors on the track.
+     * @return Number of sectors on the track.
+     */
     uint8_t sector_count() const { return sectors.size(); }
 
     /**
@@ -119,8 +130,16 @@ public:
      */
     bool init();
 
+    /**
+     * Mark the disk image as dirty (changed).
+     */
     void mark_dirty();
-    void flush_if_dirty();
+
+    /**
+     * Flush the disk image to the file if it is dirty.
+     * @param force If true, flush the image even if it is not dirty.
+     */
+    void flush_if_dirty(bool force = false);
 
     /**
      * Get a track from the specified side and track number.

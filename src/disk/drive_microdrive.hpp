@@ -41,6 +41,7 @@ public:
 
     struct State
     {
+        uint8_t drive_number;
         uint8_t status;
         uint8_t interrupt_request;
         uint8_t data_request;
@@ -74,13 +75,19 @@ public:
      * @param path path to disk image
      * @return true on success
      */
-    bool insert_disk(const std::filesystem::path& path) override;
+    bool insert_disk(const std::filesystem::path& path, uint8_t drive_number = 0) override;
 
     /**
      * Get disk image.
      * @return reference to disk image
      */
     DiskImage* get_disk_image() override;
+
+    /**
+     * Get WD1793 state. Used by tests.
+     * @return reference to WD1793 state
+     */
+    WD1793::State& get_wd1793_state() { return wd1793.get_state(); }
 
     /**
      * Print drive status to console.
@@ -150,7 +157,7 @@ protected:
     State state;
 
     std::filesystem::path disk_image_path;
-    std::unique_ptr<DiskImage> disk_image;
+    std::array<std::unique_ptr<DiskImage>, 4> disk_images;
 };
 
 #endif // DRIVE_MICRODRIVE_H

@@ -48,7 +48,7 @@ public:
      * @param path path to disk image
      * @return true on success
      */
-    bool insert_disk(const std::filesystem::path& path) override;
+    bool insert_disk(const std::filesystem::path& path, uint8_t drive_number = 0) override;
 
     /**
      * Get disk image.

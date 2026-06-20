@@ -136,7 +136,21 @@ void OperationWriteSector::write_data_reg(uint8_t value)
 
 uint8_t OperationReadAddress::read_data_reg() const
 {
-    return 0x00;
+    const uint8_t data = wd1793.state.address_data[wd1793.state.offset++];
+    wd1793.state.status &= ~WD1793::Status::StatusDataRequest;
+    wd1793.drive->data_request_clear();
+
+    if (wd1793.state.offset >= wd1793.state.address_data.size()) {
+        wd1793.state.interrupt_counter = 32;
+        wd1793.state.set_status_at_interrupt(0);
+        wd1793.state.data_request_counter = 0;
+        wd1793.state.current_operation = &wd1793.operation_idle;
+    }
+    else {
+        wd1793.state.data_request_counter = 32;
+    }
+
+    return data;
 }
 
 void OperationReadAddress::write_data_reg(uint8_t value)
@@ -173,7 +187,6 @@ void OperationWriteTrack::write_data_reg(uint8_t value)
 void WD1793::State::reset()
 {
     data = 0x00;
-    drive = 0x00;
     side = 0x00;
     track = 0x00;
     sector = 0x00;
@@ -193,6 +206,7 @@ void WD1793::State::reset()
 
     current_track = nullptr;
     current_sector = nullptr;
+    address_data = {};
 }
 
 void WD1793::State::print() const
@@ -350,20 +364,28 @@ void WD1793::do_command(uint8_t command)
             BOOST_LOG_TRIVIAL(debug) << "WD1793 - do command: Read sector";
             state.status = Status::StatusBusy | StatusNotReady;
             state.offset = 0;
-            state.data_request_counter = 60;
             operation_read_sector.multiple_sectors = command & 0x10;
             state.current_operation = &operation_read_sector;
-            set_sector(state.sector);
+            if (set_sector(state.sector)) {
+                state.data_request_counter = 60;
+            }
+            else {
+                fail_type2_command(StatusRecordNotFound);
+            }
             break;
         case 0xa0:
             // Write sector [Type 2]: 1 0 1 F₂ E F₁ a₀
             BOOST_LOG_TRIVIAL(debug) << "WD1793 - do command: Write sector";
             state.status = Status::StatusBusy | StatusNotReady;
             state.offset = 0;
-            state.data_request_counter = 60;
             operation_write_sector.multiple_sectors = command & 0x10;
             state.current_operation = &operation_write_sector;
-            set_sector(state.sector);
+            if (set_sector(state.sector)) {
+                state.data_request_counter = 60;
+            }
+            else {
+                fail_type2_command(StatusRecordNotFound);
+            }
             break;
         case 0xc0:
             if (command & 0x10) {
@@ -379,8 +401,34 @@ void WD1793::do_command(uint8_t command)
             else {
                 // Read address [Type 3]: 1 1 0 0 0 E 0 0
                 BOOST_LOG_TRIVIAL(debug) << "WD1793 - do command: Read address";
-                state.status = Status::StatusBusy | StatusNotReady | StatusDataRequest;
+                state.status = Status::StatusBusy;
                 state.current_operation = &operation_read_address;
+                state.offset = 0;
+                if (state.current_track == nullptr) {
+                    fail_type2_command(StatusRecordNotFound);
+                    break;
+                }
+
+                auto* sector = state.current_track->get_first_sector();
+                if (sector == nullptr) {
+                    fail_type2_command(StatusRecordNotFound);
+                    break;
+                }
+
+                uint8_t size_code = 0;
+                for (auto sector_size = sector->data.size(); sector_size > 128; sector_size >>= 1) {
+                    ++size_code;
+                }
+
+                state.address_data = {
+                    state.current_track_number,
+                    state.side,
+                    static_cast<uint8_t>(sector->sector_number),
+                    size_code,
+                    0x00,
+                    0x00
+                };
+                state.data_request_counter = 60;
             }
             break;
         case 0xe0:
@@ -404,6 +452,18 @@ void WD1793::do_command(uint8_t command)
     }
 }
 
+void WD1793::fail_type2_command(uint8_t status)
+{
+    state.status = StatusBusy;
+    state.current_operation = &operation_idle;
+    state.interrupt_counter = 32;
+    state.data_request_counter = 0;
+    state.set_status_at_interrupt(status);
+    state.current_sector = nullptr;
+    state.current_sector_number = 0;
+    drive->data_request_clear();
+}
+
 void WD1793::set_side_number(uint8_t side)
 {
     if (state.side == side) {
@@ -415,6 +475,27 @@ void WD1793::set_side_number(uint8_t side)
     set_track(state.current_track_number);
 }
 
+void WD1793::selected_drive_changed()
+{
+    state.current_track = nullptr;
+    state.current_sector = nullptr;
+    state.current_sector_number = 0;
+    state.current_operation = &operation_idle;
+    state.interrupt_counter = 0;
+    state.data_request_counter = 0;
+    state.status_at_interrupt = 0;
+    state.update_status_at_interrupt = false;
+    state.status &= ~StatusDataRequest;
+    drive->data_request_clear();
+
+    if (! drive->get_disk_image()) {
+        state.status = 0;
+        return;
+    }
+
+    set_track(state.current_track_number);
+}
+
 bool WD1793::set_track(uint8_t track)
 {
     BOOST_LOG_TRIVIAL(debug) << "WD1793 - track set to: " << (int)track;
@@ -422,9 +503,14 @@ bool WD1793::set_track(uint8_t track)
     auto* disk_image = drive->get_disk_image();
     if (! disk_image) {
         BOOST_LOG_TRIVIAL(debug) << "WD1793 - set track: No disk image!";
-        drive->interrupt_set();
-        state.current_track_number = 0;
-        return false;
+        state.current_track = nullptr;
+        state.current_sector = nullptr;
+        state.track = track;
+        state.current_track_number = track;
+        state.current_sector_number = 0;
+        state.set_status_at_interrupt((track == 0 ? StatusTrack00 : 0) | StatusHeadLoaded);
+        state.interrupt_counter = 20;
+        return true;
     }
     if (track < disk_image->tracks_count()) {
         state.set_status_at_interrupt(StatusIndex | StatusHeadLoaded);
@@ -460,8 +546,6 @@ bool WD1793::set_sector(uint8_t sector)
 
     if (! state.current_track) {
         BOOST_LOG_TRIVIAL(debug) << "WD1793 - set sector: no track selected!";
-        drive->interrupt_set();
-        state.current_track_number = 0;
         state.current_sector_number = 0;
         return false;
     }

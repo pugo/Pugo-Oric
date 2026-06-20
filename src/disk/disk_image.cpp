@@ -119,6 +119,15 @@ DiskSector* DiskTrack::get_sector(uint16_t sector_number)
     return nullptr;
 }
 
+DiskSector* DiskTrack::get_first_sector()
+{
+    if (sectors.empty()) {
+        return nullptr;
+    }
+
+    return &sectors.front();
+}
+
 
 
 // ==== DiskSide ============================================
@@ -243,14 +252,14 @@ void DiskImage::mark_dirty()
     last_write = std::chrono::steady_clock::now();
 }
 
-void DiskImage::flush_if_dirty()
+void DiskImage::flush_if_dirty(bool force)
 {
     if (!dirty) {
         return;
     }
 
     const auto now = std::chrono::steady_clock::now();
-    if (now - last_write < std::chrono::milliseconds(1000)) {
+    if (!force && now - last_write < std::chrono::milliseconds(1000)) {
         return;
     }
 

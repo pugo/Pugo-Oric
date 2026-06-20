@@ -176,18 +176,22 @@ void Machine::init_ay3()
 
 void Machine::init_disk()
 {
-    if (! oric.get_config().disk_path().empty()) {
-        disk = std::make_unique<DriveMicrodrive>(*this);
+    for (uint8_t drive = 0; drive < 4; drive++) {
+        if (! oric.get_config().disk_path(drive).empty()) {
+            if (!disk) {
+                disk = std::make_unique<DriveMicrodrive>(*this);
+                BOOST_LOG_TRIVIAL(info) << "Starting disk drive";
+                oric_rom_enabled = false;
+                disk_rom_enabled = true;
+            }
 
-        if (!disk->insert_disk(oric.get_config().disk_path())) {
-            BOOST_LOG_TRIVIAL(info) << "No disk in drive";
+            if (!disk->insert_disk(oric.get_config().disk_path(drive), drive)) {
+                BOOST_LOG_TRIVIAL(info) << "No disk in drive " << drive + 1;
+            }
         }
-
-        BOOST_LOG_TRIVIAL(info) << "Starting disk drive";
-        oric_rom_enabled = false;
-        disk_rom_enabled = true;
     }
-    else {
+
+    if (!disk) {
         disk = std::make_unique<DriveNone>();
     }
 }

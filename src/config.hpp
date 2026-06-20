@@ -56,8 +56,9 @@ public:
     /**
      * Path to disk image.
      * @return path to disk image
+     * @param drive drive number (0-3)
      */
-    std::filesystem::path& disk_path() { return _disk_path; }
+    std::filesystem::path& disk_path(uint8_t drive) { return _disk_paths[drive % 4]; }
 
     /**
      * Path to tape image.
@@ -136,7 +137,7 @@ public:
 protected:
     bool _start_in_monitor;
     bool _use_oric1_rom;
-    std::filesystem::path _disk_path;
+    std::filesystem::path _disk_paths[4];
     std::filesystem::path _tape_path;
     uint16_t _window_width;
     uint16_t _window_height;

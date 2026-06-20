@@ -25,7 +25,7 @@ bool DriveNone::init()
     return true;
 }
 
-bool DriveNone::insert_disk(const std::filesystem::path& path)
+bool DriveNone::insert_disk(const std::filesystem::path& path, uint8_t drive_number)
 {
     return false;
 }
