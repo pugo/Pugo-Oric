@@ -20,9 +20,12 @@
 
 #include "drive_microdrive.hpp"
 
+#include <chrono>
+#include <format>
 #include <print>
 #include <random>
 
+using namespace std::chrono_literals;
 
 DriveMicrodrive::DriveMicrodrive(Machine& machine) :
     machine(machine),
@@ -33,7 +36,9 @@ DriveMicrodrive::DriveMicrodrive(Machine& machine) :
 
 DriveMicrodrive::~DriveMicrodrive()
 {
-    disk_image->flush_if_dirty();
+    if (disk_image) {
+        disk_image->flush_if_dirty();
+    }
 }
 
 void DriveMicrodrive::State::reset()
@@ -52,6 +57,8 @@ bool DriveMicrodrive::insert_disk(const std::filesystem::path& path)
 {
     if (!std::filesystem::exists(path)) {
         BOOST_LOG_TRIVIAL(warning) << "Disk image not found: " << path.string();
+        machine.frontend->get_status_bar().show_text_for(std::format("Disk image not found: {}", path.string()), 5s);
+        disk_image = nullptr;
         return false;
     }
 
@@ -85,7 +92,9 @@ void DriveMicrodrive::exec(uint8_t cycles)
 
 void DriveMicrodrive::exec_once_per_frame()
 {
-    disk_image->flush_if_dirty();
+    if (disk_image) {
+        disk_image->flush_if_dirty();
+    }
 }
 
 void DriveMicrodrive::interrupt_set()

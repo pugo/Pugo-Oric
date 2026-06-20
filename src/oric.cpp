@@ -67,6 +67,8 @@ void Oric::init()
     machine = std::make_unique<Machine>(*this);
     frontend = std::make_unique<Frontend>(*this);
 
+    frontend->get_status_bar().show_text_for("Starting Auric!", std::chrono::seconds(3));
+
     machine->init(frontend.get());
 
     try {
@@ -96,8 +98,6 @@ void Oric::init()
 
     frontend->init_graphics();
     frontend->init_sound();
-
-    frontend->get_status_bar().show_text_for("Starting Auric!", std::chrono::seconds(3));
 
     machine->set_disassemble_execution(false);
 }
