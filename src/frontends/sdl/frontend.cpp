@@ -16,6 +16,7 @@
 // =========================================================================
 
 #include <boost/log/trivial.hpp>
+#include <format>
 #include <unordered_map>
 
 #include <SDL3/SDL.h>
@@ -303,6 +304,7 @@ void Frontend::render_graphics(std::vector<uint8_t>& pixels)
     // Check if window size has changed and recalculate render rect
     if (window_width != current_window_width || window_height != current_window_height) {
         handle_window_resize(window_width, window_height);
+        gui.status_bar().show_text_for(std::format("[{}x{}]", window_width, window_height), std::chrono::milliseconds(2000));
     }
 
     glViewport(0, 0, window_width, window_height);

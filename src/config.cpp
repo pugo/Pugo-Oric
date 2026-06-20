@@ -66,15 +66,15 @@ bool Config::parse(int argc, char **argv)
 
         desc.add_options()
             ("help,?", "produce help message")
+            ("oric1,1", po::bool_switch(&_use_oric1_rom), "use Oric 1 mode (default: Atmos mode)")
             ("width,w", po::value<uint16_t>(&_window_width), "window width in pixels")
             ("height,h", po::value<uint16_t>(&_window_height), "window height in pixels")
-            ("monitor,m", po::bool_switch(&_start_in_monitor), "start in monitor mode")
-            ("oric1,1", po::bool_switch(&_use_oric1_rom), "use Oric 1 mode (default: Atmos mode)")
+            ("tape,t", po::value<std::filesystem::path>(&_tape_path), "tape image file to use")
             ("disk1,d", po::value<std::filesystem::path>(&_disk_paths[0]), "disk image file to use for drive 1")
             ("disk2", po::value<std::filesystem::path>(&_disk_paths[1]), "disk image file to use for drive 2")
             ("disk3", po::value<std::filesystem::path>(&_disk_paths[2]), "disk image file to use for drive 3")
             ("disk4", po::value<std::filesystem::path>(&_disk_paths[3]), "disk image file to use for drive 4")
-            ("tape,t", po::value<std::filesystem::path>(&_tape_path), "tape image file to use")
+            ("monitor,m", po::bool_switch(&_start_in_monitor), "start in monitor mode")
             ("verbose,v", po::bool_switch(&_verbose), "verbose output");
 
         po::variables_map vm;

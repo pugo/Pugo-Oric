@@ -89,13 +89,17 @@ $ ./build/auric -?
 
 Usage: auric [options]
 Allowed options:
-  -? [ --help ]          produce help message
-  -z [ --zoom ] arg (=3) window zoom 1-10 (default: 3)
-  -m [ --monitor ]       start in monitor mode
-  -1 [ --oric1 ]         use Oric 1 mode (default: Atmos mode)
-  -d [ --disk ] arg      disk image file to use
-  -t [ --tape ] arg      tape image file to use
-  -v [ --verbose ]       verbose logging output
+  -? [ --help ]         produce help message
+  -1 [ --oric1 ]        use Oric 1 mode (default: Atmos mode)
+  -w [ --width ] arg    window width in pixels
+  -h [ --height ] arg   window height in pixels
+  -t [ --tape ] arg     tape image file to use
+  -d [ --disk1 ] arg    disk image file to use for drive 1
+  --disk2 arg           disk image file to use for drive 2
+  --disk3 arg           disk image file to use for drive 3
+  --disk4 arg           disk image file to use for drive 4
+  -m [ --monitor ]      start in monitor mode
+  -v [ --verbose ]      verbose output
 ```
 
 ### Control keys
@@ -203,15 +207,17 @@ emulation, tape loading and lastly sound.
 
 The timeline is something like:
 
-* 2009: MOS 6502 CPU
-* 2014: MOS 6522 VIA
-* 2016: Graphics
-* 2017: Key input
-* 2020: Tape loading
-* 2023: AY3-8912 sound
-* 2024: Cycle bug fixing, new monitor, blink mode, snapshots
-* 2025: Satus bar, new tape loading, zoom
-* 2026: Microdisk loading, renaming project, moved to SDL3, Microdisc saving
+* **2009:** MOS 6502 CPU
+* **2014:** MOS 6522 VIA
+* **2016:** Graphics
+* **2017:** Key input
+* **2020:** Tape loading
+* **2023:** AY3-8912 sound
+* **2024:** Cycle bug fixing, new monitor, blink mode, snapshots
+* **2025:** Status bar, new tape loading, zoom
+* **2026:** Microdisk loading, renaming project, moved to SDL3, Microdisc saving,
+        in emulation GUI, multi drive support, free window resizing, memory map view
+        Windows 10/11 support (thanks Dagfinn Dybvig!), 
 
 
 ## Contribution
