@@ -52,7 +52,7 @@ public:
      * Update and render the memory map window.
      * Should be called once per frame from Gui::render().
      */
-    void render();
+    void render(const ImVec2& window_pos, const ImVec2& window_size);
 
     /**
      * Set the update frequency in Hz (default 10 Hz).
@@ -101,9 +101,7 @@ private:
     float update_interval{0.1f};    // seconds
 
     // Window state
-    bool window_open{true};
-    ImVec2 window_pos{600, 10};
+    bool window_open{false};
 };
 
 #endif // FRONTENDS_GUI_MEMORY_MAP_WINDOW_H
-

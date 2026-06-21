@@ -143,6 +143,13 @@ protected:
     void handle_window_resize(int32_t window_width, int32_t window_height);
 
     /**
+     * Recalculate the emulation screen rect for the current GUI layout.
+     * @param window_width current window width in pixels
+     * @param window_height current window height in pixels
+     */
+    void update_render_rect(int32_t window_width, int32_t window_height);
+
+    /**
      * Close graphics output.
      */
     void close_graphics();

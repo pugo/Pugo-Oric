@@ -16,6 +16,7 @@
 // =========================================================================
 
 #include <boost/log/trivial.hpp>
+#include <algorithm>
 #include <format>
 #include <unordered_map>
 
@@ -46,6 +47,9 @@ std::unordered_map<SDL_Scancode, uint8_t> oric_key_map;
 // ----- Frontend ----------------
 
 constexpr uint16_t status_bar_height = 20;
+constexpr float layout_gutter_width = 16.0f;
+constexpr float layout_min_margin = 8.0f;
+constexpr float layout_max_margin = 80.0f;
 
 constexpr std::string window_title = "Auric";
 constexpr std::string window_icon_name = "window_icon.png";
@@ -301,11 +305,11 @@ void Frontend::render_graphics(std::vector<uint8_t>& pixels)
     int window_height = 0;
     SDL_GetWindowSizeInPixels(sdl_window, &window_width, &window_height);
 
-    // Check if window size has changed and recalculate render rect
     if (window_width != current_window_width || window_height != current_window_height) {
         handle_window_resize(window_width, window_height);
         gui.status_bar().show_text_for(std::format("[{}x{}]", window_width, window_height), std::chrono::milliseconds(2000));
     }
+    update_render_rect(window_width, window_height);
 
     glViewport(0, 0, window_width, window_height);
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -448,35 +452,45 @@ void Frontend::handle_window_resize(int32_t window_width, int32_t window_height)
     current_window_width = window_width;
     current_window_height = window_height;
 
-    uint16_t border_width = window_width * 0.05f;
-    uint16_t border_height = window_height * 0.05f;
-
-    uint16_t content_width = window_width - (border_width * 2);
-    uint16_t content_height = window_height - (border_height * 2);
-
-    // Calculate zoom to fit available space (maintain aspect ratio)
-    float zoom_x = static_cast<float>(content_width) / texture_width;
-    float zoom_y = static_cast<float>(content_height) / texture_height;
-    float dynamic_zoom = std::min(zoom_x, zoom_y);
-
-    // Calculate new render dimensions
-    uint16_t new_width = static_cast<uint16_t>(texture_width * dynamic_zoom);
-    uint16_t new_height = static_cast<uint16_t>(texture_height * dynamic_zoom);
-
-    // Update render rect with new dimensions, centered horizontally
-    int total_border_width_available = window_width - new_width;
-    float x_offset = (total_border_width_available > 0) ? total_border_width_available / 2.0f : border_width;
-
-    oric_texture.render_rect = {
-        x_offset,
-        static_cast<float>(border_height),
-        static_cast<float>(new_width),
-        static_cast<float>(new_height)
-    };
-
     // Update status bar
     gui.status_bar().set_position(0, window_height - status_bar_height);
     gui.status_bar().set_size(window_width, status_bar_height);
+}
+
+void Frontend::update_render_rect(int32_t window_width, int32_t window_height)
+{
+    if (window_width <= 0 || window_height <= 0) {
+        return;
+    }
+
+    const float margin_x = std::clamp(static_cast<float>(window_width) * 0.05f, layout_min_margin, layout_max_margin);
+    const float margin_y = std::clamp(static_cast<float>(window_height) * 0.05f, layout_min_margin, layout_max_margin);
+
+    float available_left = margin_x;
+    float available_right = static_cast<float>(window_width) - margin_x;
+
+    if (gui.wants_side_panel()) {
+        available_right = std::min(available_right, gui.side_panel_origin(window_width).x - layout_gutter_width);
+    }
+
+    const float available_top = margin_y;
+    const float available_bottom = static_cast<float>(window_height) - status_bar_height - margin_y;
+    const float content_width = std::max(1.0f, available_right - available_left);
+    const float content_height = std::max(1.0f, available_bottom - available_top);
+
+    const float zoom_x = content_width / texture_width;
+    const float zoom_y = content_height / texture_height;
+    const float dynamic_zoom = std::max(0.01f, std::min(zoom_x, zoom_y));
+
+    const float new_width = texture_width * dynamic_zoom;
+    const float new_height = texture_height * dynamic_zoom;
+
+    oric_texture.render_rect = {
+        available_left + ((content_width - new_width) / 2.0f),
+        available_top + ((content_height - new_height) / 2.0f),
+        new_width,
+        new_height
+    };
 }
 
 

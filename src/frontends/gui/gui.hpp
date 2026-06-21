@@ -43,6 +43,11 @@ public:
 
     void toggle_gui() { show_gui = !show_gui; }
 
+    bool wants_side_panel() const;
+    float side_panel_width(int window_width) const;
+    ImVec2 side_panel_origin(int window_width) const;
+    ImVec2 side_panel_size(int window_width, int window_height) const;
+
     MemoryMapWindow& get_memory_map_window() { return memory_map_window; }
 
 private:

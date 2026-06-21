@@ -19,6 +19,7 @@
 #include <imgui.h>
 #include "oric.hpp"
 #include "machine.hpp"
+#include <algorithm>
 #include <cmath>
 
 #include <array>
@@ -119,7 +120,7 @@ void MemoryMapWindow::update_texture()
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-void MemoryMapWindow::render()
+void MemoryMapWindow::render(const ImVec2& window_pos, const ImVec2& window_size)
 {
     ImGuiIO& io = ImGui::GetIO();
     time_accumulator += io.DeltaTime;
@@ -130,8 +131,8 @@ void MemoryMapWindow::render()
     }
 
     if (window_open) {
-        ImGui::SetNextWindowPos(window_pos, ImGuiCond_FirstUseEver);
-        ImGui::SetNextWindowSize(ImVec2(516, 550), ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always);
+        ImGui::SetNextWindowSize(window_size, ImGuiCond_Always);
 
         if (ImGui::Begin("Memory Map", &window_open)) {
             ImGui::Text("Memory Map (64KB as 256x256 grid)");
@@ -143,7 +144,9 @@ void MemoryMapWindow::render()
 
             ImGui::Separator();
             if (gl_texture != 0) {
-                ImGui::Image(reinterpret_cast<void*>(static_cast<intptr_t>(gl_texture)), ImVec2(512, 512),
+                const ImVec2 available = ImGui::GetContentRegionAvail();
+                const float image_size = std::max(64.0f, std::min(available.x, available.y));
+                ImGui::Image(reinterpret_cast<void*>(static_cast<intptr_t>(gl_texture)), ImVec2(image_size, image_size),
                              ImVec2(0, 0), ImVec2(1, 1), ImVec4(1, 1, 1, 1), ImVec4(1, 1, 1, 0.5f));
 
                 if (ImGui::IsItemHovered()) {

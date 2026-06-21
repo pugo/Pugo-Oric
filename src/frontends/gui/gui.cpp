@@ -21,7 +21,16 @@
 #include <imgui_impl_sdl3.h>
 #include <imgui_impl_opengl3.h>
 #include <imgui_stdlib.h>
+#include <algorithm>
 #include "oric.hpp"
+
+namespace
+{
+constexpr float side_panel_margin = 16.0f;
+constexpr float side_panel_desired_width = 540.0f;
+constexpr float side_panel_min_width = 320.0f;
+constexpr float status_bar_height = 20.0f;
+}
 
 Gui::Gui(Oric& oric) :
     oric(oric), sdl_window(nullptr), gl_context(nullptr), _status_bar(0, 0),
@@ -187,9 +196,15 @@ void Gui::render()
 
     _status_bar.render();
 
+    show_memory_map_window = memory_map_window.is_visible();
+
     // Render memory map window if it's visible
     if (show_memory_map_window) {
-        memory_map_window.render();
+        int window_width = 0;
+        int window_height = 0;
+        SDL_GetWindowSizeInPixels(sdl_window, &window_width, &window_height);
+        memory_map_window.render(side_panel_origin(window_width), side_panel_size(window_width, window_height));
+        show_memory_map_window = memory_map_window.is_visible();
     }
 
     // Render ImGui
@@ -203,4 +218,33 @@ void Gui::set_video_params(bool enable_scanlines, bool enable_vertical_lines, bo
     this->enable_vertical_lines = enable_vertical_lines;
     this->enable_vignette = enable_vignette;
     this->vignette_strength = vignette_strength;
+}
+
+bool Gui::wants_side_panel() const
+{
+    return memory_map_window.is_visible();
+}
+
+float Gui::side_panel_width(int window_width) const
+{
+    if (!wants_side_panel() || window_width <= 0) {
+        return 0.0f;
+    }
+
+    const float max_width = std::max(side_panel_min_width, static_cast<float>(window_width) * 0.45f);
+    return std::clamp(side_panel_desired_width, side_panel_min_width, max_width);
+}
+
+ImVec2 Gui::side_panel_origin(int window_width) const
+{
+    const float width = side_panel_width(window_width);
+    return ImVec2(std::max(side_panel_margin, static_cast<float>(window_width) - width - side_panel_margin),
+                  side_panel_margin);
+}
+
+ImVec2 Gui::side_panel_size(int window_width, int window_height) const
+{
+    const float width = side_panel_width(window_width);
+    const float height = std::max(180.0f, static_cast<float>(window_height) - status_bar_height - side_panel_margin * 2.0f);
+    return ImVec2(width, height);
 }
