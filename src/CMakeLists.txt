@@ -43,6 +43,7 @@ add_subdirectory(frontends)
 # Static library (for reuse by tests, etc.)
 add_library(auric_lib STATIC
         oric.cpp
+        debugger_controller.cpp
         memory.cpp
         machine.cpp
         monitor.cpp

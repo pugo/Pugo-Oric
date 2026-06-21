@@ -15,6 +15,9 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
+#include <format>
+#include <sstream>
+
 #include <machine.hpp>
 
 #include "ay3_8912.hpp"
@@ -90,6 +93,26 @@ Channel::Channel() :
     use_envelope(false)
 {}
 
+void Channel::print_status(uint8_t channel) const
+{
+    std::print("{}", status_string(channel));
+}
+
+std::string Channel::status_string(uint8_t channel) const
+{
+    std::ostringstream output;
+    output << std::format(" ------- Channel {} -------------------------\n", channel);
+    output << std::format("           Volume: {} \n", volume);
+    output << std::format("      Tone period: {} \n", tone_period);
+    output << std::format("          Counter: {} \n", counter);
+    output << std::format("            Value: {} \n", value);
+    output << std::format("         Disabled: {} \n", disabled);
+    output << std::format("   Noise disabled: {} \n", noise_diabled);
+    output << std::format("     Use envelope: {} \n", use_envelope);
+    output << '\n';
+    return output.str();
+}
+
 void Channel::reset()
 {
     volume = 0;
@@ -110,6 +133,23 @@ Noise::Noise() :
     output_bit(0),
     rng(1)
 {}
+
+void Noise::print_status() const
+{
+    std::print("{}", status_string());
+}
+
+std::string Noise::status_string() const
+{
+    std::ostringstream output;
+    output << " ------- Noise -------------------------\n";
+    output << std::format("      Period: {}\n", period);
+    output << std::format("     Counter: {}\n", counter);
+    output << std::format("  Output bit: {}\n", output_bit);
+    output << std::format("         Rng: {}\n", rng);
+    output << '\n';
+    return output.str();
+}
 
 void Noise::reset()
 {
@@ -207,11 +247,18 @@ void AY3_8912::SoundState::reset()
 
 void AY3_8912::SoundState::print_status()
 {
-    std::println("AY-3-8912 state:");
+    std::print("{}", status_string());
+}
+
+std::string AY3_8912::SoundState::status_string()
+{
+    std::ostringstream output;
+    output << "AY-3-8912 state:\n";
     for(uint8_t c=0; c < 3; c++) {
-        channels[c].print_status(c);
+        output << channels[c].status_string(c);
     }
-    noise.print_status();
+    output << noise.status_string();
+    return output.str();
 }
 
 void AY3_8912::SoundState::write_register_change(uint8_t value)
@@ -383,6 +430,11 @@ void AY3_8912::reset()
 void AY3_8912::print_status()
 {
     state.print_status();
+}
+
+std::string AY3_8912::status_string()
+{
+    return state.status_string();
 }
 
 void AY3_8912::save_to_snapshot(Snapshot& snapshot)

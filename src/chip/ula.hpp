@@ -49,6 +49,7 @@ public:
      * @return true if screen is finished and should be rendered.
      */
     bool paint_raster();
+    void render_screen();
 
 private:
     /**

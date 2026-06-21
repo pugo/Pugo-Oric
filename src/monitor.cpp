@@ -17,6 +17,10 @@
 
 #include <boost/log/trivial.hpp>
 
+#include <iostream>
+#include <ostream>
+#include <print>
+#include <sstream>
 #include <vector>
 
 #include "oric.hpp"
@@ -250,11 +254,19 @@ uint16_t Monitor::disassemble(uint16_t address, size_t bytes)
 {
     BOOST_LOG_TRIVIAL(debug) << "Disassembling from $" << std::hex << address << " for " << bytes << " bytes";
 
+    auto result = disassemble_to_string(address, bytes);
+    std::print("{}", result.output);
+    return result.next_address;
+}
+
+Monitor::Disassembly Monitor::disassemble_to_string(uint16_t address, size_t bytes)
+{
+    std::ostringstream output;
     uint32_t end = static_cast<uint32_t>(address) + static_cast<uint32_t>(bytes);
 
     while (static_cast<uint32_t>(address) < end) {
-        uint16_t next = disassemble(address);
-        std::println("");
+        uint16_t next = disassemble(address, output);
+        output << '\n';
 
         if (next <= address) {
             break;
@@ -262,102 +274,116 @@ uint16_t Monitor::disassemble(uint16_t address, size_t bytes)
         address = next;
     }
 
-    return address;
+    return {address, output.str()};
 }
 
 
 /* This function disassembles the opcode at the PC and outputs it in *output */
 uint16_t Monitor::disassemble(uint16_t address)
 {
-    std::print("${:04X}\t", address);
+    auto result = disassemble_to_string(address);
+    std::print("{}", result.output);
+    return result.next_address;
+}
+
+Monitor::Disassembly Monitor::disassemble_to_string(uint16_t address)
+{
+    std::ostringstream output;
+    uint16_t next = disassemble(address, output);
+    return {next, output.str()};
+}
+
+uint16_t Monitor::disassemble(uint16_t address, std::ostream& output)
+{
+    output << std::format("${:04X}\t", address);
 
     uint8_t op = memory_read_byte_handler(machine, address++);
-    std::print("${:02X}\t", op);
+    output << std::format("${:02X}\t", op);
 
     if (auto it = opcodes.find(op); it != opcodes.end())
     {
-        std::print("{} ", it->second.name);
+        output << std::format("{} ", it->second.name);
 
         switch(it->second.addressing)
         {
             case Addressing::immediate:
             {
                 uint8_t value = memory_read_byte_handler(machine, address++);
-                std::print("#${:02X}\t", value);
+                output << std::format("#${:02X}\t", value);
                 break;
             }
             case Addressing::zero_page:
             {
                 uint8_t value = memory_read_byte_handler(machine, address++);
-                std::print("${:02X}\t", value);
+                output << std::format("${:02X}\t", value);
                 break;
             }
             case Addressing::zero_page_indexed_x:
             {
                 uint8_t value = memory_read_byte_handler(machine, address++);
-                std::print("${:02X},X\t", value);
+                output << std::format("${:02X},X\t", value);
                 break;
             }
             case Addressing::zero_page_indexed_y:
             {
                 uint8_t value = memory_read_byte_handler(machine, address++);
-                std::print("${:02X},Y\t", value);
+                output << std::format("${:02X},Y\t", value);
                 break;
             }
             case Addressing::implied:
             {
-                std::print("\t\t");
+                output << "\t\t";
                 break;
             }
             case Addressing::indirect_absolute:
             {
                 uint16_t value = memory_read_byte_handler(machine, address++);
                 value += memory_read_byte_handler(machine, address++) << 8;
-                std::print("(${:04X})\t", value);
+                output << std::format("(${:04X})\t", value);
                 break;
             }
             case Addressing::absolute:
             {
                 uint16_t value = memory_read_byte_handler(machine, address++);
                 value += memory_read_byte_handler(machine, address++) << 8;
-                std::print("${:04X}\t", value);
+                output << std::format("${:04X}\t", value);
                 break;
             }
             case Addressing::absolute_indexed_x:
             {
                 uint16_t value = memory_read_byte_handler(machine, address++);
                 value += memory_read_byte_handler(machine, address++) << 8;
-                std::print("${:04X},X\t", value);
+                output << std::format("${:04X},X\t", value);
                 break;
             }
             case Addressing::absolute_indexed_y:
             {
                 uint16_t value = memory_read_byte_handler(machine, address++);
                 value += memory_read_byte_handler(machine, address++) << 8;
-                std::print("${:04X},Y\t", value);
+                output << std::format("${:04X},Y\t", value);
                 break;
             }
             case Addressing::indexed_indirect_x:
             {
                 uint8_t value = memory_read_byte_handler(machine, address++);
-                std::print("(${:02X},X)\t", value);
+                output << std::format("(${:02X},X)\t", value);
                 break;
             }
             case Addressing::indirect_indexed_y:
             {
                 uint8_t value = memory_read_byte_handler(machine, address++);
-                std::print("(${:02X},Y)\t", value);
+                output << std::format("(${:02X},Y)\t", value);
                 break;
             }
             case Addressing::relative:
             {
                 uint8_t rel = memory_read_byte_handler(machine, address++);
                 uint16_t addr = rel & 0x80 ? (address - ((rel ^ 0xff)+1)) : (address + rel);
-                std::print("${:04X}\t", addr);
+                output << std::format("${:04X}\t", addr);
                 break;
             }
             case Addressing::accumulator:
-                std::print("A\t\t");
+                output << "A\t\t";
                 break;
         }
 
@@ -365,4 +391,3 @@ uint16_t Monitor::disassemble(uint16_t address)
 
     return address;
 }
-

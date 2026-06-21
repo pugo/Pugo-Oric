@@ -21,6 +21,7 @@
 #include <memory>
 #include <filesystem>
 
+#include "debugger_controller.hpp"
 #include "machine.hpp"
 #include "config.hpp"
 
@@ -32,7 +33,7 @@ public:
     enum State
     {
         STATE_RUN,
-        STATE_MON,
+        STATE_HALTED,
         STATE_QUIT
     };
 
@@ -76,6 +77,9 @@ public:
      * Break Oric.
      */
     void do_break();
+    void break_execution();
+    void continue_execution();
+    bool is_halted() const { return state == STATE_HALTED; }
 
     /**
      * Quit Oric.
@@ -87,17 +91,16 @@ public:
      * @return true if the current run loop should stop immediately.
      */
     bool handle_sigint();
+    DebuggerController::Result submit_debugger_command(const std::string& command_line);
 
 protected:
-    State handle_command(std::string& command_line);
-    uint16_t string_to_word(std::string& addr);
+    void run_halted_frame();
 
     Config& config;
     State state;
     std::unique_ptr<Frontend> frontend;
     std::unique_ptr<Machine> machine;
-    std::string last_command;
-    uint16_t last_address;
+    std::unique_ptr<DebuggerController> debugger_controller;
 };
 
 #endif // ORIC_H

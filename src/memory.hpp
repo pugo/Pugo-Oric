@@ -20,6 +20,7 @@
 
 #include <filesystem>
 #include <cstdint>
+#include <string>
 #include <vector>
 
 
@@ -80,6 +81,7 @@ public:
      * @param length number of bytes to show
      */
     void show(uint32_t pos, uint32_t length) const;
+    std::string dump_string(uint32_t pos, uint32_t length) const;
 
     std::vector<uint8_t>& get_memory_vector() { return memory; }
 

@@ -3,6 +3,7 @@ add_subdirectory(imgui/backends)
 
 add_library(frontends_gui
         gui.cpp
+        debugger_window.cpp
         status_bar.cpp
         memory_map_window.cpp
 )
@@ -19,4 +20,3 @@ target_link_libraries(frontends_gui
         frontends_imgui
         ${SDL3_LIBRARIES}
 )
-

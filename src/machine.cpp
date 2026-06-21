@@ -73,6 +73,7 @@ Machine::Machine(Oric& oric) :
     tape(nullptr),
     disassemble_execution(false),
     cycle_count(0),
+    frame_timer_initialized(false),
     warpmode_on(false),
     break_exec(false),
     sound_paused(true),
@@ -87,6 +88,7 @@ Machine::Machine(Oric& oric) :
 void Machine::reset()
 {
     frontend->lock_audio();
+    frame_timer_initialized = false;
     init_ram();
     mos_6522->reset();
     ay3->reset();
@@ -212,11 +214,19 @@ void Machine::init_tape()
 
 void Machine::run(Oric* oric)
 {
-    uint32_t instructions = 0;
-    next_frame_tp = hrc::now();
+    while (!break_exec && !oric->is_halted()) {
+        run_until_frame_or_break(oric);
+    }
+}
 
+void Machine::run_until_frame_or_break(Oric* oric)
+{
     break_exec = false;
-    uint8_t ran = 0;
+
+    if (!frame_timer_initialized) {
+        next_frame_tp = hrc::now();
+        frame_timer_initialized = true;
+    }
 
     cycle_count += cycles_per_raster;
 
@@ -250,18 +260,23 @@ void Machine::run(Oric* oric)
             }
 
             if (break_exec) {
-                oric->do_break();
+                oric->break_execution();
                 return;
             }
 
             cycle_count -= cycles;
         }
 
-        if (ula.paint_raster()) {
+        const bool frame_rendered = ula.paint_raster();
+        cycle_count += cycles_per_raster;
+
+        if (frame_rendered) {
             next_frame_tp += 20ms;
 
             if (! frontend->handle_frame()) {
                 break_exec = true;
+                oric->do_quit();
+                return;
             }
 
             disk->exec_once_per_frame();
@@ -275,10 +290,15 @@ void Machine::run(Oric* oric)
                     std::this_thread::sleep_for(next_frame_tp - now_tp);
                 }
             }
-        }
 
-        cycle_count += cycles_per_raster;
+            return;
+        }
     }
+}
+
+void Machine::render_current_frame()
+{
+    ula.render_screen();
 }
 
 void Machine::key_press(uint8_t key_bits, bool down)
@@ -446,10 +466,21 @@ void Machine::eject_disk(uint8_t drive_number)
 
 void Machine::PrintStat()
 {
-    PrintStat(cpu->PC);
+    std::print("{}", format_stat());
 }
 
 void Machine::PrintStat(uint16_t address)
 {
-    std::println("${}\t\t{} ", monitor.disassemble(address), cpu->get_register_summary());
+    std::print("{}", format_stat(address));
+}
+
+std::string Machine::format_stat()
+{
+    return format_stat(cpu->PC);
+}
+
+std::string Machine::format_stat(uint16_t address)
+{
+    auto disassembly = monitor.disassemble_to_string(address);
+    return std::format("{}\t\t{} \n", disassembly.output, cpu->get_register_summary());
 }

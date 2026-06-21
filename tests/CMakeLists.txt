@@ -24,6 +24,7 @@ add_executable(gtests_run
         6522_test_t2.cpp
         6522_test_shift_registers.cpp
         drive_microdrive_test.cpp
+        debugger_controller_test.cpp
         mocks/test_machine.cpp
         mocks/test_machine.h
 )

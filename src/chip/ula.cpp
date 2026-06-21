@@ -177,4 +177,8 @@ void ULA::update_graphics(uint8_t raster_line)
     }
 }
 
+void ULA::render_screen()
+{
+    machine.frontend->render_graphics(pixels);
+}
 

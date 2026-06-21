@@ -75,17 +75,23 @@ void Memory::load_from_snapshot(Snapshot& snapshot)
 
 void Memory::show(uint32_t pos, uint32_t length) const
 {
-    std::println("Showing 0x{:04X} bytes from ${:x}", length, pos);
+    std::print("{}", dump_string(pos, length));
+}
+
+std::string Memory::dump_string(uint32_t pos, uint32_t length) const
+{
+    std::ostringstream output;
+    output << std::format("Showing 0x{:04X} bytes from ${:x}\n", length, pos);
     std::ostringstream chars;
 
     for (uint32_t i=0; i < length; i++) {
         if ((i % 16) == 0) {
-            std::println("    {}", chars.str());
-            std::print("[{:04X}] ", pos + i);
+            output << std::format("    {}\n", chars.str());
+            output << std::format("[{:04X}] ", pos + i);
             chars.str("");
         }
 
-        std::print("{:02x} ", (unsigned int)mem[pos + i]);
+        output << std::format("{:02x} ", (unsigned int)mem[pos + i]);
 
         if ((mem[pos + i] & 0x7f) >= 32) {
             chars << (char)(mem[pos + i] & 0x7f) << " ";
@@ -94,7 +100,7 @@ void Memory::show(uint32_t pos, uint32_t length) const
             chars << "  ";
         }
     }
-    std::println("");
+    output << '\n';
+    return output.str();
 }
-
 

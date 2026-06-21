@@ -246,8 +246,7 @@ bool Frontend::handle_frame()
                             }
 
                             else if (scancode == SDL_SCANCODE_B) {
-                                oric.get_machine().stop();
-                                oric.do_break();
+                                oric.break_execution();
                                 special_pressed = true;
                             }
                         }

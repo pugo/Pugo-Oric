@@ -19,6 +19,7 @@
 #define AY3_8912_H
 
 #include <print>
+#include <string>
 #include <boost/circular_buffer.hpp>
 #include <SDL3/SDL_audio.h>
 
@@ -53,17 +54,8 @@ public:
         }
     }
 
-    void print_status(uint8_t channel) const {
-        std::println(" ------- Channel {} -------------------------", channel);
-        std::println("           Volume: {} ", volume);
-        std::println("      Tone period: {} ", tone_period);
-        std::println("          Counter: {} ", counter);
-        std::println("            Value: {} ", value);
-        std::println("         Disabled: {} ", disabled);
-        std::println("   Noise disabled: {} ", noise_diabled);
-        std::println("     Use envelope: {} ", use_envelope);
-        std::println("");
-    }
+    void print_status(uint8_t channel) const;
+    std::string status_string(uint8_t channel) const;
 
     uint16_t volume;
     uint32_t tone_period;
@@ -95,14 +87,8 @@ public:
         }
     }
 
-    void print_status() const {
-        std::println(" ------- Noise -------------------------");
-        std::println("      Period: {}", period);
-        std::println("     Counter: {}", counter);
-        std::println("  Output bit: {}", output_bit);
-        std::println("         Rng: {}", rng);
-        std::println("");
-    }
+    void print_status() const;
+    std::string status_string() const;
 
     uint16_t output_bit;
     uint16_t period;
@@ -253,6 +239,7 @@ public:
 
         void reset();
         void print_status();
+        std::string status_string();
 
         /**
          * Write a register change to array of changes.
@@ -321,6 +308,7 @@ public:
      * Print AY-3-8912 state to console.
      */
     void print_status();
+    std::string status_string();
 
     /**
      * Save AY-3-8912 state to snapshot.

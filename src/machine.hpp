@@ -22,6 +22,7 @@
 #include <filesystem>
 #include <memory>
 #include <optional>
+#include <string>
 
 #include "chip/mos6502.hpp"
 #include "chip/mos6522.hpp"
@@ -122,6 +123,8 @@ public:
      * @param oric Pointer to Oric object
      */
     void run(Oric* oric);
+    void run_until_frame_or_break(Oric* oric);
+    void render_current_frame();
 
     /**
      * Run the machine from given address.
@@ -200,6 +203,7 @@ public:
      * Print CPU status.
      */
     void PrintStat();
+    std::string format_stat();
 
     // --- Memory functions -------------------
 
@@ -321,6 +325,7 @@ protected:
      * @param address
      */
     void PrintStat(uint16_t address);
+    std::string format_stat(uint16_t address);
 
     ULA ula;
     Oric& oric;
@@ -332,6 +337,7 @@ protected:
     bool disassemble_execution;
     int32_t cycle_count;
     std::chrono::high_resolution_clock::time_point next_frame_tp;
+    bool frame_timer_initialized;
 
     bool sound_paused;
     uint32_t sound_pause_counter;

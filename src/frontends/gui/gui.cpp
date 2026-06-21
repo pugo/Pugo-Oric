@@ -27,14 +27,15 @@
 namespace
 {
 constexpr float side_panel_margin = 16.0f;
-constexpr float side_panel_desired_width = 540.0f;
+constexpr float side_panel_desired_width = 640.0f;
 constexpr float side_panel_min_width = 320.0f;
 constexpr float status_bar_height = 20.0f;
 }
 
 Gui::Gui(Oric& oric) :
     oric(oric), sdl_window(nullptr), gl_context(nullptr), _status_bar(0, 0),
-    memory_map_window(oric)
+    memory_map_window(oric),
+    debugger_window(oric)
 {
 }
 
@@ -147,14 +148,12 @@ void Gui::render()
             oric.get_machine().cpu->NMI();
         }
         ImGui::SameLine();
-        if (ImGui::Button("Enter debugger")) {
-            oric.get_machine().stop();
-            oric.do_break();
+        if (ImGui::Button("Debugger")) {
+            show_debugger();
         }
         ImGui::SameLine();
         if (ImGui::Button("Memory Map")) {
-            show_memory_map_window = !show_memory_map_window;
-            memory_map_window.set_visible(show_memory_map_window);
+            memory_map_window.set_visible(!memory_map_window.is_visible());
         }
 
         ImGui::Text("Video:");
@@ -197,13 +196,31 @@ void Gui::render()
     _status_bar.render();
 
     show_memory_map_window = memory_map_window.is_visible();
+    const bool show_debugger_window = debugger_window.is_visible();
 
-    // Render memory map window if it's visible
-    if (show_memory_map_window) {
+    if (show_memory_map_window || show_debugger_window) {
         int window_width = 0;
         int window_height = 0;
         SDL_GetWindowSizeInPixels(sdl_window, &window_width, &window_height);
-        memory_map_window.render(side_panel_origin(window_width), side_panel_size(window_width, window_height));
+
+        const ImVec2 origin = side_panel_origin(window_width);
+        const ImVec2 size = side_panel_size(window_width, window_height);
+
+        if (show_memory_map_window && show_debugger_window) {
+            constexpr float panel_gap = 8.0f;
+            const float debugger_height = std::max(180.0f, (size.y - panel_gap) * 0.55f);
+            const float memory_height = std::max(120.0f, size.y - debugger_height - panel_gap);
+
+            debugger_window.render(origin, ImVec2(size.x, debugger_height));
+            memory_map_window.render(ImVec2(origin.x, origin.y + debugger_height + panel_gap), ImVec2(size.x, memory_height));
+        }
+        else if (show_debugger_window) {
+            debugger_window.render(origin, size);
+        }
+        else {
+            memory_map_window.render(origin, size);
+        }
+
         show_memory_map_window = memory_map_window.is_visible();
     }
 
@@ -222,7 +239,12 @@ void Gui::set_video_params(bool enable_scanlines, bool enable_vertical_lines, bo
 
 bool Gui::wants_side_panel() const
 {
-    return memory_map_window.is_visible();
+    return memory_map_window.is_visible() || debugger_window.is_visible();
+}
+
+void Gui::show_debugger()
+{
+    debugger_window.set_visible(true);
 }
 
 float Gui::side_panel_width(int window_width) const

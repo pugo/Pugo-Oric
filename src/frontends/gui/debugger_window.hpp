@@ -1,0 +1,41 @@
+// =========================================================================
+//   Copyright (C) 2009-2026 by Anders Piniesjö <pugo@pugo.org>
+//
+//   This program is free software: you can redistribute it and/or modify
+//   it under the terms of the GNU General Public License as published by
+//   the Free Software Foundation, either version 3 of the License, or
+//   (at your option) any later version.
+// =========================================================================
+
+#ifndef FRONTENDS_GUI_DEBUGGER_WINDOW_H
+#define FRONTENDS_GUI_DEBUGGER_WINDOW_H
+
+#include <string>
+#include <imgui.h>
+
+class Oric;
+
+class DebuggerWindow
+{
+public:
+    explicit DebuggerWindow(Oric& oric);
+
+    void render(const ImVec2& window_pos, const ImVec2& window_size);
+
+    void set_visible(bool visible) { window_open = visible; }
+    bool is_visible() const { return window_open; }
+
+    void clear();
+    void append_output(const std::string& output);
+
+private:
+    void submit_command();
+
+    Oric& oric;
+    std::string output;
+    std::string input;
+    bool window_open{false};
+    bool scroll_to_bottom{false};
+};
+
+#endif // FRONTENDS_GUI_DEBUGGER_WINDOW_H

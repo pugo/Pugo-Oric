@@ -18,7 +18,9 @@
 #ifndef MONITOR_H
 #define MONITOR_H
 
+#include <iosfwd>
 #include <map>
+#include <string>
 #include <string_view>
 
 #include "memory.hpp"
@@ -54,6 +56,12 @@ struct Opcode
 class Monitor
 {
 public:
+    struct Disassembly
+    {
+        uint16_t next_address;
+        std::string output;
+    };
+
     explicit Monitor(Machine& machine, f_memory_read_byte_handler&& read_byte_handler);
 
     /**
@@ -71,8 +79,13 @@ public:
      */
     uint16_t disassemble(uint16_t address, size_t bytes);
 
+    Disassembly disassemble_to_string(uint16_t address);
+    Disassembly disassemble_to_string(uint16_t address, size_t bytes);
+
 
 private:
+    uint16_t disassemble(uint16_t address, std::ostream& output);
+
     Machine& machine;
     f_memory_read_byte_handler memory_read_byte_handler;
 

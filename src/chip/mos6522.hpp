@@ -128,6 +128,7 @@ public:
 
         void reset();
         void print() const;
+        std::string to_string() const;
 
         inline void sr_shift_in();
         inline void sr_shift_out();

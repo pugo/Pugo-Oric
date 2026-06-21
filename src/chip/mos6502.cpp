@@ -192,7 +192,6 @@ void MOS6502::set_breakpoint(uint16_t address)
 {
     breakpoints.insert(address);
     has_breakpoints = true;
-    std::println("Set breakpoint at ${:04X}", address);
 }
 
 std::string MOS6502::get_register_summary()

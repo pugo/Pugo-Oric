@@ -16,24 +16,20 @@
 // =========================================================================
 
 
+#include <chrono>
 #include <format>
 #include <csignal>
-#include <iostream>
 #include <print>
-#include <sstream>
 #include <stdexcept>
 #include <string>
-#include <vector>
+#include <thread>
 
 #include <boost/log/trivial.hpp>
-#include <boost/program_options.hpp>
 #include <boost/algorithm/string.hpp>
 
 #include "oric.hpp"
 #include "memory.hpp"
 #include "frontends/sdl/frontend.hpp"
-
-namespace po = boost::program_options;
 
 volatile std::sig_atomic_t sigint_received = 0;
 
@@ -42,11 +38,10 @@ Oric::Oric(Config& config) :
     config(config),
     state(STATE_RUN),
     frontend(nullptr),
-    machine(nullptr),
-    last_address(0)
+    machine(nullptr)
 {
     if (config.start_in_monitor()) {
-        state = STATE_MON;
+        state = STATE_HALTED;
     }
 }
 
@@ -73,6 +68,7 @@ void check_rom_exists(std::filesystem::path path)
 void Oric::init()
 {
     machine = std::make_unique<Machine>(*this);
+    debugger_controller = std::make_unique<DebuggerController>(*machine);
     frontend = std::make_unique<Frontend>(*this);
 
     frontend->get_status_bar().show_text_for("Starting Auric!", std::chrono::seconds(3));
@@ -108,11 +104,16 @@ void Oric::init()
     frontend->init_sound();
 
     machine->set_disassemble_execution(false);
+
+    if (state == STATE_HALTED) {
+        break_execution();
+    }
 }
 
 void Oric::init_machine()
 {
     machine = std::make_unique<Machine>(*this);
+    debugger_controller = std::make_unique<DebuggerController>(*machine);
 }
 
 void Oric::run()
@@ -126,21 +127,11 @@ void Oric::run()
 
         switch (state) {
             case STATE_RUN:
-                machine->run(this);
+                machine->run_until_frame_or_break(this);
                 break;
-            case STATE_MON:
-            {
-                std::string cmd;
-                std::print(">> ");
-
-                if (! getline(std::cin, cmd)) {
-                    state = STATE_QUIT;
-                    break;
-                }
-
-                state = handle_command(cmd);
+            case STATE_HALTED:
+                run_halted_frame();
                 break;
-            }
             case STATE_QUIT:
                 do_run = false;
                 break;
@@ -157,35 +148,37 @@ bool Oric::handle_sigint()
 
     sigint_received = 0;
 
-    if (state == STATE_MON) {
+    if (state == STATE_HALTED) {
         state = STATE_QUIT;
         return true;
     }
 
-    machine->stop();
-    do_break();
+    break_execution();
     return true;
 }
 
 
 void Oric::do_break()
 {
-    last_command = "";
-    last_address = 0;
+    break_execution();
+}
 
-    if (state == STATE_MON) {
-        std::println("\n\n - Bye! - \n\n");
-    }
-    else
-    {
-        std::println("");
-        std::println("* Oric Monitor *\n");
-        std::println("        Ctrl-c : to exit the emulator");
-        std::println("    g <return> : to continue the emulation");
-        std::println("    h <return> : for help (more commands)\n");
+void Oric::break_execution()
+{
+    if (debugger_controller) {
+        debugger_controller->reset();
     }
 
-    state = STATE_MON;
+    if (frontend) {
+        frontend->show_debugger();
+    }
+
+    state = STATE_HALTED;
+}
+
+void Oric::continue_execution()
+{
+    state = STATE_RUN;
 }
 
 
@@ -194,134 +187,36 @@ void Oric::do_quit()
     state = STATE_QUIT;
 }
 
-
-uint16_t Oric::string_to_word(std::string& addr)
+void Oric::run_halted_frame()
 {
-    uint16_t x;
-    std::stringstream ss;
-    ss << std::hex << addr;
-    ss >> x;
-    return x;
+    if (!frontend->handle_frame()) {
+        state = STATE_QUIT;
+        return;
+    }
+
+    machine->render_current_frame();
+    std::this_thread::sleep_for(std::chrono::milliseconds(20));
 }
 
-
-Oric::State Oric::handle_command(std::string& command_line)
+DebuggerController::Result Oric::submit_debugger_command(const std::string& command_line)
 {
-    if (command_line.empty()) {
-        if (last_command.empty()) {
-            return STATE_MON;
-        }
-        command_line = last_command;
-    }
-    else {
-        last_command = command_line;
+    std::string trimmed_command = command_line;
+    boost::trim(trimmed_command);
+    if (state == STATE_RUN && (trimmed_command == "s" || trimmed_command.starts_with("s "))) {
+        break_execution();
     }
 
-    std::vector<std::string> parts;
-    boost::split(parts, command_line, boost::is_any_of("\t "));
-    std::string cmd = parts[0];
+    auto result = debugger_controller->execute(command_line);
 
-    if (cmd == "h") {
-        std::println("Available monitor commands:\n");
-        std::println("ay              : print AY-3-8912 sound chip info");
-        std::println("bs <address>    : set breakpoint for address");
-        std::println("d               : disassemble from last address or PC");
-        std::println("d <address> <n> : disassemble from address and n bytes ahead (example: d c000 10)");
-        std::println("debug           : show debug output at run time");
-        std::println("g               : go (continue)");
-        std::println("g <address>     : go to address and run (example: g 1f00)");
-        std::println("h               : help (showing this text)");
-        std::println("i               : print machine info");
-        std::println("m <address> <n> : dump memory from address and n bytes ahead (example: m 1f00 20)");
-        std::println("pc <address>    : set program counter to address");
-        std::println("quiet           : prevent debug output at run time");
-        std::println("q               : quit");
-        std::println("s [n]           : step one or possible n steps");
-        std::println("sr, softreset   : soft reset oric");
-        std::println("v               : print VIA (6522) info\n");
-        return STATE_MON;
+    if (result.action == DebuggerController::Action::Break) {
+        break_execution();
     }
-    else if (cmd == "ay") { // info
-        machine->ay3->print_status();
+    else if (result.action == DebuggerController::Action::Continue) {
+        continue_execution();
     }
-    else if (cmd == "bs") { // set breakpoint <address>
-        if (parts.size() < 2) {
-            std::println("Error: missing address");
-            return STATE_MON;
-        }
-        uint16_t addr = string_to_word(parts[1]);
-        machine->cpu->set_breakpoint(addr);
-    }
-    else if (cmd == "d") { // info
-        if (parts.size() == 1) {
-            uint16_t addr = (last_address == 0) ? machine->cpu->get_pc() : last_address;
-            last_address = machine->get_monitor().disassemble(addr, 30);
-            return STATE_MON;
-        }
-        if (parts.size() < 3) {
-            std::println("Use: d <start address> <length>");
-            return STATE_MON;
-        }
-        last_address = machine->get_monitor().disassemble(string_to_word(parts[1]), string_to_word(parts[2]));
-    }
-    else if (cmd == "debug") {
-        machine->set_disassemble_execution(true);
-        std::println("Debug mode enabled");
-    }
-    else if (cmd == "g") { // go <address>
-        return STATE_RUN;
-    }
-    else if (cmd == "i") { // info
-        std::println("PC: ${:04X}", machine->cpu->get_pc());
-        machine->PrintStat();
-    }
-    else if (cmd == "m") { // info
-        if (parts.size() < 3) {
-            std::println("Use: m <start address> <length>");
-            return STATE_MON;
-        }
-        machine->memory.show(string_to_word(parts[1]), string_to_word(parts[2]));
-    }
-    else if (cmd == "pc") { // set pc
-        if (parts.size() < 2) {
-            std::println("Error: missing address");
-            return STATE_MON;
-        }
-        uint16_t addr = string_to_word(parts[1]);
-        machine->cpu->set_pc(addr);
-        machine->PrintStat();
-    }
-    else if (cmd == "q") { // quit
-        std::println("quit");
-        return STATE_QUIT;
-    }
-    else if (cmd == "quiet") {
-        machine->set_disassemble_execution(false);
-        std::println("Quiet mode enabled");
-    }
-    else if (cmd == "s") { // step
-        if (parts.size() == 2) {
-            machine->run(std::stol(parts[1]), this);
-        }
-        else {
-            bool brk = false;
-            while (! machine->cpu->exec(false, brk)) {}
-            if (brk) {
-                std::println("Instruction BRK executed.");
-            }
-        }
-        machine->PrintStat();
-    }
-    else if (cmd == "sr" || cmd == "softreset") {
-        machine->cpu->NMI();
-        std::println("NMI triggered");
-    }
-    else if (cmd == "v") { // info
-        machine->mos_6522->get_state().print();
-    }
-    else {
-        println("Unknown command \"{}\". Use command \"h\" to get help.", cmd);
+    else if (result.action == DebuggerController::Action::Quit) {
+        state = STATE_QUIT;
     }
 
-    return STATE_MON;
+    return result;
 }

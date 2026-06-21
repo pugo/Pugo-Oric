@@ -23,6 +23,7 @@
 
 #include "frontends/gui/status_bar.hpp"
 #include "frontends/gui/memory_map_window.hpp"
+#include "frontends/gui/debugger_window.hpp"
 
 class Oric;
 
@@ -49,6 +50,8 @@ public:
     ImVec2 side_panel_size(int window_width, int window_height) const;
 
     MemoryMapWindow& get_memory_map_window() { return memory_map_window; }
+    DebuggerWindow& get_debugger_window() { return debugger_window; }
+    void show_debugger();
 
 private:
     Oric& oric;
@@ -58,6 +61,7 @@ private:
 
     StatusBar _status_bar;
     MemoryMapWindow memory_map_window;
+    DebuggerWindow debugger_window;
 
     bool show_gui{false};
     bool initialized{false};

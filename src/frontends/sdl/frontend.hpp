@@ -20,6 +20,7 @@
 
 #include <filesystem>
 #include <cstdint>
+#include <string>
 #include <vector>
 
 #include <SDL3/SDL.h>
@@ -98,6 +99,8 @@ public:
      * @return reference to status bar handler
      */
     virtual StatusBar& get_status_bar() { return gui.status_bar(); }
+    virtual void show_debugger() { gui.show_debugger(); }
+    virtual void append_debugger_output(const std::string& output) { gui.get_debugger_window().append_output(output); }
 
     virtual std::optional<std::filesystem::path> select_file(const std::string& title);
 

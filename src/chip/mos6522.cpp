@@ -17,6 +17,8 @@
 
 #include <utility>
 #include <print>
+#include <format>
+#include <sstream>
 
 #include <machine.hpp>
 #include "mos6522.hpp"
@@ -85,23 +87,30 @@ void MOS6522::State::reset()
 
 void MOS6522::State::print() const
 {
-    std::println("VIA status:");
-    std::println("      ORA: {:02X}", ora);
-    std::println("     DDRA: {:02X}", ddra);
-    std::println("      ORB: {:02X}", orb);
-    std::println("     DDRB: {:02X}", ddrb);
-    std::println("    T1C_L: {:02X}", t1_counter & 0x00ff);
-    std::println("    T1C_H: {:02X}", t1_counter >> 8);
-    std::println("    T1L_L: {:02X}", t1_latch_low);
-    std::println("    T1L_H: {:02X}", t1_latch_high);
-    std::println("    T2C_L: {:02X}", t2_counter & 0x00ff);
-    std::println("    T2C_H: {:02X}", t2_counter >> 8);
-    std::println("       SR: {:02X}", sr);
-    std::println("      ACR: {:02X}", acr);
-    std::println("      PCR: {:02X}", pcr);
-    std::println("      IFR: {:02X}", ifr);
-    std::println("      IER: {:02X}", ier);
-    std::println("    IORA2: {:02X}", ora);
+    std::print("{}", to_string());
+}
+
+std::string MOS6522::State::to_string() const
+{
+    std::ostringstream output;
+    output << "VIA status:\n";
+    output << std::format("      ORA: {:02X}\n", ora);
+    output << std::format("     DDRA: {:02X}\n", ddra);
+    output << std::format("      ORB: {:02X}\n", orb);
+    output << std::format("     DDRB: {:02X}\n", ddrb);
+    output << std::format("    T1C_L: {:02X}\n", t1_counter & 0x00ff);
+    output << std::format("    T1C_H: {:02X}\n", t1_counter >> 8);
+    output << std::format("    T1L_L: {:02X}\n", t1_latch_low);
+    output << std::format("    T1L_H: {:02X}\n", t1_latch_high);
+    output << std::format("    T2C_L: {:02X}\n", t2_counter & 0x00ff);
+    output << std::format("    T2C_H: {:02X}\n", t2_counter >> 8);
+    output << std::format("       SR: {:02X}\n", sr);
+    output << std::format("      ACR: {:02X}\n", acr);
+    output << std::format("      PCR: {:02X}\n", pcr);
+    output << std::format("      IFR: {:02X}\n", ifr);
+    output << std::format("      IER: {:02X}\n", ier);
+    output << std::format("    IORA2: {:02X}\n", ora);
+    return output.str();
 }
 
 void MOS6522::State::sr_shift_in()
@@ -775,4 +784,3 @@ void MOS6522::write_cb2(bool value)
         if (cb2_changed_handler) { cb2_changed_handler(machine, state.cb2); }
     }
 }
-
