@@ -182,8 +182,8 @@ public:
     void insert_tape(std::filesystem::path path);
     void eject_tape();
 
-    void insert_disk(std::filesystem::path path);
-    void eject_disk();
+    void insert_disk(std::filesystem::path path, uint8_t drive_number = 0);
+    void eject_disk(uint8_t drive_number);
 
     Drive* get_disk_drive() { return disk.get(); }
 

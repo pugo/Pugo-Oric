@@ -30,6 +30,11 @@ bool DriveNone::insert_disk(const std::filesystem::path& path, uint8_t drive_num
     return false;
 }
 
+bool DriveNone::eject_disk(uint8_t drive_number)
+{
+    return false;
+}
+
 DiskImage* DriveNone::get_disk_image()
 {
     return nullptr;

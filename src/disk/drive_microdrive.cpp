@@ -101,6 +101,26 @@ bool DriveMicrodrive::insert_disk(const std::filesystem::path& path, uint8_t dri
     return true;
 }
 
+bool DriveMicrodrive::eject_disk(uint8_t drive_number)
+{
+    if (drive_number >= disk_images.size()) {
+        BOOST_LOG_TRIVIAL(warning) << "Invalid drive number: " << (int)drive_number;
+        return false;
+    }
+
+    auto& disk_image = disk_images[drive_number];
+    if (disk_image) {
+        disk_image->flush_if_dirty(true);
+    }
+
+    disk_image = nullptr;
+    if (drive_number == state.drive_number) {
+        wd1793.selected_drive_changed();
+    }
+
+    return true;
+}
+
 DiskImage* DriveMicrodrive::get_disk_image()
 {
     if (state.drive_number >= disk_images.size()) {

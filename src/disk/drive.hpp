@@ -55,6 +55,13 @@ public:
     virtual bool insert_disk(const std::filesystem::path& path, uint8_t drive_number = 0) = 0;
 
     /**
+     * Eject disk image.
+     * @param drive_number drive number
+     * @return true on success
+     */
+    virtual bool eject_disk(uint8_t drive_number) = 0;
+
+    /**
      * Get disk image.
      * @return reference to disk image
      */

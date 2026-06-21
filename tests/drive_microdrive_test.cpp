@@ -192,6 +192,40 @@ TEST_F(DriveMicrodriveTest, MediaChangeDuringCommandClearsWd1793BusyState)
     EXPECT_EQ(drive.read_byte(0x8), 0xff);
 }
 
+TEST_F(DriveMicrodriveTest, EjectsOneDriveWithoutAffectingAnother)
+{
+    DriveMicrodrive drive(oric->get_machine());
+
+    ASSERT_TRUE(drive.insert_disk(make_disk(0x11), 0));
+    auto* drive0_image = drive.get_disk_image();
+    ASSERT_NE(drive0_image, nullptr);
+
+    ASSERT_TRUE(drive.insert_disk(make_disk(0x22), 1));
+    drive.write_byte(0x4, 0x20);
+    auto* drive1_image = drive.get_disk_image();
+    ASSERT_NE(drive1_image, nullptr);
+    EXPECT_NE(drive1_image, drive0_image);
+
+    EXPECT_TRUE(drive.eject_disk(1));
+    EXPECT_EQ(drive.get_disk_image(), nullptr);
+
+    drive.write_byte(0x4, 0x00);
+    EXPECT_EQ(drive.get_disk_image(), drive0_image);
+}
+
+TEST_F(DriveMicrodriveTest, EjectSelectedDriveClearsWd1793MediaPointers)
+{
+    DriveMicrodrive drive(oric->get_machine());
+
+    ASSERT_TRUE(drive.insert_disk(make_disk(0x33), 0));
+    EXPECT_NE(drive.get_wd1793_state().current_track, nullptr);
+
+    EXPECT_TRUE(drive.eject_disk(0));
+    EXPECT_EQ(drive.get_disk_image(), nullptr);
+    EXPECT_EQ(drive.get_wd1793_state().current_track, nullptr);
+    EXPECT_EQ(drive.get_wd1793_state().current_sector, nullptr);
+}
+
 TEST_F(DriveMicrodriveTest, DriveSwitchClearsAndReloadsWd1793MediaPointers)
 {
     DriveMicrodrive drive(oric->get_machine());

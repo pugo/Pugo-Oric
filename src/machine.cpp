@@ -393,9 +393,9 @@ void Machine::eject_tape()
     frontend->get_status_bar().show_text_for("Tape ejected", 2s);
 }
 
-void Machine::insert_disk(std::filesystem::path path)
+void Machine::insert_disk(std::filesystem::path path, uint8_t drive_number)
 {
-    BOOST_LOG_TRIVIAL(info) << "Loading disk from: " << path.string();
+    BOOST_LOG_TRIVIAL(info) << "Loading disk " << (int)drive_number + 1 << " from: " << path.string();
 
     if (! std::filesystem::exists(path)) {
         BOOST_LOG_TRIVIAL(error) << "Disk file not found";
@@ -413,7 +413,7 @@ void Machine::insert_disk(std::filesystem::path path)
         microdrive = new_microdrive.get();
     }
 
-    if (!microdrive->insert_disk(path)) {
+    if (!microdrive->insert_disk(path, drive_number)) {
         BOOST_LOG_TRIVIAL(info) << "Failed to load disk image";
         if (frontend) {
             frontend->get_status_bar().show_text_for("Failed to load disk image", 2s);
@@ -429,15 +429,19 @@ void Machine::insert_disk(std::filesystem::path path)
     }
 
     if (frontend) {
-        frontend->get_status_bar().show_text_for("Disk inserted", 2s);
+        frontend->get_status_bar().show_text_for(std::format("Disk {} inserted", (int)drive_number + 1), 2s);
     }
 }
 
-void Machine::eject_disk()
+void Machine::eject_disk(uint8_t drive_number)
 {
-    BOOST_LOG_TRIVIAL(info) << "Ejecting disk";
-    disk = std::make_unique<DriveNone>();
-    frontend->get_status_bar().show_text_for("Disk ejected", 2s);
+    BOOST_LOG_TRIVIAL(info) << "Ejecting disk " << (int)drive_number + 1;
+    if (disk->eject_disk(drive_number)) {
+        frontend->get_status_bar().show_text_for(std::format("Disk {} ejected", (int)drive_number + 1), 2s);
+    }
+    else {
+        frontend->get_status_bar().show_text_for(std::format("No disk in drive {}", (int)drive_number + 1), 2s);
+    }
 }
 
 void Machine::PrintStat()

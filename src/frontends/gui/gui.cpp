@@ -103,15 +103,21 @@ void Gui::render()
         }
 
         ImGui::Text("Disk:");
-        if (ImGui::Button("Insert disk")) {
-            auto result = oric.get_frontend().select_file("Choose disk file");
-            if (result.has_value()) {
-                oric.get_machine().insert_disk(result.value());
+        for (uint8_t drive = 0; drive < 4; drive++) {
+            ImGui::PushID(drive);
+            ImGui::Text("Drive %d:", drive + 1);
+            ImGui::SameLine();
+            if (ImGui::Button("Mount")) {
+                auto result = oric.get_frontend().select_file("Choose disk file");
+                if (result.has_value()) {
+                    oric.get_machine().insert_disk(result.value(), drive);
+                }
             }
-        }
-        ImGui::SameLine();
-        if (ImGui::Button("Eject disk")) {
-            oric.get_machine().eject_disk();
+            ImGui::SameLine();
+            if (ImGui::Button("Eject")) {
+                oric.get_machine().eject_disk(drive);
+            }
+            ImGui::PopID();
         }
 
         ImGui::Text("Snapshots:");

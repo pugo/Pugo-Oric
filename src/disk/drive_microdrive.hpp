@@ -78,6 +78,13 @@ public:
     bool insert_disk(const std::filesystem::path& path, uint8_t drive_number = 0) override;
 
     /**
+     * Eject disk image.
+     * @param drive_number drive number
+     * @return true on success
+     */
+    bool eject_disk(uint8_t drive_number) override;
+
+    /**
      * Get disk image.
      * @return reference to disk image
      */
