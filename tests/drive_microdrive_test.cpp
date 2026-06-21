@@ -130,6 +130,68 @@ TEST_F(DriveMicrodriveTest, KeepsSeparateImagesPerDrive)
     EXPECT_EQ(drive.get_disk_image(), drive0_image);
 }
 
+TEST_F(DriveMicrodriveTest, MachineDiskInsertKeepsExistingMicrodriveState)
+{
+    auto& machine = oric->get_machine();
+
+    ASSERT_TRUE(machine.cpu != nullptr);
+
+    machine.insert_disk(make_disk(0x66));
+    auto* drive = dynamic_cast<DriveMicrodrive*>(machine.get_disk_drive());
+    ASSERT_NE(drive, nullptr);
+    ASSERT_NE(drive->get_disk_image(), nullptr);
+
+    drive->write_byte(0x4, 0x20);
+    ASSERT_EQ(drive->get_disk_image(), nullptr);
+
+    machine.insert_disk(make_disk(0x77));
+    auto* drive_after_insert = dynamic_cast<DriveMicrodrive*>(machine.get_disk_drive());
+
+    EXPECT_EQ(drive_after_insert, drive);
+    ASSERT_NE(drive_after_insert, nullptr);
+    EXPECT_EQ(drive_after_insert->get_disk_image(), nullptr);
+}
+
+TEST_F(DriveMicrodriveTest, MachineDiskInsertReplacesDriveNoneAfterBootWithoutDisk)
+{
+    auto& machine = oric->get_machine();
+
+    ASSERT_TRUE(machine.cpu != nullptr);
+
+    machine.init_disk();
+    ASSERT_EQ(dynamic_cast<DriveMicrodrive*>(machine.get_disk_drive()), nullptr);
+
+    machine.insert_disk(make_disk(0x88));
+    auto* drive = dynamic_cast<DriveMicrodrive*>(machine.get_disk_drive());
+
+    ASSERT_NE(drive, nullptr);
+    EXPECT_NE(drive->get_disk_image(), nullptr);
+    EXPECT_FALSE(machine.oric_rom_enabled);
+    EXPECT_TRUE(machine.disk_rom_enabled);
+}
+
+TEST_F(DriveMicrodriveTest, MediaChangeDuringCommandClearsWd1793BusyState)
+{
+    DriveMicrodrive drive(oric->get_machine());
+
+    ASSERT_TRUE(drive.insert_disk(make_disk(0x99), 0));
+
+    drive.write_byte(0x2, 0x01);
+    drive.write_byte(0x0, 0x80);
+    ASSERT_NE(drive.get_wd1793_state().status & WD1793::StatusBusy, 0);
+    ASSERT_GT(drive.get_wd1793_state().data_request_counter, 0);
+
+    ASSERT_TRUE(drive.insert_disk(make_disk(0xaa), 0));
+
+    EXPECT_EQ(drive.get_wd1793_state().status & WD1793::StatusBusy, 0);
+    EXPECT_EQ(drive.get_wd1793_state().status & WD1793::StatusDataRequest, 0);
+    EXPECT_EQ(drive.get_wd1793_state().data_request_counter, 0);
+    EXPECT_EQ(drive.get_wd1793_state().interrupt_counter, 0);
+    EXPECT_NE(drive.get_wd1793_state().current_track, nullptr);
+    EXPECT_EQ(drive.get_wd1793_state().current_sector, nullptr);
+    EXPECT_EQ(drive.read_byte(0x8), 0xff);
+}
+
 TEST_F(DriveMicrodriveTest, DriveSwitchClearsAndReloadsWd1793MediaPointers)
 {
     DriveMicrodrive drive(oric->get_machine());

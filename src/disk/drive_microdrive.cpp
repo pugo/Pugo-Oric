@@ -73,7 +73,7 @@ bool DriveMicrodrive::insert_disk(const std::filesystem::path& path, uint8_t dri
         }
         disk_image = nullptr;
         if (drive_number == state.drive_number) {
-            wd1793.selected_drive_changed();
+            wd1793.media_changed();
         }
         return false;
     }
@@ -87,7 +87,7 @@ bool DriveMicrodrive::insert_disk(const std::filesystem::path& path, uint8_t dri
         BOOST_LOG_TRIVIAL(warning) << "Failed to initialize disk image: " << path.string();
         disk_image = nullptr;
         if (drive_number == state.drive_number) {
-            wd1793.selected_drive_changed();
+            wd1793.media_changed();
         }
         return false;
     }
@@ -95,7 +95,7 @@ bool DriveMicrodrive::insert_disk(const std::filesystem::path& path, uint8_t dri
     disk_image_path = path;
     disk_image = std::move(new_disk_image);
     if (drive_number == state.drive_number) {
-        wd1793.selected_drive_changed();
+        wd1793.media_changed();
     }
 
     return true;

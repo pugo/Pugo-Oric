@@ -191,6 +191,11 @@ public:
     void selected_drive_changed();
 
     /**
+     * Indicate that media in the selected drive has changed.
+     */
+    void media_changed();
+
+    /**
      * Read register value.
      * @param offset register to read
      * @return value of register

@@ -399,20 +399,38 @@ void Machine::insert_disk(std::filesystem::path path)
 
     if (! std::filesystem::exists(path)) {
         BOOST_LOG_TRIVIAL(error) << "Disk file not found";
-        frontend->get_status_bar().show_text_for("Disk file not found", 2s);
+        if (frontend) {
+            frontend->get_status_bar().show_text_for("Disk file not found", 2s);
+        }
         return;
     }
 
-    disk = std::make_unique<DriveMicrodrive>(*this);
-    if (!disk->insert_disk(path)) {
+    auto* microdrive = dynamic_cast<DriveMicrodrive*>(disk.get());
+    std::unique_ptr<DriveMicrodrive> new_microdrive;
+
+    if (!microdrive) {
+        new_microdrive = std::make_unique<DriveMicrodrive>(*this);
+        microdrive = new_microdrive.get();
+    }
+
+    if (!microdrive->insert_disk(path)) {
         BOOST_LOG_TRIVIAL(info) << "Failed to load disk image";
-        frontend->get_status_bar().show_text_for("Failed to load disk image", 2s);
+        if (frontend) {
+            frontend->get_status_bar().show_text_for("Failed to load disk image", 2s);
+        }
         return;
     }
 
-    BOOST_LOG_TRIVIAL(info) << "Starting disk drive";
+    if (new_microdrive) {
+        disk = std::move(new_microdrive);
+        oric_rom_enabled = false;
+        disk_rom_enabled = true;
+        cpu->reset();
+    }
 
-    frontend->get_status_bar().show_text_for("Disk inserted", 2s);
+    if (frontend) {
+        frontend->get_status_bar().show_text_for("Disk inserted", 2s);
+    }
 }
 
 void Machine::eject_disk()

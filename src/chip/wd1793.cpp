@@ -477,6 +477,11 @@ void WD1793::set_side_number(uint8_t side)
 
 void WD1793::selected_drive_changed()
 {
+    media_changed();
+}
+
+void WD1793::media_changed()
+{
     state.current_track = nullptr;
     state.current_sector = nullptr;
     state.current_sector_number = 0;
@@ -485,7 +490,7 @@ void WD1793::selected_drive_changed()
     state.data_request_counter = 0;
     state.status_at_interrupt = 0;
     state.update_status_at_interrupt = false;
-    state.status &= ~StatusDataRequest;
+    state.status &= ~(StatusBusy | StatusDataRequest);
     drive->data_request_clear();
 
     if (! drive->get_disk_image()) {
@@ -493,7 +498,12 @@ void WD1793::selected_drive_changed()
         return;
     }
 
-    set_track(state.current_track_number);
+    auto* disk_image = drive->get_disk_image();
+    if (state.current_track_number >= disk_image->tracks_count()) {
+        return;
+    }
+
+    state.current_track = disk_image->get_track(state.side, state.current_track_number);
 }
 
 bool WD1793::set_track(uint8_t track)

@@ -185,6 +185,8 @@ public:
     void insert_disk(std::filesystem::path path);
     void eject_disk();
 
+    Drive* get_disk_drive() { return disk.get(); }
+
     /**
      * Set whether to disassemble executed instructions.
      * @param disassemble true to disassemble executed instructions
