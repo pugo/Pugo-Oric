@@ -18,7 +18,6 @@
 #ifndef TAPE_TAP_H
 #define TAPE_TAP_H
 
-#include <memory>
 #include <filesystem>
 
 #include "chip/mos6522.hpp"
@@ -27,6 +26,7 @@
 
 class TapeTap : public Tape
 {
+public:
     enum class TapeState {
         Idle,
         ParseHeader,
@@ -46,7 +46,6 @@ class TapeTap : public Tape
         std::string name;
     };
 
-public:
     TapeTap(MOS6522& via, const std::filesystem::path& path);
 
     virtual ~TapeTap() = default;
@@ -72,11 +71,6 @@ public:
      * @param motor_on true if motor is on
      */
     void motor_on(bool motor_on) override;
-
-    /**
-     * Execute one cycle.
-     */
-    void exec(uint8_t cycles) override;
 
 protected:
     /**
@@ -112,12 +106,6 @@ protected:
      */
     std::string read_null_terminated_string(size_t& offset) const;
 
-    /**
-     * Get current bit value.
-     * @return current bit value
-     */
-    uint8_t next_bit();
-
     std::filesystem::path path;
     MOS6522& via;
     size_t tape_size;
@@ -127,19 +115,12 @@ protected:
     uint32_t sync_end;
     uint32_t body_start;
     uint32_t body_remaining;
-    bool stopped_mid_byte;
-
     uint16_t leader_count;
-    uint8_t  gap_bits_remaining;
 
     uint32_t tape_pos;
     uint8_t bit_index;
-    uint8_t current_byte;
-    uint8_t current_bit;
-    uint8_t parity;
 
-    int16_t tape_cycle_counter;
-    uint8_t line_out;
+    bool stopped_mid_byte;
 
     std::vector<uint8_t> memory_vector;
     uint8_t* data;

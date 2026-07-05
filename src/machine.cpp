@@ -26,7 +26,7 @@
 #include "frontends/flags.hpp"
 #include "machine.hpp"
 #include "oric.hpp"
-#include "tape/tape_tap.hpp"
+#include "tape/tape_tap_normal.hpp"
 #include "tape/tape_blank.hpp"
 
 
@@ -201,7 +201,7 @@ void Machine::init_disk()
 void Machine::init_tape()
 {
     if (! oric.get_config().tape_path().empty()) {
-        tape = std::make_unique<TapeTap>(*mos_6522, oric.get_config().tape_path());
+        tape = std::make_unique<TapeTapNormal>(*mos_6522, oric.get_config().tape_path());
         if (!tape->init()) {
             exit(1);
         }
@@ -398,7 +398,7 @@ void Machine::insert_tape(std::filesystem::path path)
         return;
     }
 
-    tape = std::make_unique<TapeTap>(*mos_6522, path);
+    tape = std::make_unique<TapeTapNormal>(*mos_6522, path);
     if (!tape->init()) {
         frontend->get_status_bar().show_text_for("Failed to load tape", 2s);
     }
