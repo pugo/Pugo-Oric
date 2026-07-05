@@ -72,21 +72,21 @@ bool TapeTap::init()
     reset();
     BOOST_LOG_TRIVIAL(info) << "Tape: Reading TAP file '" << path << "'";
 
-    std::ifstream file (path, std::ios::in | std::ios::binary | std::ios::ate);
-    if (file.is_open())
-    {
-        tape_size = file.tellg();
-        memory_vector = std::vector<uint8_t>(tape_size);
-        data = memory_vector.data();
-
-        file.seekg(0, std::ios::beg);
-        file.read(reinterpret_cast<char*>(data), tape_size);
-        file.close();
+    if (!std::filesystem::exists(path)) {
+        BOOST_LOG_TRIVIAL(warning) << "Tape: TAP file does not exist";
+        return false;
     }
-    else {
+
+    tape_size = std::filesystem::file_size(path);
+
+    std::ifstream file(path, std::ios::binary);
+    if (!file) {
         BOOST_LOG_TRIVIAL(warning) << "Tape: unable to open TAP file";
         return false;
     }
+
+    memory_vector.assign(std::istreambuf_iterator<char>(file), {});
+    data = memory_vector.data();
 
     return true;
 }
@@ -258,10 +258,53 @@ void TapeTap::exec(uint8_t cycles)
 
 bool TapeTap::parse_header()
 {
+    size_t i = count_sync_bytes();
+    uint16_t sync_len = i;
+    sync_end = tape_pos + i;
+
+    if (!validate_header_start(i)) {
+        return false;
+    }
+
+    // Skip end of sync and reserved bytes.
+    i += 1 + 2;
+
+    auto file_type = data[tape_pos + i++];
+    uint8_t auto_flag = data[tape_pos + i++];
+    log_file_type(file_type, auto_flag);
+
+    const bool basic_mode = (file_type == 0x00) || (auto_flag == 0x80);
+    size_t desired_sync = basic_mode ? 192 : 112;
+
+    const uint16_t end_address = data[tape_pos + i] << 8 | data[tape_pos + i + 1];
+    i += 2;
+    const uint16_t start_address = data[tape_pos + i] << 8 | data[tape_pos + i + 1];
+    i += 2;
+
+    BOOST_LOG_TRIVIAL(debug) << std::format("Tape: start address: ${:04x}", start_address);
+    BOOST_LOG_TRIVIAL(debug) << std::format("Tape:   end address: ${:04x}", end_address);
+
+    // Skip one reserved byte.
+    i++;
+
+    // Read variable-length name
+    const std::string name = read_null_terminated_string(i);
+    BOOST_LOG_TRIVIAL(info) << "Tape: file name: " << name;
+
+    // Store where body starts, to allow delay after header.
+    body_start = tape_pos + i + 1;
+    body_remaining = uint32_t(end_address) - size_t(start_address) + 1;
+    leader_count = (sync_len < desired_sync) ? (desired_sync - sync_len) : 0;
+
+    return true;
+}
+
+
+size_t TapeTap::count_sync_bytes()
+{
     size_t i{0};
 
-    while (true)
-    {
+    while (true) {
         if (tape_pos + i >= tape_size) {
             return false;
         }
@@ -269,35 +312,40 @@ bool TapeTap::parse_header()
         if (data[tape_pos + i] != 0x16) {
             break;
         }
-
         ++i;
     }
 
-    BOOST_LOG_TRIVIAL(debug) << "Tape: found " << i << " sync bytes (0x16)";
-    uint16_t sync_len = i;
-    sync_end = tape_pos + i;
+    return i;
+}
 
-    if (i < 3) {
+
+bool TapeTap::validate_header_start(size_t pos)
+{
+    BOOST_LOG_TRIVIAL(debug) << "Tape: found " << pos << " sync bytes (0x16)";
+
+    if (pos < 3) {
         BOOST_LOG_TRIVIAL(warning) << "Tape: too few sync bytes, failing.";
         return false;
     }
 
-    if (data[tape_pos + i] != 0x24) {
+    if (data[tape_pos + pos] != 0x24) {
         BOOST_LOG_TRIVIAL(warning) << "Tape: missing end of sync bytes (0x24), failing.";
         return false;
     }
 
-    ++i;
+    ++pos;
 
-    if (i + 9 >= tape_size) {
+    if (pos + 9 >= tape_size) {
         BOOST_LOG_TRIVIAL(warning) << "Tape: too short (no specs and addresses).";
         return false;
     }
 
-    // Skip reserved bytes.
-    i += 2;
+    return true;
+}
 
-    auto file_type = data[tape_pos + i];
+
+void TapeTap::log_file_type(uint8_t file_type, uint8_t auto_flag)
+{
     switch(file_type)
     {
         case 0x00:
@@ -310,9 +358,7 @@ bool TapeTap::parse_header()
             BOOST_LOG_TRIVIAL(debug) << "Tape: file is unknown.";
             break;
     }
-    i++;
 
-    uint8_t auto_flag = data[tape_pos + i];
     switch(auto_flag)
     {
         case 0x80:
@@ -325,49 +371,27 @@ bool TapeTap::parse_header()
             BOOST_LOG_TRIVIAL(debug) << "Tape: Don't run automatically.";
             break;
     }
-    i++;
+}
 
-    const bool basic_mode = (file_type == 0x00) || (auto_flag == 0x80);
-    size_t desired_sync = basic_mode ? 192 : 112;
 
-    uint16_t start_address;
-    uint16_t end_address;
+std::string TapeTap::read_null_terminated_string(size_t& offset) const
+{
+    std::string result;
 
-    end_address = data[tape_pos + i] << 8 | data[tape_pos + i + 1];
-    i += 2;
-
-    start_address = data[tape_pos + i] << 8 | data[tape_pos + i + 1];
-    i += 2;
-
-    BOOST_LOG_TRIVIAL(debug) << std::format("Tape: start address: ${:04x}", start_address);
-    BOOST_LOG_TRIVIAL(debug) << std::format("Tape:   end address: ${:04x}", end_address);
-
-    // Skip one reserved byte.
-    i++;
-
-    std::string name;
-    while (true)
-    {
-        if (tape_pos + i >= tape_size) {
-            return false;
+    while (true) {
+        if (tape_pos + offset >= tape_size) {
+            return result;
         }
 
-        if (data[tape_pos + i] == 0x00) {
+        if (data[tape_pos + offset] == 0x00) {
             break;
         }
 
-        name += data[tape_pos + i];
-        ++i;
+        result += data[tape_pos + offset];
+        ++offset;
     }
-    BOOST_LOG_TRIVIAL(info) << "Tape: file name: " << name;
 
-    // Store where body starts, to allow delay after header.
-    body_start = tape_pos + i + 1;
-    body_remaining = uint32_t(end_address) - size_t(start_address) + 1;
-
-    leader_count = (sync_len < desired_sync) ? (desired_sync - sync_len) : 0;
-
-    return true;
+    return result;
 }
 
 // Tape output is a delicate thing on the Oric. The below is not exactly what the ROM routines expect,

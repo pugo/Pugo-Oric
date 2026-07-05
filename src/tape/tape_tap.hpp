@@ -38,6 +38,14 @@ class TapeTap : public Tape
         Fail
     };
 
+    struct TapeHeader {
+        uint16_t sync_len;
+        uint8_t file_type;
+        uint8_t auto_flag;
+        uint16_t start_addr, end_addr;
+        std::string name;
+    };
+
 public:
     TapeTap(MOS6522& via, const std::filesystem::path& path);
 
@@ -76,6 +84,33 @@ protected:
      * @return true if header is valid
      */
     bool parse_header();
+
+    /**
+     * Count sync bytes.
+     * @return number of sync bytes
+     */
+    size_t count_sync_bytes();
+
+    /**
+     * Validate header start.
+     * @param pos header start position
+     * @return true if header start is valid
+     */
+    bool validate_header_start(size_t pos);
+
+    /**
+     * Log file type info.
+     * @param file_type file type byte
+     * @param auto_flag auto flag byte
+     */
+    void log_file_type(uint8_t file_type, uint8_t auto_flag);
+
+    /**
+     * Read a null-terminated string from tape.
+     * @param offset offset to read from. Updated to end of string.
+     * @return read string
+     */
+    std::string read_null_terminated_string(size_t& offset) const;
 
     /**
      * Get current bit value.
