@@ -37,6 +37,7 @@
 class Oric;
 class Frontend;
 class AY3_8912;
+class TapeTapTurbo;
 
 
 class Machine
@@ -326,6 +327,8 @@ protected:
      */
     void PrintStat(uint16_t address);
     std::string format_stat(uint16_t address);
+    bool try_tape_turbo_intercept();
+    bool load_tape(std::filesystem::path path);
 
     ULA ula;
     Oric& oric;
@@ -333,6 +336,7 @@ protected:
 
     std::unique_ptr<Drive> disk;
     std::unique_ptr<Tape> tape;
+    TapeTapTurbo* tape_turbo;
 
     bool disassemble_execution;
     int32_t cycle_count;

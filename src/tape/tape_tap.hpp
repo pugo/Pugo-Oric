@@ -19,6 +19,7 @@
 #define TAPE_TAP_H
 
 #include <filesystem>
+#include <optional>
 
 #include "chip/mos6522.hpp"
 #include "tape.hpp"
@@ -73,6 +74,24 @@ public:
     void motor_on(bool motor_on) override;
 
 protected:
+    /**
+     * Check if TAP data is available.
+     * @return true if a TAP file has been loaded.
+     */
+    bool has_tap_data() const;
+
+    /**
+     * Seek from the current tape position to the next TAP sync marker.
+     * @return true if a valid sync marker was found.
+     */
+    bool seek_next_sync();
+
+    /**
+     * Read the next logical TAP byte and advance the tape position.
+     * @return next byte if available.
+     */
+    std::optional<uint8_t> read_next_tap_byte();
+
     /**
      * Read tape header.
      * @return true if header is valid

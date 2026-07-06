@@ -133,6 +133,7 @@ public:
 
     float vignette_strength() const { return _vignette_strength; }
 
+    bool tape_turbo_enabled() const { return _tape_turbo_enabled; }
 
 protected:
     bool _start_in_monitor;
@@ -158,6 +159,9 @@ protected:
     bool _enable_vignette;
 
     float _vignette_strength;
+
+    // Tape
+    bool _tape_turbo_enabled;
 };
 
 #endif // CONFIG_H

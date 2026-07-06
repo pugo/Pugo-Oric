@@ -52,7 +52,8 @@ Config::Config() :
                {RomType::OricAtmos, "basic11b.roms"},
                {RomType::Microdisk, "microdis.rom"}},
     _fonts_path{"./fonts"},
-    _images_path{"./images"}
+    _images_path{"./images"},
+    _tape_turbo_enabled{true}
 {
 }
 
@@ -63,6 +64,7 @@ bool Config::parse(int argc, char **argv)
         po::options_description desc("Allowed options");
 
         int zoom_arg;
+        bool disable_tape_turbo(false);
 
         desc.add_options()
             ("help,?", "produce help message")
@@ -70,6 +72,7 @@ bool Config::parse(int argc, char **argv)
             ("width,w", po::value<uint16_t>(&_window_width), "window width in pixels")
             ("height,h", po::value<uint16_t>(&_window_height), "window height in pixels")
             ("tape,t", po::value<std::filesystem::path>(&_tape_path), "tape image file to use")
+            ("tape-normal", po::bool_switch(&disable_tape_turbo), "disable tape turbo mode")
             ("disk1,d", po::value<std::filesystem::path>(&_disk_paths[0]), "disk image file to use for drive 1")
             ("disk2", po::value<std::filesystem::path>(&_disk_paths[1]), "disk image file to use for drive 2")
             ("disk3", po::value<std::filesystem::path>(&_disk_paths[2]), "disk image file to use for drive 3")
@@ -111,6 +114,10 @@ bool Config::parse(int argc, char **argv)
             }
             strm << rec[boost::log::expressions::smessage] << "\033[0m";
         });
+
+        if (disable_tape_turbo) {
+            _tape_turbo_enabled = false;
+        }
     }
     catch(std::exception& e)
     {

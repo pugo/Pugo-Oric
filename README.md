@@ -94,13 +94,20 @@ Allowed options:
   -w [ --width ] arg    window width in pixels
   -h [ --height ] arg   window height in pixels
   -t [ --tape ] arg     tape image file to use
+  --tape-normal         disable tape turbo mode
   -d [ --disk1 ] arg    disk image file to use for drive 1
   --disk2 arg           disk image file to use for drive 2
   --disk3 arg           disk image file to use for drive 3
   --disk4 arg           disk image file to use for drive 4
-  -m [ --monitor ]      start in monitor mode
+  -m [ --monitor ]      start with GUI debugger open
   -v [ --verbose ]      verbose output
+
 ```
+
+### Main menu
+
+The in-emulator main menu can be toggled with `F1`. It allows you to change
+the emulator settings, load tape and disk images, and more.
 
 ### Control keys
 
@@ -112,7 +119,6 @@ The following control keys can alter the emulator behavior.
 * `CTRL-W`: Toggle warp mode (go as fast as possible, speed up tape loading, etc.)
 * `CTRL-R`: Soft reset the emulator (NMI)
 * `CTRL-B`: Break to debugger (in console).
-
 
 ### Loading from tape image
 
@@ -164,10 +170,13 @@ enter the monitor mode. See the monitor section below for more
 information about the monitor. To exit for real, press `ctrl-c` a second 
 time.
 
-## Monitor
+## Monitor/Debugger
 
-You can at any time enter a small monitor mode by pressing `ctrl-c` in
+You can at any time enter a monitor mode by pressing `ctrl-c` in
 the terminal or by pressing `ctrl-b` inside the emulator.
+
+The monitor is shown as a panel in the emulation window. It allows you to 
+inspect the state of the emulated computer, set breakpoints, and more.
 
 The monitor has commands like the following.
 
@@ -215,9 +224,10 @@ The timeline is something like:
 * **2023:** AY3-8912 sound
 * **2024:** Cycle bug fixing, new monitor, blink mode, snapshots
 * **2025:** Status bar, new tape loading, zoom
-* **2026:** Microdisk loading, renaming project, moved to SDL3, Microdisc saving,
+* **2026:** Microdisk loading and saving, moved to SDL3,
         in emulation GUI, multi drive support, free window resizing, memory map view
-        Windows 10/11 support (thanks Dagfinn Dybvig!), 
+        Windows 10/11 support (thanks Dagfinn Dybvig!), Tape turbo loading,
+        in emulation window debugger.
 
 
 ## Contribution

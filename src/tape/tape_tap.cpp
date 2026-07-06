@@ -19,6 +19,7 @@
 #include <fstream>
 #include <cstdlib>
 #include <format>
+#include <optional>
 #include <print>
 #include <vector>
 #include <string>
@@ -111,6 +112,56 @@ void TapeTap::motor_on(bool motor_on)
             bit_index = 0;
         }
     }
+}
+
+bool TapeTap::has_tap_data() const
+{
+    return data != nullptr && tape_size > 0;
+}
+
+
+bool TapeTap::seek_next_sync()
+{
+    if (!has_tap_data()) {
+        return false;
+    }
+
+    const uint32_t original_tape_pos = tape_pos;
+
+    while (tape_pos < tape_size) {
+        if (data[tape_pos] != 0x16) {
+            ++tape_pos;
+            continue;
+        }
+
+        const size_t sync_start = tape_pos;
+        size_t sync_len = 0;
+
+        while (sync_start + sync_len < tape_size && data[sync_start + sync_len] == 0x16) {
+            ++sync_len;
+        }
+
+        if (sync_len >= 3 && sync_start + sync_len < tape_size && data[sync_start + sync_len] == 0x24) {
+            tape_pos = sync_start + sync_len;
+            BOOST_LOG_TRIVIAL(debug) << std::format("Tape: turbo sync at ${:x}", tape_pos);
+            return true;
+        }
+
+        tape_pos = sync_start + 1;
+    }
+
+    tape_pos = original_tape_pos;
+    return false;
+}
+
+
+std::optional<uint8_t> TapeTap::read_next_tap_byte()
+{
+    if (!has_tap_data() || tape_pos >= tape_size) {
+        return std::nullopt;
+    }
+
+    return data[tape_pos++];
 }
 
 
