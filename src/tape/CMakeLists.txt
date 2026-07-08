@@ -12,5 +12,6 @@ target_include_directories(tape PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(tape
         PUBLIC
         chip
+        utils
         ${AURIC_COMMON_LIBRARIES}
 )

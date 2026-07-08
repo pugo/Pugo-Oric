@@ -3,7 +3,6 @@
   "version-string": "1.0.0",
   "dependencies": [
     "argparse",
-    "boost-circular-buffer",
     {
       "name": "dbus",
       "default-features": false,

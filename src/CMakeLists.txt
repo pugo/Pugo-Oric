@@ -3,7 +3,6 @@
 if (DEFINED CMAKE_TOOLCHAIN_FILE)
     message("Using vcpkg")
 
-    find_package(Boost REQUIRED COMPONENTS circular_buffer)
     find_package(argparse CONFIG REQUIRED)
     find_package(glad CONFIG REQUIRED)
     find_package(SDL3 CONFIG REQUIRED)
@@ -11,20 +10,17 @@ if (DEFINED CMAKE_TOOLCHAIN_FILE)
     find_package(OpenGL REQUIRED)
     find_package(yaml-cpp CONFIG REQUIRED)
 
-    set(BOOST_LIBRARIES Boost::circular_buffer)
     set(SDL3_LIBRARIES SDL3::SDL3)
     set(GLAD_TARGET glad::glad)
 else ()
     message("Not using vcpkg")
 
-    find_package(Boost 1.71.0 REQUIRED)
     find_package(argparse CONFIG REQUIRED)
     find_package(SDL3 CONFIG REQUIRED)
     find_package(spdlog CONFIG REQUIRED)
     find_package(OpenGL REQUIRED)
     find_package(yaml-cpp REQUIRED)
 
-    set(BOOST_LIBRARIES Boost::boost)
     set(SDL3_LIBRARIES SDL3::SDL3)
 
     add_library(glad_vendor STATIC
@@ -39,13 +35,13 @@ else ()
 endif ()
 
 set(AURIC_COMMON_LIBRARIES
-        ${BOOST_LIBRARIES}
         spdlog::spdlog
 )
 
 add_subdirectory(chip)
 add_subdirectory(disk)
 add_subdirectory(tape)
+add_subdirectory(utils)
 
 add_subdirectory(frontends)
 
@@ -75,6 +71,7 @@ target_link_libraries(auric_lib
         disk
         frontend
         tape
+        utils
         ${AURIC_COMMON_LIBRARIES}
         argparse::argparse
 )

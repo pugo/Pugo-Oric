@@ -18,10 +18,14 @@
 #ifndef AY3_8912_H
 #define AY3_8912_H
 
+#include <cstddef>
+#include <cstdint>
 #include <print>
 #include <string>
-#include <boost/circular_buffer.hpp>
+#include <vector>
 #include <SDL3/SDL_audio.h>
+
+#include "utils/circular_buffer.hpp"
 
 class Snapshot;
 class Machine;
@@ -199,7 +203,7 @@ public:
         log_cycle += cycles;
     }
 
-    boost::circular_buffer<RegisterChange> buffer;
+    utils::CircularBuffer<RegisterChange> buffer;
 
     uint32_t new_log_cycle;
     uint32_t log_cycle;

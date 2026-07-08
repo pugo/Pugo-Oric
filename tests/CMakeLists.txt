@@ -1,6 +1,5 @@
 project(tests)
 
-find_package(Boost REQUIRED)
 find_package(SDL3 REQUIRED)
 
 include(FetchContent)
@@ -31,6 +30,6 @@ add_executable(gtests_run
 
 target_include_directories(gtests_run PUBLIC ../src)
 
-target_link_libraries(gtests_run  gtest_main gmock auric_lib ${BOOST_LIBRARIES} ${SDL3_LIBRARIES})
+target_link_libraries(gtests_run  gtest_main gmock auric_lib ${SDL3_LIBRARIES})
 
 add_test(NAME gtests_run COMMAND gtests_run)

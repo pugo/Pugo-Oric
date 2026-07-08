@@ -21,7 +21,7 @@
 #include "chip/mos6502.hpp"
 #include "memory.hpp"
 #include "tape_tap_turbo.hpp"
-#include "tape_utils.hpp"
+#include "utils/sha1.hpp"
 
 
 namespace {
@@ -112,7 +112,7 @@ bool TapeTapTurbo::intercept(MOS6502& cpu, Memory& ram, bool oric_rom_enabled)
 
 const TapeTapTurbo::TapeRomPatch* TapeTapTurbo::find_patch(const Memory& rom)
 {
-    const std::string rom_sha1 = tape_utils::sha1_hex(rom.mem, rom.get_size());
+    const std::string rom_sha1 = utils::sha1_hex(rom.mem, rom.get_size());
 
     for (const auto& candidate : tape_rom_patches) {
         if (rom_sha1 == candidate.sha1) {

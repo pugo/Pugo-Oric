@@ -15,8 +15,8 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
-#ifndef TAPE_UTILS_HPP
-#define TAPE_UTILS_HPP
+#ifndef UTILS_SHA1_HPP
+#define UTILS_SHA1_HPP
 
 #include <algorithm>
 #include <array>
@@ -27,8 +27,9 @@
 #include <string>
 
 
-namespace tape_utils
+namespace utils
 {
+
 /**
  * Compute SHA-1 hash of data.
  */
@@ -176,6 +177,6 @@ inline std::string sha1_hex(const uint8_t* data, size_t size)
     return result;
 }
 
-}
+} // namespace utils
 
-#endif
+#endif // UTILS_SHA1_HPP

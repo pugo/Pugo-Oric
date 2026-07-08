@@ -10,8 +10,6 @@ or as Brew packages on macOS (and more).
 
 The following dependencies are required.
 
- * `Boost`
-   * `Boost.Circular_buffer`
  * `argparse` (p-ranav/argparse)
  * `spdlog`
  * `SDL3`
@@ -20,7 +18,7 @@ The following dependencies are required.
 That means that the following packages could be installed on a Debian-based Linux system.
 
 ```
-$ apt install libboost-dev libargparse-dev libspdlog-dev libsdl3-dev libyaml-cpp-dev
+$ apt install libargparse-dev libspdlog-dev libsdl3-dev libyaml-cpp-dev
 ``` 
 
 ## Configuring with CMake

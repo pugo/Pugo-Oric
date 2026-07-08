@@ -13,5 +13,6 @@ target_link_libraries(chip
         PUBLIC
         ${AURIC_COMMON_LIBRARIES}
         auric_lib
+        utils
 )
 
