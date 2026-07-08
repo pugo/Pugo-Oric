@@ -73,6 +73,10 @@ void DebuggerWindow::render(const ImVec2& window_pos, const ImVec2& window_size)
         ImGui::EndChild();
 
         ImGui::SetNextItemWidth(-1.0f);
+        if (focus_input) {
+            ImGui::SetKeyboardFocusHere();
+            focus_input = false;
+        }
         if (ImGui::InputText("##DebuggerInput", &input, ImGuiInputTextFlags_EnterReturnsTrue)) {
             submit_command();
             ImGui::SetKeyboardFocusHere(-1);

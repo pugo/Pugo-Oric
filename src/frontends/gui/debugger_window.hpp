@@ -24,6 +24,7 @@ public:
 
     void set_visible(bool visible) { window_open = visible; }
     bool is_visible() const { return window_open; }
+    void request_input_focus() { focus_input = true; }
 
     void clear();
     void append_output(const std::string& output);
@@ -36,6 +37,7 @@ private:
     std::string input;
     bool window_open{false};
     bool scroll_to_bottom{false};
+    bool focus_input{false};
 };
 
 #endif // FRONTENDS_GUI_DEBUGGER_WINDOW_H

@@ -245,6 +245,7 @@ bool Gui::wants_side_panel() const
 void Gui::show_debugger()
 {
     debugger_window.set_visible(true);
+    debugger_window.request_input_focus();
 }
 
 float Gui::side_panel_width(int window_width) const

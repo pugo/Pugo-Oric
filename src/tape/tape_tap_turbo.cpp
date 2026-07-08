@@ -34,7 +34,7 @@ constexpr std::array<TapeTapTurbo::TapeRomPatch, 2> tape_rom_patches{{
         .get_sync_loop_pc = 0xe720,
         .read_byte_pc = 0xe6c9,
         .read_byte_end_pc = 0xe6fb,
-        .read_byte_set_carry = true,
+        .read_byte_set_carry = false,
         .read_byte_store_byte_addr = 0x002f,
         .read_byte_store_zero_addr = 0x02b1,
     },

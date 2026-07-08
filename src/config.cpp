@@ -17,6 +17,8 @@
 
 #include <iostream>
 #include <print>
+#include <string>
+#include <vector>
 
 #include <argparse/argparse.hpp>
 #include <spdlog/sinks/stdout_color_sinks.h>
@@ -84,7 +86,14 @@ bool Config::parse(int argc, char **argv)
             .default_value(false)
             .implicit_value(true);
 
-        program.parse_args(argc, argv);
+        std::vector<std::string> args(argv, argv + argc);
+        for (auto& arg : args) {
+            if (arg == "-1") {
+                arg = "--oric1";
+            }
+        }
+
+        program.parse_args(args);
 
         if (program.get<bool>("--help")) {
             std::cout << program;
