@@ -9,13 +9,53 @@
 
 #include "debugger_controller.hpp"
 
-#include <boost/algorithm/string.hpp>
+#include <algorithm>
+#include <cctype>
 #include <format>
 #include <sstream>
 #include <string>
 #include <vector>
 
 #include "machine.hpp"
+
+namespace
+{
+
+void trim(std::string& str)
+{
+    const auto is_not_space = [](unsigned char ch) {
+        return !std::isspace(ch);
+    };
+
+    str.erase(str.begin(), std::find_if(str.begin(), str.end(), is_not_space));
+    str.erase(std::find_if(str.rbegin(), str.rend(), is_not_space).base(), str.end());
+}
+
+std::vector<std::string> split_words(const std::string& str)
+{
+    std::vector<std::string> parts;
+    auto current = str.begin();
+
+    while (current != str.end()) {
+        current = std::find_if(current, str.end(), [](unsigned char ch) {
+            return !std::isspace(ch);
+        });
+
+        const auto next = std::find_if(current, str.end(), [](unsigned char ch) {
+            return std::isspace(ch);
+        });
+
+        if (current != next) {
+            parts.emplace_back(current, next);
+        }
+
+        current = next;
+    }
+
+    return parts;
+}
+
+}
 
 DebuggerController::DebuggerController(Machine& machine) :
     machine(machine)
@@ -81,7 +121,7 @@ std::string DebuggerController::step(size_t count)
 
 DebuggerController::Result DebuggerController::execute(std::string command_line)
 {
-    boost::trim(command_line);
+    trim(command_line);
 
     if (command_line.empty()) {
         if (last_command.empty()) {
@@ -93,8 +133,7 @@ DebuggerController::Result DebuggerController::execute(std::string command_line)
         last_command = command_line;
     }
 
-    std::vector<std::string> parts;
-    boost::split(parts, command_line, boost::is_any_of("\t "), boost::token_compress_on);
+    std::vector<std::string> parts = split_words(command_line);
     const std::string& cmd = parts[0];
 
     if (cmd == "h") {

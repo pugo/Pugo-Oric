@@ -12,7 +12,6 @@ The following dependencies are required.
 
  * `Boost`
    * `Boost.Circular_buffer`
-   * `Boost.Algorithm`
    * `Boost.UUID`
  * `argparse` (p-ranav/argparse)
  * `spdlog`

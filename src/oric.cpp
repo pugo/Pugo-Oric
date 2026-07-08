@@ -22,16 +22,34 @@
 #include <print>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <thread>
 
 #include <spdlog/spdlog.h>
-#include <boost/algorithm/string.hpp>
 
 #include "oric.hpp"
 #include "memory.hpp"
 #include "frontends/sdl/frontend.hpp"
 
 volatile std::sig_atomic_t sigint_received = 0;
+
+namespace
+{
+
+std::string_view trim_view(std::string_view str)
+{
+    constexpr std::string_view whitespace = " \t\n\r\f\v";
+
+    const auto first = str.find_first_not_of(whitespace);
+    if (first == std::string_view::npos) {
+        return {};
+    }
+
+    const auto last = str.find_last_not_of(whitespace);
+    return str.substr(first, last - first + 1);
+}
+
+}
 
 
 Oric::Oric(Config& config) :
@@ -202,8 +220,7 @@ void Oric::run_halted_frame()
 
 DebuggerController::Result Oric::submit_debugger_command(const std::string& command_line)
 {
-    std::string trimmed_command = command_line;
-    boost::trim(trimmed_command);
+    std::string_view trimmed_command = trim_view(command_line);
     if (state == STATE_RUN && (trimmed_command == "s" || trimmed_command.starts_with("s "))) {
         break_execution();
     }
