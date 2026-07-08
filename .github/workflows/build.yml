@@ -55,6 +55,8 @@ jobs:
           autoconf
           autoconf-archive
           automake
+          gcc-14
+          g++-14
           libegl1-mesa-dev
           libltdl-dev
           libtool
@@ -64,7 +66,16 @@ jobs:
           libxcursor-dev
           libxext-dev
           libxft-dev
+          libxi-dev
           libxkbcommon-dev
+          libxrandr-dev
+          libxtst-dev
+        if: runner.os == 'Linux'
+
+      - name: Select Linux compiler
+        run: |
+          echo "CC=gcc-14" >> "$GITHUB_ENV"
+          echo "CXX=g++-14" >> "$GITHUB_ENV"
         if: runner.os == 'Linux'
 
       - name: Install vcpkg
