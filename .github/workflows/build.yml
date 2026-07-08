@@ -48,6 +48,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-vcpkg-
 
+      - name: Install Linux build dependencies
+        run: sudo apt-get update && sudo apt-get install -y autoconf autoconf-archive automake libtool
+        if: runner.os == 'Linux'
+
       - name: Install vcpkg
         shell: bash
         run: |
