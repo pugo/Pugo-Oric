@@ -3,24 +3,28 @@
 if (DEFINED CMAKE_TOOLCHAIN_FILE)
     message("Using vcpkg")
 
-    find_package(Boost REQUIRED COMPONENTS log program_options circular_buffer)
+    find_package(Boost REQUIRED COMPONENTS circular_buffer)
+    find_package(argparse CONFIG REQUIRED)
     find_package(glad CONFIG REQUIRED)
     find_package(SDL3 CONFIG REQUIRED)
+    find_package(spdlog CONFIG REQUIRED)
     find_package(OpenGL REQUIRED)
     find_package(yaml-cpp CONFIG REQUIRED)
 
-    set(BOOST_LIBRARIES Boost::log Boost::program_options Boost::circular_buffer)
+    set(BOOST_LIBRARIES Boost::circular_buffer)
     set(SDL3_LIBRARIES SDL3::SDL3)
     set(GLAD_TARGET glad::glad)
 else ()
     message("Not using vcpkg")
 
-    find_package(Boost 1.71.0 COMPONENTS program_options log)
+    find_package(Boost 1.71.0 REQUIRED)
+    find_package(argparse CONFIG REQUIRED)
     find_package(SDL3 CONFIG REQUIRED)
+    find_package(spdlog CONFIG REQUIRED)
     find_package(OpenGL REQUIRED)
     find_package(yaml-cpp REQUIRED)
 
-    set(BOOST_LIBRARIES ${Boost_LIBRARIES})
+    set(BOOST_LIBRARIES Boost::boost)
     set(SDL3_LIBRARIES SDL3::SDL3)
 
     add_library(glad_vendor STATIC
@@ -33,6 +37,11 @@ else ()
     target_link_libraries(glad_vendor PUBLIC OpenGL::GL)
     set(GLAD_TARGET glad_vendor)
 endif ()
+
+set(AURIC_COMMON_LIBRARIES
+        ${BOOST_LIBRARIES}
+        spdlog::spdlog
+)
 
 add_subdirectory(chip)
 add_subdirectory(disk)
@@ -54,7 +63,8 @@ add_library(auric_lib STATIC
 target_include_directories(auric_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_link_libraries(auric_lib PUBLIC chip frontend tape
-                      ${BOOST_LIBRARIES}
+                      ${AURIC_COMMON_LIBRARIES}
+                      argparse::argparse
                       ${SDL3_LIBRARIES}
                       ${YAML_CPP_LIBRARIES})
 
@@ -65,7 +75,8 @@ target_link_libraries(auric_lib
         disk
         frontend
         tape
-        ${BOOST_LIBRARIES}
+        ${AURIC_COMMON_LIBRARIES}
+        argparse::argparse
 )
 
 # Main executable

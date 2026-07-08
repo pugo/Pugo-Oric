@@ -11,8 +11,7 @@ target_include_directories(chip PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_link_libraries(chip
         PUBLIC
-        ${BOOST_LIBRARIES}
+        ${AURIC_COMMON_LIBRARIES}
         auric_lib
 )
-
 

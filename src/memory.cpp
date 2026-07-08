@@ -15,7 +15,7 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
-#include <boost/log/trivial.hpp>
+#include "logging.hpp"
 #include <format>
 #include <fstream>
 #include <iostream>
@@ -40,7 +40,7 @@ Memory::Memory(size_t size) :
 
 void Memory::load(const std::filesystem::path& path, uint32_t address)
 {
-    BOOST_LOG_TRIVIAL(debug) << std::format("Memory: loading {} -> ${:04X}", path.string(), address);
+    AURIC_LOG(debug) << std::format("Memory: loading {} -> ${:04X}", path.string(), address);
 
     if (! std::filesystem::exists(path)) {
         throw(std::runtime_error(std::format("no such file: {}", path.string())));

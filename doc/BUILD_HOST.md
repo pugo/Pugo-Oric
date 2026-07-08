@@ -11,15 +11,18 @@ or as Brew packages on macOS (and more).
 The following dependencies are required.
 
  * `Boost`
-   * `Boost.Log`
-   * `Boost.Program_options`
    * `Boost.Circular_buffer`
+   * `Boost.Algorithm`
+   * `Boost.UUID`
+ * `argparse` (p-ranav/argparse)
+ * `spdlog`
  * `SDL3`
+ * `yaml-cpp`
 
 That means that the following packages could be installed on a Debian-based Linux system.
 
 ```
-$ apt install libboost-log-dev libboost-program-options-dev libboost-circular-buffer-dev libsdl3-dev
+$ apt install libboost-dev libargparse-dev libspdlog-dev libsdl3-dev libyaml-cpp-dev
 ``` 
 
 ## Configuring with CMake
@@ -53,4 +56,3 @@ If you want to build with ninja (after configuring for Ninja use), then the foll
 ```
 $ ninja
 ```
-

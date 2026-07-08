@@ -16,7 +16,7 @@
 // =========================================================================
 
 #include <array>
-#include <boost/log/trivial.hpp>
+#include "logging.hpp"
 #include <boost/uuid/detail/sha1.hpp>
 #include <format>
 #include <iomanip>
@@ -80,7 +80,7 @@ TapeTapTurbo::TapeTapTurbo(MOS6522& via, const std::filesystem::path& path, cons
     patch(patch),
     turbo_loading(false)
 {
-    BOOST_LOG_TRIVIAL(info) << "Tape: turbo supported for " << patch.name;
+    AURIC_LOG(info) << "Tape: turbo supported for " << patch.name;
 }
 
 
@@ -140,7 +140,7 @@ const TapeTapTurbo::TapeRomPatch* TapeTapTurbo::find_patch(const Memory& rom)
         }
     }
 
-    BOOST_LOG_TRIVIAL(info) << "Tape: turbo not supported for ROM SHA-1 " << rom_sha1;
+    AURIC_LOG(info) << "Tape: turbo not supported for ROM SHA-1 " << rom_sha1;
     return nullptr;
 }
 

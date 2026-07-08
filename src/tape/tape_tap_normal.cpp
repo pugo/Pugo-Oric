@@ -15,7 +15,7 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
-#include <boost/log/trivial.hpp>
+#include "logging.hpp"
 #include <fstream>
 #include <cstdlib>
 
@@ -58,7 +58,7 @@ void TapeTapNormal::exec(uint8_t cycles)
 
     if (tape_state == TapeState::ParseHeader) {
         if (!parse_header()) {
-            BOOST_LOG_TRIVIAL(error) << "Tape: failed to read header, stopping.";
+            AURIC_LOG(error) << "Tape: failed to read header, stopping.";
             motor_running = false;
             tape_state = TapeState::Fail;
             return;

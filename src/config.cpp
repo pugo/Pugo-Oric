@@ -15,31 +15,15 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
+#include <iostream>
 #include <print>
 
-#include <boost/log/trivial.hpp>
-#include <boost/log/core.hpp>
-#include <boost/log/utility/setup/console.hpp>
-#include <boost/log/expressions.hpp>
-#include <boost/program_options.hpp>
+#include <argparse/argparse.hpp>
+#include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/spdlog.h>
+#include "logging.hpp"
 
 #include "oric.hpp"
-
-namespace po = boost::program_options;
-namespace logging = boost::log;
-
-
-static const char* severity_color(logging::trivial::severity_level lvl) {
-    switch (lvl) {
-        case logging::trivial::trace:   return "\033[37m";
-        case logging::trivial::debug:   return "\033[36m";
-        case logging::trivial::info:    return "\033[32m";
-        case logging::trivial::warning: return "\033[33m";
-        case logging::trivial::error:   return "\033[31m";
-        case logging::trivial::fatal:   return "\033[41m";
-    }
-    return "\033[0m";
-}
 
 
 Config::Config() :
@@ -61,59 +45,87 @@ Config::Config() :
 bool Config::parse(int argc, char **argv)
 {
     try {
-        po::options_description desc("Allowed options");
-
-        int zoom_arg;
+        argparse::ArgumentParser program("oric", "1.0", argparse::default_arguments::none);
         bool disable_tape_turbo(false);
 
-        desc.add_options()
-            ("help,?", "produce help message")
-            ("oric1,1", po::bool_switch(&_use_oric1_rom), "use Oric 1 mode (default: Atmos mode)")
-            ("width,w", po::value<uint16_t>(&_window_width), "window width in pixels")
-            ("height,h", po::value<uint16_t>(&_window_height), "window height in pixels")
-            ("tape,t", po::value<std::filesystem::path>(&_tape_path), "tape image file to use")
-            ("tape-normal", po::bool_switch(&disable_tape_turbo), "disable tape turbo mode")
-            ("disk1,d", po::value<std::filesystem::path>(&_disk_paths[0]), "disk image file to use for drive 1")
-            ("disk2", po::value<std::filesystem::path>(&_disk_paths[1]), "disk image file to use for drive 2")
-            ("disk3", po::value<std::filesystem::path>(&_disk_paths[2]), "disk image file to use for drive 3")
-            ("disk4", po::value<std::filesystem::path>(&_disk_paths[3]), "disk image file to use for drive 4")
-            ("monitor,m", po::bool_switch(&_start_in_monitor), "start with GUI debugger open")
-            ("verbose,v", po::bool_switch(&_verbose), "verbose output");
+        program.add_argument("-?", "--help")
+            .help("produce help message")
+            .default_value(false)
+            .implicit_value(true);
+        program.add_argument("-1", "--oric1")
+            .help("use Oric 1 mode (default: Atmos mode)")
+            .default_value(false)
+            .implicit_value(true);
+        program.add_argument("-w", "--width")
+            .help("window width in pixels")
+            .scan<'i', uint16_t>();
+        program.add_argument("-h", "--height")
+            .help("window height in pixels")
+            .scan<'i', uint16_t>();
+        program.add_argument("-t", "--tape")
+            .help("tape image file to use");
+        program.add_argument("--tape-normal")
+            .help("disable tape turbo mode")
+            .default_value(false)
+            .implicit_value(true);
+        program.add_argument("-d", "--disk1")
+            .help("disk image file to use for drive 1");
+        program.add_argument("--disk2")
+            .help("disk image file to use for drive 2");
+        program.add_argument("--disk3")
+            .help("disk image file to use for drive 3");
+        program.add_argument("--disk4")
+            .help("disk image file to use for drive 4");
+        program.add_argument("-m", "--monitor")
+            .help("start with GUI debugger open")
+            .default_value(false)
+            .implicit_value(true);
+        program.add_argument("-v", "--verbose")
+            .help("verbose output")
+            .default_value(false)
+            .implicit_value(true);
 
-        po::variables_map vm;
-        po::store(po::command_line_parser(argc, argv).options(desc).run(), vm);
-        po::notify(vm);
+        program.parse_args(argc, argv);
 
-        if (vm.count("help")) {
-            std::println("Usage: oric [options]\n");
-            desc.print(std::cout);
+        if (program.get<bool>("--help")) {
+            std::cout << program;
             return false;
         }
 
-        if (!vm["width"].empty()) {
-            _window_width = vm["width"].as<uint16_t>();
+        _use_oric1_rom = program.get<bool>("--oric1");
+        _start_in_monitor = program.get<bool>("--monitor");
+        _verbose = program.get<bool>("--verbose");
+        disable_tape_turbo = program.get<bool>("--tape-normal");
+
+        if (auto width = program.present<uint16_t>("--width")) {
+            _window_width = *width;
         }
-        if (!vm["height"].empty()) {
-            _window_height = vm["height"].as<uint16_t>();
+        if (auto height = program.present<uint16_t>("--height")) {
+            _window_height = *height;
+        }
+        if (auto tape = program.present<std::string>("--tape")) {
+            _tape_path = *tape;
+        }
+        if (auto disk1 = program.present<std::string>("--disk1")) {
+            _disk_paths[0] = *disk1;
+        }
+        if (auto disk2 = program.present<std::string>("--disk2")) {
+            _disk_paths[1] = *disk2;
+        }
+        if (auto disk3 = program.present<std::string>("--disk3")) {
+            _disk_paths[2] = *disk3;
+        }
+        if (auto disk4 = program.present<std::string>("--disk4")) {
+            _disk_paths[3] = *disk4;
         }
 
-        if (_verbose) {
-            boost::log::core::get()->set_filter(boost::log::trivial::severity >= boost::log::trivial::debug);
+        auto logger = spdlog::get("auric");
+        if (!logger) {
+            logger = spdlog::stderr_color_mt("auric");
         }
-        else {
-            boost::log::core::get()->set_filter(boost::log::trivial::severity >= boost::log::trivial::info);
-        }
-
-        // Format logging output.
-        auto sink = boost::log::add_console_log(std::clog);
-
-        sink->set_formatter([](const logging::record_view& rec, logging::formatting_ostream& strm) {
-            auto lvl = rec[logging::trivial::severity];
-            if (lvl) {
-                strm << severity_color(*lvl) << "[" << *lvl << "]  ";
-            }
-            strm << rec[boost::log::expressions::smessage] << "\033[0m";
-        });
+        logger->set_pattern("%^[%l]  %v%$");
+        spdlog::set_default_logger(logger);
+        spdlog::set_level(_verbose ? spdlog::level::debug : spdlog::level::info);
 
         if (disable_tape_turbo) {
             _tape_turbo_enabled = false;

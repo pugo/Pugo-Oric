@@ -24,7 +24,7 @@
 #include <string>
 #include <thread>
 
-#include <boost/log/trivial.hpp>
+#include "logging.hpp"
 #include <boost/algorithm/string.hpp>
 
 #include "oric.hpp"

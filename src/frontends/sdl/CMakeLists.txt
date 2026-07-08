@@ -13,7 +13,7 @@ target_link_libraries(frontend_sdl3
         PUBLIC
         chip
         ${GLAD_TARGET}
-        ${BOOST_LIBRARIES}
+        ${AURIC_COMMON_LIBRARIES}
         ${SDL3_LIBRARIES}
         frontends_gui
 )
