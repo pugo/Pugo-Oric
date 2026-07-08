@@ -17,14 +17,11 @@
 
 #include <array>
 #include <spdlog/spdlog.h>
-#include <boost/uuid/detail/sha1.hpp>
-#include <format>
-#include <iomanip>
-#include <sstream>
 
 #include "chip/mos6502.hpp"
 #include "memory.hpp"
 #include "tape_tap_turbo.hpp"
+#include "tape_utils.hpp"
 
 
 namespace {
@@ -55,23 +52,6 @@ constexpr std::array<TapeTapTurbo::TapeRomPatch, 2> tape_rom_patches{{
     },
 }};
 
-std::string sha1_hex(const uint8_t* data, size_t size)
-{
-    boost::uuids::detail::sha1 sha1;
-    sha1.process_bytes(data, size);
-
-    boost::uuids::detail::sha1::digest_type digest;
-    sha1.get_digest(digest);
-
-    std::ostringstream result;
-    result << std::hex << std::setfill('0');
-
-    for (const uint8_t byte : digest) {
-        result << std::setw(2) << static_cast<unsigned int>(byte);
-    }
-
-    return result.str();
-}
 }
 
 
@@ -132,7 +112,7 @@ bool TapeTapTurbo::intercept(MOS6502& cpu, Memory& ram, bool oric_rom_enabled)
 
 const TapeTapTurbo::TapeRomPatch* TapeTapTurbo::find_patch(const Memory& rom)
 {
-    const std::string rom_sha1 = sha1_hex(rom.mem, rom.get_size());
+    const std::string rom_sha1 = tape_utils::sha1_hex(rom.mem, rom.get_size());
 
     for (const auto& candidate : tape_rom_patches) {
         if (rom_sha1 == candidate.sha1) {
