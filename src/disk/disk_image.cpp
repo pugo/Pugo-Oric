@@ -15,7 +15,7 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
-#include "logging.hpp"
+#include <spdlog/spdlog.h>
 #include <fstream>
 #include <print>
 #include <sstream>
@@ -34,13 +34,13 @@ DiskSector::DiskSector(uint16_t sector_number, std::span<uint8_t> sector_data) :
     sector_number(sector_number),
     valid(false)
 {
-    // AURIC_LOG(debug) << "   -- Sector data start byte: " << std::hex << (int)sector_data[0];
+    // spdlog::debug("   -- Sector data start byte: {:x}", static_cast<int>(sector_data[0]));
     // if (sector_data[0] == 0xfb) {
-    //     AURIC_LOG(debug) << "   -- Sector data ID byte indicates normal data sector";
+    //     spdlog::debug("   -- Sector data ID byte indicates normal data sector");
     // } else if (sector_data[0] == 0xf8) {
-    //     AURIC_LOG(debug) << "   -- Sector data ID byte indicates deleted data sector";
+    //     spdlog::debug("   -- Sector data ID byte indicates deleted data sector");
     // } else {
-    //     AURIC_LOG(debug) << "   -- Sector data ID byte indicates unknown sector type";
+    //     spdlog::debug("   -- Sector data ID byte indicates unknown sector type");
     // }
 
     if (sector_data[0] == 0xfb || sector_data[0] == 0xf8) {
@@ -55,7 +55,7 @@ DiskSector::DiskSector(uint16_t sector_number, std::span<uint8_t> sector_data) :
 
 DiskTrack::DiskTrack(std::span<uint8_t> track_data)
 {
-    AURIC_LOG(debug) << " DiskTrack - Track data size: " << track_data.size();
+    spdlog::debug(" DiskTrack - Track data size: {}", track_data.size());
 
     this->data = track_data;
     auto data_ptr = track_data.begin();
@@ -64,8 +64,8 @@ DiskTrack::DiskTrack(std::span<uint8_t> track_data)
     uint16_t sector{0};
 
     while (data_ptr < data_end) {
-        // AURIC_LOG(debug) << " -- ptr: " << std::hex << (data_ptr - track_data.begin())
-        //                          << " -- Searching for sector ID record for sector " << sector;
+        // spdlog::debug(" -- ptr: {:x} -- Searching for sector ID record for sector {}",
+        //                data_ptr - track_data.begin(), sector);
         while (data_ptr < (data_end - 10) &&
                !(data_ptr[0] == 0xa1 && data_ptr[1] == 0xa1 && data_ptr[2] == 0xa1 && data_ptr[3] == 0xfe)) {
             ++data_ptr;
@@ -82,11 +82,8 @@ DiskTrack::DiskTrack(std::span<uint8_t> track_data)
         auto bps = static_cast<uint16_t>(data_ptr[4]);
         auto sector_size = 128 << bps;
 
-        // AURIC_LOG(debug) << " -- ptr: " << std::hex << (data_ptr - track_data.begin())
-        //                          << " -- Track header: track " << track_nr
-        //                          << ", side " << side_nr
-        //                          << ", sector " << sector_nr
-        //                          << ", sector_size " << sector_size;
+        // spdlog::debug(" -- ptr: {:x} -- Track header: track {}, side {}, sector {}, sector_size {}",
+        //                data_ptr - track_data.begin(), track_nr, side_nr, sector_nr, sector_size);
         data_ptr += 7; // Skip ID record and CRC
 
         if (data_ptr >= data_end - sector_size - 3) {
@@ -100,8 +97,7 @@ DiskTrack::DiskTrack(std::span<uint8_t> track_data)
         auto sector_data = std::span<uint8_t>(data_ptr, sector_size + 3); // Include ID byte and CRC
         sectors.push_back(DiskSector(sector_nr, sector_data));
 
-        auto data_pos = data_ptr;
-        // AURIC_LOG(debug) << " -- data position: " << std::hex << (data_ptr - track_data.begin());
+        // spdlog::debug(" -- data position: {:x}", data_ptr - track_data.begin());
 
         data_ptr += 256;
     }
@@ -135,7 +131,7 @@ DiskSector* DiskTrack::get_first_sector()
 DiskSide::DiskSide(uint8_t side) :
     side(side)
 {
-    AURIC_LOG(debug) << "Added DiskSide: side " << (int)side;
+    spdlog::debug("Added DiskSide: side {}", static_cast<int>(side));
 }
 
 void DiskSide::add_track(DiskTrack track)
@@ -186,7 +182,7 @@ uint32_t DiskImage::read32(uint32_t offset) const
 
 bool DiskImage::init()
 {
-    AURIC_LOG(info) << "DiskImage: Reading disk image file '" << image_path << "'";
+    spdlog::info("DiskImage: Reading disk image file '{}'", image_path.string());
 
     std::ifstream file (image_path, std::ios::in | std::ios::binary | std::ios::ate);
     if (file.is_open())
@@ -200,14 +196,14 @@ bool DiskImage::init()
         file.close();
     }
     else {
-        AURIC_LOG(warning) << "DiskImage: unable to open image file";
+        spdlog::warn("DiskImage: unable to open image file");
         return false;
     }
 
     if (memory_vector.size() >= 8 && std::equal(memory_vector.begin(), memory_vector.begin() + 8, "MFM_DISK")) {
-        AURIC_LOG(info) << "DiskImage: MFM disk image detected";
+        spdlog::info("DiskImage: MFM disk image detected");
     } else {
-        AURIC_LOG(warning) << "DiskImage: unknown disk image format";
+        spdlog::warn("DiskImage: unknown disk image format");
         return false;
     }
 
@@ -215,12 +211,13 @@ bool DiskImage::init()
     tracks_count_ = static_cast<uint16_t>(read32(12));
     geometry_ = static_cast<uint8_t>(read32(16));
 
-    AURIC_LOG(debug) << "DiskImage: sides: " << (int)side_count_
-                            << ", tracks: " << (int)tracks_count_
-                            << ", geometry: " << (int)geometry_;
+    spdlog::debug("DiskImage: sides: {}, tracks: {}, geometry: {}",
+                  static_cast<int>(side_count_),
+                  static_cast<int>(tracks_count_),
+                  static_cast<int>(geometry_));
 
-    AURIC_LOG(debug) << "Total size: " << image_size;
-    AURIC_LOG(debug) << "data start: " << (void*)data;
+    spdlog::debug("Total size: {}", image_size);
+    spdlog::debug("data start: {}", static_cast<void*>(data));
 
     for (uint8_t i = 0; i < side_count_; ++i) {
         disk_sides.emplace_back(DiskSide(i));
@@ -229,16 +226,16 @@ bool DiskImage::init()
     size_t size_per_side = tracks_count_ * track_size;
 
     for (uint8_t side = 0; side < side_count_; ++side) {
-        AURIC_LOG(debug) << "======= DiskImage: sides: " << (int)side << " =======";
+        spdlog::debug("======= DiskImage: sides: {} =======", static_cast<int>(side));
 
         for (uint8_t track = 0; track < tracks_count_; ++track) {
             auto track_data = std::span<uint8_t>(data + header_size + (side * size_per_side) + (track * track_size), track_size);
             if (track_data.data() - data > image_size) {
-                AURIC_LOG(error) << "DiskImage: track data out of bounds";
+                spdlog::error("DiskImage: track data out of bounds");
                 return false;
             }
 
-            AURIC_LOG(debug) << "======= DiskImage: track: " << (int)track << " =======";
+            spdlog::debug("======= DiskImage: track: {} =======", static_cast<int>(track));
             disk_sides[side].add_track(DiskTrack(track_data));
         }
     }
@@ -267,7 +264,7 @@ void DiskImage::flush_if_dirty(bool force)
 
     std::ofstream file (image_path, std::ios::out | std::ios::binary);
     if (!file.is_open()) {
-        AURIC_LOG(error) << "DiskImage: failed to open file for writing";
+        spdlog::error("DiskImage: failed to open file for writing");
     }
 
     file.write((char*)data, image_size);
@@ -275,7 +272,7 @@ void DiskImage::flush_if_dirty(bool force)
 
     dirty = false;
 
-    AURIC_LOG(debug) << "DiskImage: disk image file '" << image_path << "' written";
+    spdlog::debug("DiskImage: disk image file '{}' written", image_path.string());
 }
 
 

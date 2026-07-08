@@ -10,7 +10,7 @@ GLuint compile_shader(GLenum type, const char* source)
     if (success == GL_FALSE) {
         GLchar log[512];
         glGetShaderInfoLog(shader, static_cast<GLsizei>(sizeof(log)), nullptr, log);
-        AURIC_LOG(error) << "OpenGL shader compilation failed: " << log;
+        spdlog::error("OpenGL shader compilation failed: {}", log);
         glDeleteShader(shader);
         return 0;
     }
@@ -108,7 +108,7 @@ GLuint create_screen_program()
     if (success == GL_FALSE) {
         GLchar log[512];
         glGetProgramInfoLog(program, static_cast<GLsizei>(sizeof(log)), nullptr, log);
-        AURIC_LOG(error) << "OpenGL program link failed: " << log;
+        spdlog::error("OpenGL program link failed: {}", log);
         glDeleteProgram(program);
         return 0;
     }

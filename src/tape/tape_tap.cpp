@@ -15,7 +15,7 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
-#include "logging.hpp"
+#include <spdlog/spdlog.h>
 #include <fstream>
 #include <cstdlib>
 #include <format>
@@ -60,10 +60,10 @@ void TapeTap::reset()
 bool TapeTap::init()
 {
     reset();
-    AURIC_LOG(info) << "Tape: Reading TAP file '" << path << "'";
+    spdlog::info("Tape: Reading TAP file '{}'", path.string());
 
     if (!std::filesystem::exists(path)) {
-        AURIC_LOG(warning) << "Tape: TAP file does not exist";
+        spdlog::warn("Tape: TAP file does not exist");
         return false;
     }
 
@@ -71,7 +71,7 @@ bool TapeTap::init()
 
     std::ifstream file(path, std::ios::binary);
     if (!file) {
-        AURIC_LOG(warning) << "Tape: unable to open TAP file";
+        spdlog::warn("Tape: unable to open TAP file");
         return false;
     }
 
@@ -93,7 +93,7 @@ void TapeTap::motor_on(bool motor_on)
     if (motor_on == motor_running) {
         return;
     }
-    AURIC_LOG(debug) << "Tape: motor " << (motor_on ? "on" : "off");
+    spdlog::debug("Tape: motor {}", motor_on ? "on" : "off");
 
     motor_running = motor_on;
 
@@ -107,7 +107,7 @@ void TapeTap::motor_on(bool motor_on)
     else {
         if (bit_index > 0) {
             // stopped mid-byte: drop the partial byte on resume
-            AURIC_LOG(debug) << "Skipped one byte at resume (pos now " << tape_pos << ")";
+            spdlog::debug("Skipped one byte at resume (pos now {})", tape_pos);
             stopped_mid_byte = true;
             bit_index = 0;
         }
@@ -143,7 +143,7 @@ bool TapeTap::seek_next_sync()
 
         if (sync_len >= 3 && sync_start + sync_len < tape_size && data[sync_start + sync_len] == 0x24) {
             tape_pos = sync_start + sync_len;
-            AURIC_LOG(debug) << std::format("Tape: turbo sync at ${:x}", tape_pos);
+            spdlog::debug("Tape: turbo sync at ${:x}", tape_pos);
             return true;
         }
 
@@ -190,15 +190,15 @@ bool TapeTap::parse_header()
     const uint16_t start_address = data[tape_pos + i] << 8 | data[tape_pos + i + 1];
     i += 2;
 
-    AURIC_LOG(debug) << std::format("Tape: start address: ${:04x}", start_address);
-    AURIC_LOG(debug) << std::format("Tape:   end address: ${:04x}", end_address);
+    spdlog::debug("Tape: start address: ${:04x}", start_address);
+    spdlog::debug("Tape:   end address: ${:04x}", end_address);
 
     // Skip one reserved byte.
     i++;
 
     // Read variable-length name
     const std::string name = read_null_terminated_string(i);
-    AURIC_LOG(info) << "Tape: file name: " << name;
+    spdlog::info("Tape: file name: {}", name);
 
     // Store where body starts, to allow delay after header.
     body_start = tape_pos + i + 1;
@@ -230,22 +230,22 @@ size_t TapeTap::count_sync_bytes()
 
 bool TapeTap::validate_header_start(size_t pos)
 {
-    AURIC_LOG(debug) << "Tape: found " << pos << " sync bytes (0x16)";
+    spdlog::debug("Tape: found {} sync bytes (0x16)", pos);
 
     if (pos < 3) {
-        AURIC_LOG(warning) << "Tape: too few sync bytes, failing.";
+        spdlog::warn("Tape: too few sync bytes, failing.");
         return false;
     }
 
     if (data[tape_pos + pos] != 0x24) {
-        AURIC_LOG(warning) << "Tape: missing end of sync bytes (0x24), failing.";
+        spdlog::warn("Tape: missing end of sync bytes (0x24), failing.");
         return false;
     }
 
     ++pos;
 
     if (pos + 9 >= tape_size) {
-        AURIC_LOG(warning) << "Tape: too short (no specs and addresses).";
+        spdlog::warn("Tape: too short (no specs and addresses).");
         return false;
     }
 
@@ -258,26 +258,26 @@ void TapeTap::log_file_type(uint8_t file_type, uint8_t auto_flag)
     switch(file_type)
     {
         case 0x00:
-            AURIC_LOG(debug) << "Tape: file is BASIC.";
+            spdlog::debug("Tape: file is BASIC.");
             break;
         case 0x80:
-            AURIC_LOG(debug) << "Tape: file is machine code.";
+            spdlog::debug("Tape: file is machine code.");
             break;
         default:
-            AURIC_LOG(debug) << "Tape: file is unknown.";
+            spdlog::debug("Tape: file is unknown.");
             break;
     }
 
     switch(auto_flag)
     {
         case 0x80:
-            AURIC_LOG(debug) << "Tape: run automatically as BASIC.";
+            spdlog::debug("Tape: run automatically as BASIC.");
             break;
         case 0xc7:
-            AURIC_LOG(debug) << "Tape: run automatically as machine code.";
+            spdlog::debug("Tape: run automatically as machine code.");
             break;
         default:
-            AURIC_LOG(debug) << "Tape: Don't run automatically.";
+            spdlog::debug("Tape: Don't run automatically.");
             break;
     }
 }

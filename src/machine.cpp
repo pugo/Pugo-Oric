@@ -18,7 +18,7 @@
 #include <numeric>
 #include <thread>
 
-#include "logging.hpp"
+#include <spdlog/spdlog.h>
 
 #include "disk/drive_microdrive.hpp"
 #include "disk/drive_none.hpp"
@@ -183,13 +183,13 @@ void Machine::init_disk()
         if (! oric.get_config().disk_path(drive).empty()) {
             if (!disk) {
                 disk = std::make_unique<DriveMicrodrive>(*this);
-                AURIC_LOG(info) << "Starting disk drive";
+                spdlog::info("Starting disk drive");
                 oric_rom_enabled = false;
                 disk_rom_enabled = true;
             }
 
             if (!disk->insert_disk(oric.get_config().disk_path(drive), drive)) {
-                AURIC_LOG(info) << "No disk in drive " << drive + 1;
+                spdlog::info("No disk in drive {}", drive + 1);
             }
         }
     }
@@ -207,7 +207,7 @@ void Machine::init_tape()
         }
     }
     else {
-        AURIC_LOG(info) << "No tape specified.";
+        spdlog::info("No tape specified.");
         tape = std::make_unique<TapeBlank>();
         tape_turbo = nullptr;
     }
@@ -426,16 +426,16 @@ bool Machine::toggle_warp_mode()
         frontend->get_status_bar().set_flag(StatusbarFlags::warp_mode, true);
     }
 
-    AURIC_LOG(info) << "Warp mode: " << (warpmode_on ? "on" : "off");
+    spdlog::info("Warp mode: {}", warpmode_on ? "on" : "off");
     return warpmode_on;
 }
 
 void Machine::insert_tape(std::filesystem::path path)
 {
-    AURIC_LOG(info) << "Loading tape from: " << path.string();
+    spdlog::info("Loading tape from: {}", path.string());
 
     if (! std::filesystem::exists(path)) {
-        AURIC_LOG(error) << "Tape file not found";
+        spdlog::error("Tape file not found");
         frontend->get_status_bar().show_text_for("Tape file not found", 2s);
         tape = std::make_unique<TapeBlank>();
         tape_turbo = nullptr;
@@ -451,7 +451,7 @@ void Machine::insert_tape(std::filesystem::path path)
 
 void Machine::eject_tape()
 {
-    AURIC_LOG(info) << "Ejecting tape";
+    spdlog::info("Ejecting tape");
     tape = std::make_unique<TapeBlank>();
     tape_turbo = nullptr;
     frontend->get_status_bar().show_text_for("Tape ejected", 2s);
@@ -459,10 +459,10 @@ void Machine::eject_tape()
 
 void Machine::insert_disk(std::filesystem::path path, uint8_t drive_number)
 {
-    AURIC_LOG(info) << "Loading disk " << (int)drive_number + 1 << " from: " << path.string();
+    spdlog::info("Loading disk {} from: {}", static_cast<int>(drive_number) + 1, path.string());
 
     if (! std::filesystem::exists(path)) {
-        AURIC_LOG(error) << "Disk file not found";
+        spdlog::error("Disk file not found");
         if (frontend) {
             frontend->get_status_bar().show_text_for("Disk file not found", 2s);
         }
@@ -478,7 +478,7 @@ void Machine::insert_disk(std::filesystem::path path, uint8_t drive_number)
     }
 
     if (!microdrive->insert_disk(path, drive_number)) {
-        AURIC_LOG(info) << "Failed to load disk image";
+        spdlog::info("Failed to load disk image");
         if (frontend) {
             frontend->get_status_bar().show_text_for("Failed to load disk image", 2s);
         }
@@ -499,7 +499,7 @@ void Machine::insert_disk(std::filesystem::path path, uint8_t drive_number)
 
 void Machine::eject_disk(uint8_t drive_number)
 {
-    AURIC_LOG(info) << "Ejecting disk " << (int)drive_number + 1;
+    spdlog::info("Ejecting disk {}", static_cast<int>(drive_number) + 1);
     if (disk->eject_disk(drive_number)) {
         frontend->get_status_bar().show_text_for(std::format("Disk {} ejected", (int)drive_number + 1), 2s);
     }

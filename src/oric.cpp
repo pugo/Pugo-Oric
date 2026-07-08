@@ -24,7 +24,7 @@
 #include <string>
 #include <thread>
 
-#include "logging.hpp"
+#include <spdlog/spdlog.h>
 #include <boost/algorithm/string.hpp>
 
 #include "oric.hpp"

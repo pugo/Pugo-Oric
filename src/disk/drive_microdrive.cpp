@@ -15,7 +15,7 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
-#include "logging.hpp"
+#include <spdlog/spdlog.h>
 #include <machine.hpp>
 
 #include "drive_microdrive.hpp"
@@ -59,14 +59,14 @@ bool DriveMicrodrive::init()
 bool DriveMicrodrive::insert_disk(const std::filesystem::path& path, uint8_t drive_number)
 {
     if (drive_number >= disk_images.size()) {
-        AURIC_LOG(warning) << "Invalid drive number: " << (int)drive_number;
+        spdlog::warn("Invalid drive number: {}", static_cast<int>(drive_number));
         return false;
     }
 
     auto& disk_image = disk_images[drive_number];
 
     if (!std::filesystem::exists(path)) {
-        AURIC_LOG(warning) << "Disk image not found: " << path.string();
+        spdlog::warn("Disk image not found: {}", path.string());
         machine.frontend->get_status_bar().show_text_for(std::format("Disk image not found: {}", path.string()), 5s);
         if (disk_image) {
             disk_image->flush_if_dirty(true);
@@ -84,7 +84,7 @@ bool DriveMicrodrive::insert_disk(const std::filesystem::path& path, uint8_t dri
 
     auto new_disk_image = std::make_unique<DiskImage>(path);
     if (!new_disk_image->init()) {
-        AURIC_LOG(warning) << "Failed to initialize disk image: " << path.string();
+        spdlog::warn("Failed to initialize disk image: {}", path.string());
         disk_image = nullptr;
         if (drive_number == state.drive_number) {
             wd1793.media_changed();
@@ -104,7 +104,7 @@ bool DriveMicrodrive::insert_disk(const std::filesystem::path& path, uint8_t dri
 bool DriveMicrodrive::eject_disk(uint8_t drive_number)
 {
     if (drive_number >= disk_images.size()) {
-        AURIC_LOG(warning) << "Invalid drive number: " << (int)drive_number;
+        spdlog::warn("Invalid drive number: {}", static_cast<int>(drive_number));
         return false;
     }
 
@@ -138,7 +138,7 @@ void DriveMicrodrive::reset()
 
 void DriveMicrodrive::print_stat()
 {
-    AURIC_LOG(info) << "Microdrive status: " << std::hex << state.status;
+    spdlog::info("Microdrive status: {:x}", state.status);
 }
 
 void DriveMicrodrive::exec(uint8_t cycles)

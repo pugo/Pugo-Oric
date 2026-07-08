@@ -15,7 +15,7 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
-#include "logging.hpp"
+#include <spdlog/spdlog.h>
 #include <algorithm>
 #include <format>
 #include <unordered_map>
@@ -100,7 +100,7 @@ bool Frontend::init_graphics()
 
     // Initialize SDL
     if (!SDL_Init(SDL_INIT_VIDEO)) {
-        AURIC_LOG(error) << "SDL could not initialize! SDL_Error: " << SDL_GetError();
+        spdlog::error("SDL could not initialize! SDL_Error: {}", SDL_GetError());
         return false;
     }
 
@@ -117,7 +117,7 @@ bool Frontend::init_graphics()
 
     sdl_window = SDL_CreateWindow(window_title.c_str(), window_width, window_height, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
     if (sdl_window == nullptr) {
-        AURIC_LOG(error) << "Window could not be created! SDL_Error: " << SDL_GetError();
+        spdlog::error("Window could not be created! SDL_Error: {}", SDL_GetError());
         return false;
     }
 
@@ -130,14 +130,14 @@ bool Frontend::init_graphics()
 
     gl_context = SDL_GL_CreateContext(sdl_window);
     if (gl_context == nullptr) {
-        AURIC_LOG(error) << "OpenGL context could not be created! SDL_Error: " << SDL_GetError();
+        spdlog::error("OpenGL context could not be created! SDL_Error: {}", SDL_GetError());
         return false;
     }
     SDL_GL_MakeCurrent(sdl_window, gl_context);
     SDL_GL_SetSwapInterval(1);
 
     if (!load_gl_functions()) {
-        AURIC_LOG(error) << "Failed to initialize GLAD OpenGL function loader";
+        spdlog::error("Failed to initialize GLAD OpenGL function loader");
         return false;
     }
 
@@ -146,11 +146,11 @@ bool Frontend::init_graphics()
     if (std::filesystem::exists(path)) {
         SDL_Surface* icon = SDL_LoadSurface(path.string().c_str());
         if (! icon) {
-            AURIC_LOG(error) << "Failed loading application icon: " << path << ": " << SDL_GetError();
+            spdlog::error("Failed loading application icon: {}: {}", path.string(), SDL_GetError());
         }
         else {
             if (!SDL_SetWindowIcon(sdl_window, icon)) {
-                AURIC_LOG(error) << "Failed setting application icon";
+                spdlog::error("Failed setting application icon");
             }
             SDL_DestroySurface(icon);
         }
@@ -162,11 +162,11 @@ bool Frontend::init_graphics()
 
 bool Frontend::init_sound()
 {
-    AURIC_LOG(debug) << "Initializing sound..";
+    spdlog::debug("Initializing sound..");
 
     if (!SDL_Init(SDL_INIT_AUDIO))
     {
-        AURIC_LOG(error) << "Error: failed initializing SDL: " << SDL_GetError();
+        spdlog::error("Error: failed initializing SDL: {}", SDL_GetError());
         return false;
     }
 
@@ -183,15 +183,15 @@ bool Frontend::init_sound()
 
     if (!sound_audio_stream)
     {
-        AURIC_LOG(error) << "Error: creating SDL audio stream: " << SDL_GetError();
+        spdlog::error("Error: creating SDL audio stream: {}", SDL_GetError());
         return false;
     }
 
     SDL_AudioSpec audio_spec;
     if (SDL_GetAudioStreamFormat(sound_audio_stream, &audio_spec, nullptr)) {
-        AURIC_LOG(debug) << "Freq: " << std::dec << (int) audio_spec.freq;
-        AURIC_LOG(debug) << "format: " << (int) audio_spec.format;
-        AURIC_LOG(debug) << "channels: " << (int) audio_spec.channels;
+        spdlog::debug("Freq: {}", static_cast<int>(audio_spec.freq));
+        spdlog::debug("format: {}", static_cast<int>(audio_spec.format));
+        spdlog::debug("channels: {}", static_cast<int>(audio_spec.channels));
     }
 
     return true;
@@ -362,12 +362,12 @@ bool Frontend::init_gl()
     const GLint pos_attr = glGetAttribLocation(gl_program, "a_pos");
     const GLint uv_attr = glGetAttribLocation(gl_program, "a_uv");
     if (pos_attr < 0 || uv_attr < 0) {
-        AURIC_LOG(error) << "Failed to resolve OpenGL shader attributes";
+        spdlog::error("Failed to resolve OpenGL shader attributes");
         return false;
     }
     gl_u_texture = glGetUniformLocation(gl_program, "u_texture");
     if (gl_u_texture < 0) {
-        AURIC_LOG(error) << "Failed to resolve OpenGL shader uniforms";
+        spdlog::error("Failed to resolve OpenGL shader uniforms");
         return false;
     }
 

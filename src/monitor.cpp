@@ -15,7 +15,7 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
-#include "logging.hpp"
+#include <spdlog/spdlog.h>
 
 #include <iostream>
 #include <ostream>
@@ -252,7 +252,7 @@ Monitor::Monitor(Machine& machine, f_memory_read_byte_handler&& read_byte_handle
 
 uint16_t Monitor::disassemble(uint16_t address, size_t bytes)
 {
-    AURIC_LOG(debug) << "Disassembling from $" << std::hex << address << " for " << bytes << " bytes";
+    spdlog::debug("Disassembling from ${:x} for {} bytes", address, bytes);
 
     auto result = disassemble_to_string(address, bytes);
     std::print("{}", result.output);

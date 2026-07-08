@@ -21,7 +21,6 @@
 #include <argparse/argparse.hpp>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
-#include "logging.hpp"
 
 #include "oric.hpp"
 

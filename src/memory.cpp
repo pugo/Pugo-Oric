@@ -15,7 +15,7 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
-#include "logging.hpp"
+#include <spdlog/spdlog.h>
 #include <format>
 #include <fstream>
 #include <iostream>
@@ -40,7 +40,7 @@ Memory::Memory(size_t size) :
 
 void Memory::load(const std::filesystem::path& path, uint32_t address)
 {
-    AURIC_LOG(debug) << std::format("Memory: loading {} -> ${:04X}", path.string(), address);
+    spdlog::debug("Memory: loading {} -> ${:04X}", path.string(), address);
 
     if (! std::filesystem::exists(path)) {
         throw(std::runtime_error(std::format("no such file: {}", path.string())));
@@ -103,4 +103,3 @@ std::string Memory::dump_string(uint32_t pos, uint32_t length) const
     output << '\n';
     return output.str();
 }
-

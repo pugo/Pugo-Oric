@@ -15,7 +15,7 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
-#include "logging.hpp"
+#include <spdlog/spdlog.h>
 #include <print>
 
 #include "machine.hpp"
@@ -46,7 +46,7 @@ uint8_t OperationReadSector::read_data_reg() const
         wd1793.state.status |= WD1793::Status::StatusRecordNotFound;
         wd1793.drive->data_request_clear();
         wd1793.drive->interrupt_set();
-        AURIC_LOG(debug) << "OperationReadSector::read_data_reg() - Record not found!";
+        spdlog::debug("OperationReadSector::read_data_reg() - Record not found!");
         return 0x00;
     }
 
@@ -98,7 +98,7 @@ void OperationWriteSector::write_data_reg(uint8_t value)
         wd1793.state.status &= ~WD1793::Status::StatusBusy;
         wd1793.state.status |= WD1793::Status::StatusRecordNotFound;
         wd1793.drive->interrupt_set();
-        AURIC_LOG(debug) << "OperationWriteSector::write_data_reg() - Record not found!";
+        spdlog::debug("OperationWriteSector::write_data_reg() - Record not found!");
         return;
     }
 
@@ -321,7 +321,7 @@ void WD1793::do_command(uint8_t command)
         case 0x00:
             if (command & 0x10) {
                 // Seek [Type 1]: 0 0 1 0 h V r₁ r₀
-                AURIC_LOG(debug) << "WD1793 - do command: Seek";
+                spdlog::debug("WD1793 - do command: Seek");
                 state.status = Status::StatusBusy;
                 if (command & 0x08) { state.status |= Status::StatusHeadLoaded; }
                 state.current_operation = &operation_idle;
@@ -329,7 +329,7 @@ void WD1793::do_command(uint8_t command)
             }
             else {
                 // Restore [Type 1]: : 0 0 1 1 h V r₁ r₀
-                AURIC_LOG(debug) << "WD1793 - do command: Restore";
+                spdlog::debug("WD1793 - do command: Restore");
                 state.status = Status::StatusBusy;
                 if (command & 0x08) { state.status |= Status::StatusHeadLoaded; }
                 state.current_operation = &operation_idle;
@@ -338,14 +338,14 @@ void WD1793::do_command(uint8_t command)
             break;
         case 0x20:
             // Step [Type 1]: 0 0 1 u h V r₁ r₀
-            AURIC_LOG(debug) << "WD1793 - do command: Step";
+            spdlog::debug("WD1793 - do command: Step");
             state.status = Status::StatusBusy;
             if (command & 0x08) { state.status |= Status::StatusHeadLoaded; }
             state.current_operation = &operation_idle;
             break;
         case 0x40:
             // Step in [Type 1]: 0 1 0 u h V r₁ r₀
-            AURIC_LOG(debug) << "WD1793 - do command: Step in";
+            spdlog::debug("WD1793 - do command: Step in");
             state.status = Status::StatusBusy;
             if (command & 0x08) { state.status |= Status::StatusHeadLoaded; }
             set_track(state.current_track_number + 1);
@@ -353,7 +353,7 @@ void WD1793::do_command(uint8_t command)
             break;
         case 0x60:
             // Step out [Type 1]: 0 1 1 u h V r₁ r₀
-            AURIC_LOG(debug) << "WD1793 - do command: Step out";
+            spdlog::debug("WD1793 - do command: Step out");
             state.status = Status::StatusBusy;
             if (command & 0x08) { state.status |= Status::StatusHeadLoaded; }
             set_track(state.current_track_number - 1);
@@ -361,7 +361,7 @@ void WD1793::do_command(uint8_t command)
             break;
         case 0x80:
             // Read sector [Type 2]: 1 0 0 m F₂ E F₁ 0
-            AURIC_LOG(debug) << "WD1793 - do command: Read sector";
+            spdlog::debug("WD1793 - do command: Read sector");
             state.status = Status::StatusBusy | StatusNotReady;
             state.offset = 0;
             operation_read_sector.multiple_sectors = command & 0x10;
@@ -375,7 +375,7 @@ void WD1793::do_command(uint8_t command)
             break;
         case 0xa0:
             // Write sector [Type 2]: 1 0 1 F₂ E F₁ a₀
-            AURIC_LOG(debug) << "WD1793 - do command: Write sector";
+            spdlog::debug("WD1793 - do command: Write sector");
             state.status = Status::StatusBusy | StatusNotReady;
             state.offset = 0;
             operation_write_sector.multiple_sectors = command & 0x10;
@@ -390,7 +390,7 @@ void WD1793::do_command(uint8_t command)
         case 0xc0:
             if (command & 0x10) {
                 // Force int [Type 4]: 1 1 0 1 I₃ I₂ I₁ I₀
-                AURIC_LOG(debug) << "WD1793 - do command: Force interrupt";
+                spdlog::debug("WD1793 - do command: Force interrupt");
                 state.status = 0;
                 drive->data_request_clear();
                 state.interrupt_counter = 0;
@@ -400,7 +400,7 @@ void WD1793::do_command(uint8_t command)
             }
             else {
                 // Read address [Type 3]: 1 1 0 0 0 E 0 0
-                AURIC_LOG(debug) << "WD1793 - do command: Read address";
+                spdlog::debug("WD1793 - do command: Read address");
                 state.status = Status::StatusBusy;
                 state.current_operation = &operation_read_address;
                 state.offset = 0;
@@ -434,7 +434,7 @@ void WD1793::do_command(uint8_t command)
         case 0xe0:
             if (command & 0x10) {
                 // Write track [Type 3]: 1 1 1 1 0 E 0 0
-                AURIC_LOG(debug) << "WD1793 - do command: Write track";
+                spdlog::debug("WD1793 - do command: Write track");
                 state.status = Status::StatusBusy | StatusNotReady;
                 state.current_operation = &operation_write_track;
                 state.offset = 0;
@@ -442,7 +442,7 @@ void WD1793::do_command(uint8_t command)
             }
             else {
                 // Read track [Type 3]: 1 1 1 0 0 E 0 0
-                AURIC_LOG(debug) << "WD1793 - do command: Read track";
+                spdlog::debug("WD1793 - do command: Read track");
                 state.status = Status::StatusBusy | StatusNotReady;
                 state.current_operation = &operation_read_track;
                 state.offset = 0;
@@ -508,11 +508,11 @@ void WD1793::media_changed()
 
 bool WD1793::set_track(uint8_t track)
 {
-    AURIC_LOG(debug) << "WD1793 - track set to: " << (int)track;
+    spdlog::debug("WD1793 - track set to: {}", static_cast<int>(track));
 
     auto* disk_image = drive->get_disk_image();
     if (! disk_image) {
-        AURIC_LOG(debug) << "WD1793 - set track: No disk image!";
+        spdlog::debug("WD1793 - set track: No disk image!");
         state.current_track = nullptr;
         state.current_sector = nullptr;
         state.track = track;
@@ -532,7 +532,7 @@ bool WD1793::set_track(uint8_t track)
 
     auto* track_ptr = disk_image->get_track(state.side, track);
     if (track_ptr == nullptr) {
-        AURIC_LOG(error) << "WD1793 - set track: Unable to get track data!";
+        spdlog::error("WD1793 - set track: Unable to get track data!");
         return false;
     }
     state.current_track = track_ptr;
@@ -555,20 +555,20 @@ bool WD1793::set_sector(uint8_t sector)
     state.current_sector_number = 0;
 
     if (! state.current_track) {
-        AURIC_LOG(debug) << "WD1793 - set sector: no track selected!";
+        spdlog::debug("WD1793 - set sector: no track selected!");
         state.current_sector_number = 0;
         return false;
     }
 
     auto* sector_ptr = state.current_track->get_sector(sector);
     if (sector_ptr == nullptr) {
-       AURIC_LOG(debug) << "WD1793 - Unable to get sector data!";
+        spdlog::debug("WD1793 - Unable to get sector data!");
         return false;
     }
 
     state.current_sector = sector_ptr;
     state.current_sector_number = sector;
-    AURIC_LOG(debug) << "WD1793 - sector set to: " << (int)sector;
+    spdlog::debug("WD1793 - sector set to: {}", static_cast<int>(sector));
 
     return true;
 }
