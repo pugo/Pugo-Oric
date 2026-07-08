@@ -60,6 +60,7 @@ jobs:
           libtool
           libwayland-dev
           libx11-dev
+          libxcursor-dev
           libxext-dev
           libxft-dev
           libxkbcommon-dev
