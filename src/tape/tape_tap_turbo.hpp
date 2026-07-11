@@ -21,6 +21,7 @@
 #include <filesystem>
 #include <optional>
 
+#include "rom_patcher.hpp"
 #include "tape_tap_normal.hpp"
 
 class Memory;
@@ -30,28 +31,9 @@ class MOS6502;
 class TapeTapTurbo : public TapeTapNormal
 {
 public:
-    struct TapeRomPatch {
-        const char* name;
-        const char* sha1;
-        uint16_t get_sync_pc;
-        uint16_t get_sync_end_pc;
-        uint16_t get_sync_loop_pc;
-        uint16_t read_byte_pc;
-        uint16_t read_byte_end_pc;
-        bool read_byte_set_carry;
-        std::optional<uint16_t> read_byte_store_byte_addr;
-        std::optional<uint16_t> read_byte_store_zero_addr;
-    };
-
-    TapeTapTurbo(MOS6522& via, const std::filesystem::path& path, const TapeRomPatch& patch);
+    TapeTapTurbo(MOS6522& via, const std::filesystem::path& path, const RomPatch& patch);
 
     virtual ~TapeTapTurbo() = default;
-
-    /**
-     * Find turbo tape patch information for a ROM.
-     * @return patch if the ROM is supported.
-     */
-    static const TapeRomPatch* find_patch(const Memory& rom);
 
     /**
      * Reset tape postion.
@@ -70,17 +52,20 @@ public:
     void exec(uint8_t cycles) override;
 
     /**
-     * Intercept a ROM tape routine before CPU opcode fetch.
+     * Intercept a ROM tape routine before CPU opcode fetch. Allows turbo loading.
+     * @param cpu reference to CPU
+     * @param ram reference to RAM
+     * @param oric_rom_enabled true if Oric ROM is enabled
      * @return true if the tape handled this CPU step.
      */
-    bool intercept(MOS6502& cpu, Memory& ram, bool oric_rom_enabled);
+    bool intercept_read(MOS6502& cpu, Memory& ram, bool oric_rom_enabled) override;
 
 protected:
     void reset_normal_timing_state();
     bool intercept_sync(MOS6502& cpu);
     bool intercept_read_byte(MOS6502& cpu, Memory& ram);
 
-    const TapeRomPatch& patch;
+    const RomPatch& patch;
     bool turbo_loading;
 };
 

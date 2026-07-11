@@ -32,3 +32,10 @@ video:
 
   # Controls CRT vignette strength (0 - 1).
   vignette_strength: 0.2
+
+tape:
+  # Enables tape turbo load (bypasses ROM loading routines for faster loading).
+  turbo_load_enabled: true
+
+  # Enables automatic tape loading at start-up (echoes CLOAD command).
+  autostart_enabled: false

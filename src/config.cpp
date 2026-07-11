@@ -49,6 +49,7 @@ bool Config::parse(int argc, char **argv)
         argparse::ArgumentParser program("oric", "1.0", argparse::default_arguments::none);
         bool disable_tape_turbo(false);
 
+
         program.add_argument("-?", "--help")
             .help("produce help message")
             .default_value(false)
@@ -63,12 +64,18 @@ bool Config::parse(int argc, char **argv)
         program.add_argument("-h", "--height")
             .help("window height in pixels")
             .scan<'i', uint16_t>();
+
         program.add_argument("-t", "--tape")
             .help("tape image file to use");
-        program.add_argument("--tape-normal")
-            .help("disable tape turbo mode")
+        program.add_argument("--tape-autostart-off")
+            .help("turn off tape autostart")
             .default_value(false)
             .implicit_value(true);
+        program.add_argument("--tape-turbo-off")
+            .help("turn off tape turbo mode")
+            .default_value(false)
+            .implicit_value(true);
+
         program.add_argument("-d", "--disk1")
             .help("disk image file to use for drive 1");
         program.add_argument("--disk2")
@@ -77,6 +84,7 @@ bool Config::parse(int argc, char **argv)
             .help("disk image file to use for drive 3");
         program.add_argument("--disk4")
             .help("disk image file to use for drive 4");
+
         program.add_argument("-m", "--monitor")
             .help("start with GUI debugger open")
             .default_value(false)
@@ -103,7 +111,6 @@ bool Config::parse(int argc, char **argv)
         _use_oric1_rom = program.get<bool>("--oric1");
         _start_in_monitor = program.get<bool>("--monitor");
         _verbose = program.get<bool>("--verbose");
-        disable_tape_turbo = program.get<bool>("--tape-normal");
 
         if (auto width = program.present<uint16_t>("--width")) {
             _window_width = *width;
@@ -111,6 +118,22 @@ bool Config::parse(int argc, char **argv)
         if (auto height = program.present<uint16_t>("--height")) {
             _window_height = *height;
         }
+
+        if (program.get<bool>("--tape-turbo-off")) {
+            _tape_turbo_enabled = false;
+        }
+
+        if (program.get<bool>("--tape-autostart-off")) {
+            _tape_autostart_enabled = false;
+        }
+
+        if (auto tape = program.present<std::string>("--tape")) {
+            _tape_path = *tape;
+        }
+        else {
+            _tape_autostart_enabled = false;
+        }
+
         if (auto tape = program.present<std::string>("--tape")) {
             _tape_path = *tape;
         }
@@ -214,6 +237,14 @@ bool Config::read_config_file(std::filesystem::path config_path)
             float vignette_arg = yaml_config["video"]["vignette_strength"].as<float>();
             vignette_arg = std::clamp<float>(vignette_arg, 0, 1);
             _vignette_strength = vignette_arg;
+        }
+
+        if (yaml_config["tape"]["turbo_load_enabled"]) {
+            _tape_turbo_enabled = yaml_config["tape"]["turbo_load_enabled"].as<bool>();
+        }
+
+        if (yaml_config["tape"]["autostart_enabled"]) {
+            _tape_autostart_enabled = yaml_config["tape"]["autostart_enabled"].as<bool>();
         }
     }
 

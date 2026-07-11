@@ -26,6 +26,7 @@
 #include "frontends/flags.hpp"
 #include "machine.hpp"
 #include "oric.hpp"
+#include "rom_patcher.hpp"
 #include "tape/tape_tap_normal.hpp"
 #include "tape/tape_tap_turbo.hpp"
 #include "tape/tape_blank.hpp"
@@ -71,8 +72,9 @@ Machine::Machine(Oric& oric) :
     disk_rom(disk_rom_size),
     oric_rom_enabled(true),
     disk_rom_enabled(false),
+    rom_patch(nullptr),
     tape(std::make_unique<TapeBlank>()),
-    tape_turbo(nullptr),
+    has_tape_turbo(false),
     disassemble_execution(false),
     cycle_count(0),
     frame_timer_initialized(false),
@@ -116,7 +118,20 @@ void Machine::init(Frontend* frontend)
     init_cpu();
     init_mos6522();
     init_ay3();
+}
+
+void Machine::init_storage()
+{
+    if (oric.get_config().tape_turbo_enabled()) {
+        auto* found_patch = RomPatcher::find_patch(oric_rom);
+        if (found_patch) {
+            rom_patch = found_patch;
+            has_tape_turbo = true;
+        }
+    }
+
     init_disk();
+    init_tape();
 }
 
 void Machine::init_ram()
@@ -209,23 +224,19 @@ void Machine::init_tape()
     else {
         spdlog::info("No tape specified.");
         tape = std::make_unique<TapeBlank>();
-        tape_turbo = nullptr;
     }
 }
 
 bool Machine::load_tape(std::filesystem::path path)
 {
-    const TapeTapTurbo::TapeRomPatch* turbo_patch = TapeTapTurbo::find_patch(oric_rom);
-    tape_turbo = nullptr;
+    const RomPatch* rom_patch = RomPatcher::find_patch(oric_rom);
 
-    if (oric.get_config().tape_turbo_enabled() && turbo_patch) {
-        auto turbo_tape = std::make_unique<TapeTapTurbo>(*mos_6522, path, *turbo_patch);
-        tape_turbo = turbo_tape.get();
+    if (oric.get_config().tape_turbo_enabled() && has_tape_turbo) {
+        auto turbo_tape = std::make_unique<TapeTapTurbo>(*mos_6522, path, *rom_patch);
         tape = std::move(turbo_tape);
     }
     else {
         tape = std::make_unique<TapeTapNormal>(*mos_6522, path);
-        tape_turbo = nullptr;
     }
 
     return tape->init();
@@ -233,11 +244,7 @@ bool Machine::load_tape(std::filesystem::path path)
 
 bool Machine::try_tape_turbo_intercept()
 {
-    if (!tape_turbo) {
-        return false;
-    }
-
-    if (!tape_turbo->intercept(*cpu, memory, oric_rom_enabled)) {
+    if (!tape->intercept_read(*cpu, memory, oric_rom_enabled)) {
         return false;
     }
 
@@ -284,7 +291,7 @@ void Machine::run_until_frame_or_break(Oric* oric)
         }
 
         while (cycle_count > 0) {
-            if (try_tape_turbo_intercept()) {
+            if (has_tape_turbo && try_tape_turbo_intercept()) {
                 continue;
             }
 
@@ -438,7 +445,6 @@ void Machine::insert_tape(std::filesystem::path path)
         spdlog::error("Tape file not found");
         frontend->get_status_bar().show_text_for("Tape file not found", 2s);
         tape = std::make_unique<TapeBlank>();
-        tape_turbo = nullptr;
         return;
     }
 
@@ -453,7 +459,6 @@ void Machine::eject_tape()
 {
     spdlog::info("Ejecting tape");
     tape = std::make_unique<TapeBlank>();
-    tape_turbo = nullptr;
     frontend->get_status_bar().show_text_for("Tape ejected", 2s);
 }
 

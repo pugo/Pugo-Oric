@@ -73,6 +73,15 @@ public:
      */
     void motor_on(bool motor_on) override;
 
+    /**
+     * Intercept a ROM tape routine before CPU opcode fetch. Allows turbo loading.
+     * @param cpu reference to CPU
+     * @param ram reference to RAM
+     * @param oric_rom_enabled true if Oric ROM is enabled
+     * @return true if the tape handled this CPU step.
+     */
+    bool intercept_read(MOS6502& cpu, Memory& ram, bool oric_rom_enabled) override { return false; };
+
 protected:
     /**
      * Check if TAP data is available.

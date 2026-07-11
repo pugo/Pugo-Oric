@@ -15,47 +15,14 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
-#include <array>
 #include <spdlog/spdlog.h>
 
 #include "chip/mos6502.hpp"
 #include "memory.hpp"
 #include "tape_tap_turbo.hpp"
-#include "utils/sha1.hpp"
 
 
-namespace {
-constexpr std::array<TapeTapTurbo::TapeRomPatch, 2> tape_rom_patches{{
-    {
-        .name = "Oric Atmos BASIC 1.1b",
-        .sha1 = "9451a1a09d8f75944dbd6f91193fc360f1de80ac",
-        .get_sync_pc = 0xe735,
-        .get_sync_end_pc = 0xe759,
-        .get_sync_loop_pc = 0xe720,
-        .read_byte_pc = 0xe6c9,
-        .read_byte_end_pc = 0xe6fb,
-        .read_byte_set_carry = false,
-        .read_byte_store_byte_addr = 0x002f,
-        .read_byte_store_zero_addr = 0x02b1,
-    },
-    {
-        .name = "Oric-1 BASIC 1.0",
-        .sha1 = "333116e6884d85aaa4dfc7578a91cceeea66d016",
-        .get_sync_pc = 0xe696,
-        .get_sync_end_pc = 0xe6b9,
-        .get_sync_loop_pc = 0xe681,
-        .read_byte_pc = 0xe630,
-        .read_byte_end_pc = 0xe65b,
-        .read_byte_set_carry = false,
-        .read_byte_store_byte_addr = 0x002f,
-        .read_byte_store_zero_addr = std::nullopt,
-    },
-}};
-
-}
-
-
-TapeTapTurbo::TapeTapTurbo(MOS6522& via, const std::filesystem::path& path, const TapeRomPatch& patch) :
+TapeTapTurbo::TapeTapTurbo(MOS6522& via, const std::filesystem::path& path, const RomPatch& patch) :
     TapeTapNormal(via, path),
     patch(patch),
     turbo_loading(false)
@@ -96,7 +63,7 @@ void TapeTapTurbo::exec(uint8_t cycles)
 }
 
 
-bool TapeTapTurbo::intercept(MOS6502& cpu, Memory& ram, bool oric_rom_enabled)
+bool TapeTapTurbo::intercept_read(MOS6502& cpu, Memory& ram, bool oric_rom_enabled)
 {
     if (!motor_running || !oric_rom_enabled || !has_tap_data()) {
         return false;
@@ -109,20 +76,6 @@ bool TapeTapTurbo::intercept(MOS6502& cpu, Memory& ram, bool oric_rom_enabled)
     return intercept_read_byte(cpu, ram);
 }
 
-
-const TapeTapTurbo::TapeRomPatch* TapeTapTurbo::find_patch(const Memory& rom)
-{
-    const std::string rom_sha1 = utils::sha1_hex(rom.mem, rom.get_size());
-
-    for (const auto& candidate : tape_rom_patches) {
-        if (rom_sha1 == candidate.sha1) {
-            return &candidate;
-        }
-    }
-
-    spdlog::info("Tape: turbo not supported for ROM SHA-1 {}", rom_sha1);
-    return nullptr;
-}
 
 void TapeTapTurbo::reset_normal_timing_state()
 {

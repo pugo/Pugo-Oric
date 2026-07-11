@@ -20,6 +20,10 @@
 
 #include <cstdint>
 
+class Memory;
+class MOS6502;
+
+
 class Tape
 {
 public:
@@ -55,6 +59,15 @@ public:
      * Execute one cycle.
      */
     virtual void exec(uint8_t cycles) = 0;
+
+    /**
+     * Intercept a ROM tape routine before CPU opcode fetch. Allows turbo loading.
+     * @param cpu reference to CPU
+     * @param ram reference to RAM
+     * @param oric_rom_enabled true if Oric ROM is enabled
+     * @return true if the tape handled this CPU step.
+     */
+    virtual bool intercept_read(MOS6502& cpu, Memory& ram, bool oric_rom_enabled) = 0;
 
     /**
      * Check if motor is running.

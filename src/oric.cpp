@@ -118,7 +118,7 @@ void Oric::init()
         throw(std::runtime_error(std::format("Failed loading disk drive ROM: {}", err.what())));
     }
 
-    machine->init_tape();
+    machine->init_storage();
 
     frontend->init_graphics();
     frontend->init_sound();

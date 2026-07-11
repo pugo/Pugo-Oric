@@ -30,6 +30,7 @@
 #include "chip/ula.hpp"
 #include "memory.hpp"
 #include "monitor.hpp"
+#include "rom_patcher.hpp"
 #include "snapshot.hpp"
 #include "tape/tape.hpp"
 #include "disk/drive.hpp"
@@ -61,6 +62,11 @@ public:
      * @param frontend pointer to Frontend object
      */
     void init(Frontend* frontend);
+
+    /**
+     * Init the storage components.
+     */
+    void init_storage();
 
     /**
      * Init the RAM.
@@ -334,9 +340,11 @@ protected:
     Oric& oric;
     Monitor monitor;
 
+    const RomPatch* rom_patch;
+
     std::unique_ptr<Drive> disk;
     std::unique_ptr<Tape> tape;
-    TapeTapTurbo* tape_turbo;
+    bool has_tape_turbo;
 
     bool disassemble_execution;
     int32_t cycle_count;

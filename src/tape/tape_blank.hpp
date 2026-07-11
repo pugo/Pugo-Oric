@@ -20,6 +20,8 @@
 
 #include "tape.hpp"
 
+class Memory;
+class MOS6502;
 
 class TapeBlank : public Tape
 {
@@ -53,6 +55,15 @@ public:
      * Execute one cycle.
      */
     void exec(uint8_t cycles) override;
+
+    /**
+     * Intercept a ROM tape routine before CPU opcode fetch. Allows turbo loading.
+     * @param cpu reference to CPU
+     * @param ram reference to RAM
+     * @param oric_rom_enabled true if Oric ROM is enabled
+     * @return true if the tape handled this CPU step.
+     */
+    bool intercept_read(MOS6502& cpu, Memory& ram, bool oric_rom_enabled) override { return false; };
 
 protected:
 };
