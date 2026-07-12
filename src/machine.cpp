@@ -239,6 +239,10 @@ bool Machine::load_tape(std::filesystem::path path)
         tape = std::make_unique<TapeTapNormal>(*mos_6522, path);
     }
 
+    if (oric.get_config().tape_autostart_enabled()) {
+        tape_autostarter = std::make_unique<TapeAutostarter>();
+    }
+
     return tape->init();
 }
 
@@ -322,6 +326,12 @@ void Machine::run_until_frame_or_break(Oric* oric)
 
         if (frame_rendered) {
             next_frame_tp += 20ms;
+
+            if (tape_autostarter) {
+                if (!tape_autostarter->exec(*this, *tape)) {
+                    tape_autostarter.reset();
+                }
+            }
 
             if (! frontend->handle_frame()) {
                 break_exec = true;

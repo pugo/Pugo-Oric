@@ -33,6 +33,7 @@
 #include "rom_patcher.hpp"
 #include "snapshot.hpp"
 #include "tape/tape.hpp"
+#include "tape/tape_autostarter.hpp"
 #include "disk/drive.hpp"
 
 class Oric;
@@ -322,6 +323,7 @@ public:
     Memory disk_rom;
     bool oric_rom_enabled;
     bool disk_rom_enabled;
+    const RomPatch* rom_patch;
 
     Frontend* frontend;
     bool warpmode_on;
@@ -340,11 +342,11 @@ protected:
     Oric& oric;
     Monitor monitor;
 
-    const RomPatch* rom_patch;
-
     std::unique_ptr<Drive> disk;
     std::unique_ptr<Tape> tape;
+
     bool has_tape_turbo;
+    std::unique_ptr<TapeAutostarter> tape_autostarter;
 
     bool disassemble_execution;
     int32_t cycle_count;

@@ -38,4 +38,4 @@ tape:
   turbo_load_enabled: true
 
   # Enables automatic tape loading at start-up (echoes CLOAD command).
-  autostart_enabled: false
+  autostart_enabled: true
