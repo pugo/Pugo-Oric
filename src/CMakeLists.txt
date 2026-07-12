@@ -58,6 +58,7 @@ add_library(auric_lib STATIC
 )
 
 target_include_directories(auric_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_compile_definitions(auric_lib PUBLIC AURIC_VERSION="${PROJECT_VERSION}")
 
 target_link_libraries(auric_lib PUBLIC chip frontend tape
                       ${AURIC_COMMON_LIBRARIES}
@@ -82,3 +83,13 @@ add_executable(auric main.cpp)
 target_link_libraries(auric PRIVATE auric_lib)
 
 install(TARGETS auric RUNTIME DESTINATION bin)
+install(FILES
+        ${PROJECT_SOURCE_DIR}/README.md
+        ${PROJECT_SOURCE_DIR}/LICENSE
+        ${PROJECT_SOURCE_DIR}/VERSION
+        ${PROJECT_SOURCE_DIR}/auric.yaml
+        DESTINATION .
+)
+install(DIRECTORY ${PROJECT_SOURCE_DIR}/fonts DESTINATION .)
+install(DIRECTORY ${PROJECT_SOURCE_DIR}/images DESTINATION .)
+install(FILES ${PROJECT_SOURCE_DIR}/ROMS/README_ROMS.md DESTINATION ROMS)

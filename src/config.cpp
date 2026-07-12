@@ -26,6 +26,10 @@
 
 #include "oric.hpp"
 
+#ifndef AURIC_VERSION
+#define AURIC_VERSION "0.0.0"
+#endif
+
 
 Config::Config() :
     _start_in_monitor{false},
@@ -46,7 +50,7 @@ Config::Config() :
 bool Config::parse(int argc, char **argv)
 {
     try {
-        argparse::ArgumentParser program("oric", "1.0", argparse::default_arguments::none);
+        argparse::ArgumentParser program("oric", AURIC_VERSION, argparse::default_arguments::none);
         bool disable_tape_turbo(false);
 
 

@@ -227,7 +227,7 @@ The timeline is something like:
 * **2026:** Microdisk loading and saving, moved to SDL3,
         in emulation GUI, multi drive support, free window resizing, memory map view
         Windows 10/11 support (thanks Dagfinn Dybvig!), Tape turbo loading,
-        in emulation window debugger.
+        Tape autostart, in emulation window debugger.
 
 
 ## Contribution
