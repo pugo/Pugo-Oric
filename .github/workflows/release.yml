@@ -1,0 +1,162 @@
+name: Release
+
+"on":
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release version, without leading v
+        required: true
+        type: string
+      draft:
+        description: Create the GitHub Release as a draft
+        required: true
+        default: true
+        type: boolean
+      prerelease:
+        description: Mark the GitHub Release as a prerelease
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+env:
+  VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+  VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}/.vcpkg-cache
+
+jobs:
+  linux:
+    name: Linux release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Check release version
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${{ inputs.version }}"
+          if [[ ! "$version" =~ ^[0-9]+[.][0-9]+[.][0-9]+$ ]]; then
+            echo "Version must look like 0.1.0, without a leading v."
+            exit 1
+          fi
+          if [[ "$(tr -d '[:space:]' < VERSION)" != "$version" ]]; then
+            echo "workflow_dispatch version '$version' does not match VERSION file:"
+            cat VERSION
+            exit 1
+          fi
+
+      - name: Cache vcpkg
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ env.VCPKG_ROOT }}
+            ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
+          key: ${{ runner.os }}-vcpkg-${{ hashFiles('vcpkg.json') }}
+          restore-keys: |
+            ${{ runner.os }}-vcpkg-
+
+      - name: Install Linux build dependencies
+        run: >
+          sudo apt-get update &&
+          sudo apt-get install -y
+          autoconf
+          autoconf-archive
+          automake
+          gcc-14
+          g++-14
+          libegl1-mesa-dev
+          libltdl-dev
+          libtool
+          libwayland-dev
+          libx11-dev
+          libxcb-xinput-dev
+          libxcursor-dev
+          libxext-dev
+          libxft-dev
+          libxi-dev
+          libxkbcommon-dev
+          libxrandr-dev
+          libxtst-dev
+
+      - name: Select Linux compiler
+        shell: bash
+        run: |
+          echo "CC=gcc-14" >> "$GITHUB_ENV"
+          echo "CXX=g++-14" >> "$GITHUB_ENV"
+
+      - name: Install vcpkg
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ ! -d "$VCPKG_ROOT/.git" ]; then
+            rm -rf "$VCPKG_ROOT"
+            git clone https://github.com/microsoft/vcpkg.git "$VCPKG_ROOT"
+          else
+            git -C "$VCPKG_ROOT" pull --ff-only
+          fi
+          mkdir -p "$VCPKG_DEFAULT_BINARY_CACHE"
+          "$VCPKG_ROOT/bootstrap-vcpkg.sh"
+
+      - name: Configure CMake
+        run: >
+          cmake
+          -S .
+          -B build
+          -DCMAKE_TOOLCHAIN_FILE=${{ env.VCPKG_ROOT }}/scripts/buildsystems/vcpkg.cmake
+          -DVCPKG_TARGET_TRIPLET=x64-linux
+          -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
+      - name: Test
+        run: ctest --test-dir build --build-config Release --output-on-failure
+
+      - name: Stage package
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${{ inputs.version }}"
+          package_name="auric-${version}-linux-x64"
+          package_dir="dist/${package_name}"
+          cmake --install build --config Release --prefix "$package_dir" --strip
+          ldd "$package_dir/bin/auric"
+          tar -czf "dist/${package_name}.tar.gz" -C dist "$package_name"
+          tar -tzf "dist/${package_name}.tar.gz"
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: auric-${{ inputs.version }}-linux-x64
+          path: dist/auric-${{ inputs.version }}-linux-x64.tar.gz
+          if-no-files-found: error
+
+      - name: Publish GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          version="${{ inputs.version }}"
+          tag="v${version}"
+          archive="dist/auric-${version}-linux-x64.tar.gz"
+          release_flags=()
+          if [[ "${{ inputs.draft }}" == "true" ]]; then
+            release_flags+=(--draft)
+          fi
+          if [[ "${{ inputs.prerelease }}" == "true" ]]; then
+            release_flags+=(--prerelease)
+          fi
+
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" "$archive" --clobber
+          else
+            gh release create "$tag" "$archive" \
+              --title "Auric ${tag}" \
+              --notes "Linux x64 release package for Auric ${tag}." \
+              "${release_flags[@]}"
+          fi
