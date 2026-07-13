@@ -13,6 +13,7 @@
       "name": "sdl3",
       "default-features": false,
       "features": [
+        "alsa",
         "wayland",
         "x11"
       ],
