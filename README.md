@@ -10,10 +10,24 @@ All code is written from scratch.
 
 It is my absolutely slowest project, just made out of love to programming and to my first computer.
 
+<p align="center">
+<img style="height: 300px;" src="images/oric.jpg"/>
+</p>
+
+## Screenshots
+
 <div>
-<img style="width: 30%;" src="images/startscreen.png"/>
-<img style="width: 33%; margin-left: 1em;" src="images/screen_petscii_robots.png"/>
-<img style="width: 30%;" src="images/hunchback_knights.png"/>
+<img style="height: 300px;" src="images/oric_basic.png"/>
+<img style="height: 300px;" src="images/screen_petscii_robots.png"/>
+<img style="height: 300px;" src="images/hunchback.png"/>
+<img style="height: 300px;" src="images/demo_nova.png"/>
+<img style="height: 300px;" src="images/game_b7.png"/>
+</div>
+
+Memory map and debugger is available in the emulator.
+
+<div>
+<img style="height: 300px;" src="images/memory_map.png"/>
 </div>
 
 ## Background
@@ -29,33 +43,16 @@ There already is a brilliant emulator of Oric: Oricutron. The purpose of my emul
 is not to compete, but to learn more about how emulators work and to close the circle
 by learning more about the computer I got as a kid.
 
-<p align="center">
-<img style="width: 40%;" src="images/oric.jpg"/>
-</p>
 
 ## Building
 
-Auric has been developed and tested on Linux and MacOS. It should be possible to build it on Windows as well, 
-but I have not tried that.
+Auric has been developed and tested on Linux and MacOS. It does build on Linux, MacOS and Windows.
 
 All building instructions are located in the `doc` directory.
 
  * To build with vcpkg, see [doc/BUILD_VCPKG.md](doc/BUILD_VCPKG.md).
  * To build with host libraries, see [doc/BUILD_HOST.md](doc/BUILD_HOST.md).
-
-### CMake presets
-
-This repository includes CMake presets for common build setups.
-
-Example for Windows (Visual Studio 2022 + vcpkg):
-
-```
-set VCPKG_ROOT=C:\path\to\vcpkg
-cmake --preset windows-vs2022
-cmake --build --preset windows-vs2022-release -j 8
-```
-
-For detailed Windows notes, see [Windows.md](Windows.md).
+ * To build on Windows, see [doc/BUILD_WINDOWS.md](doc/BUILD_WINDOWS.md).
 
 ## Running
 
@@ -63,16 +60,11 @@ This section describes how to run the emulator.
 
 ### ROM files
 
-The program currently looks for ROM files from the `ROMS` directory in the project
-root. It expects the following ROM files to exist.
+Auric needs ROM files to be able to emulate the Oric 1 and Oric Atmos computers. 
+The ROM files are not included in this project, but can be extracted from a real
+ORIC computer or found on the internet.
 
-| ROM file name  | Description                        |
-|----------------|------------------------------------|
-| `basic10.rom`  | Oric 1 ROM (for Oric 1 mode)       |
-| `basic11b.rom` | Oric Atmos ROM (for Atmos mode)    |
-| `microdis.rom` | For Microdisc disc drive emulation |
-
-_I plan to add a configuration file options to specify ROM locations and ROM file names._
+For details about the ROM files, see [ROMS/README_ROMS.md](ROMS/README_ROMS.md).
 
 ### Starting the emulator
 
@@ -84,24 +76,28 @@ $ ./build/auric
 
 Run the emulator with flag `-?` (or `--help`) to see available parameters.
 
+Current command line arguments are:
+
 ```
-$ ./build/auric -?
+Usage: oric [--help] [--config VAR] [--oric1] [--width VAR] [--height VAR] [--tape VAR] 
+            [--tape-autostart-off] [--tape-turbo-off] [--disk1 VAR] [--disk2 VAR] 
+            [--disk3 VAR] [--disk4 VAR] [--monitor] [--verbose]
 
-Usage: auric [options]
-Allowed options:
-  -? [ --help ]         produce help message
-  -1 [ --oric1 ]        use Oric 1 mode (default: Atmos mode)
-  -w [ --width ] arg    window width in pixels
-  -h [ --height ] arg   window height in pixels
-  -t [ --tape ] arg     tape image file to use
-  --tape-normal         disable tape turbo mode
-  -d [ --disk1 ] arg    disk image file to use for drive 1
-  --disk2 arg           disk image file to use for drive 2
-  --disk3 arg           disk image file to use for drive 3
-  --disk4 arg           disk image file to use for drive 4
-  -m [ --monitor ]      start with GUI debugger open
-  -v [ --verbose ]      verbose output
-
+Optional arguments:
+  -?, --help            produce help message 
+  -c, --config          path to configuration file 
+  -1 --oric1            use Oric 1 mode (default: Atmos mode) 
+  -w, --width           window width in pixels 
+  -h, --height          window height in pixels 
+  -t, --tape            tape image file to use 
+  --tape-autostart-off  turn off tape autostart 
+  --tape-turbo-off      turn off tape turbo mode 
+  -d, --disk1           disk image file to use for drive 1 
+  --disk2               disk image file to use for drive 2 
+  --disk3               disk image file to use for drive 3 
+  --disk4               disk image file to use for drive 4 
+  -m, --monitor         start with GUI debugger open 
+  -v, --verbose         verbose output 
 ```
 
 ### Main menu
@@ -116,7 +112,7 @@ The following control keys can alter the emulator behavior.
 * `F1`: Toggle main menu
 * `F2`: Save snapshot (to RAM)
 * `F3`: Load snapshot (from RAM)
-* `CTRL-W`: Toggle warp mode (go as fast as possible, speed up tape loading, etc.)
+* `CTRL-W`: Toggle warp mode (go as fast as possible, speed up non-turbo tape loading, etc.)
 * `CTRL-R`: Soft reset the emulator (NMI)
 * `CTRL-B`: Break to debugger (in console).
 
@@ -129,35 +125,37 @@ argument:
 $ ./build/auric --tape taps/hunchbk.tap
 ```
 
-To load a tape program from the emulator you can try the following.
+Auric by default uses tape autostart and tape turbo mode. This means that the tape will 
+be loaded automatically and as fast as possible. If you want to turn off autostart or 
+turbo mode, use the `--tape-autostart-off` or `--tape-turbo-off` command line arguments.
+
+To manually load any tape program from the emulator you can try the following.
 
 ```
-CLOAD"
+CLOAD""
 ```
-
-To speed up the loading time it is possible to toggle warp mode with
-`F12`.
-
 
 ### Loading from disk image
 
 Auric supports loading from Microdisk images.
 
-To specify which tape TAP file to use, use the `--disk` or `-d` command line
+To specify which disk image file to use, use the `--disk` or `-d` command line
 argument:
 
 ```
 $ ./build/auric --disk disk/oricpetscii.dsk
 ```
 
-### Loading from disk image
+It is possible to specify up to four disk images, one for each drive. 
+Use the `--disk2`, `--disk3` and `--disk4` command line arguments for the other drives.
+
+### Saving to disk image
 
 Auric supports saving to Microdisk images.
 
-If a Microdisk image is loaded, and data is written to the disk,
+If a Microdisk image is assigned, and data is written to the disk,
 then the changes will be saved to the image file automatically.
-There is currently no write protection mechanism.
-
+There is no write protection mechanism.
 
 ## Exiting
 
@@ -172,8 +170,8 @@ time.
 
 ## Monitor/Debugger
 
-You can at any time enter a monitor mode by pressing `ctrl-c` in
-the terminal or by pressing `ctrl-b` inside the emulator.
+You can at any time enter a monitor mode by pressing `ctrl-b` inside the emulator
+or by pressing `ctrl-c` in the terminal.
 
 The monitor is shown as a panel in the emulation window. It allows you to 
 inspect the state of the emulated computer, set breakpoints, and more.
@@ -225,17 +223,19 @@ The timeline is something like:
 * **2024:** Cycle bug fixing, new monitor, blink mode, snapshots
 * **2025:** Status bar, new tape loading, zoom
 * **2026:** Microdisk loading and saving, moved to SDL3,
-        in emulation GUI, multi drive support, free window resizing, memory map view
+        in emulation GUI, multi drive support, free window resizing, memory map view,
         Windows 10/11 support (thanks Dagfinn Dybvig!), Tape turbo loading,
         Tape autostart, in emulation window debugger.
 
 
-## Contribution
+## Contributions
 
-Since this is a pet project I work on it only when I like to. Up to this point
-noone has wanted to contribute, but at this stage it could be fun to cooperate!
+Any contributions are welcome! The project exists on GitHub: https://github.com/pugo/Auric. 
+That is the best place to report issues, request features, and submit pull requests.
 
-The project exists on GitHub: https://github.com/pugo/Auric
+### Auric heroes this far:
+  * **Anders Piniesjö:** (myself) for lots of coding, testing, and debugging.
+  * **Dagfinn Dybvig:** Windows 10/11 build support 
 
 ## License
 
