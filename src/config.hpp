@@ -18,6 +18,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+#include <argparse/argparse.hpp>
 #include <filesystem>
 #include <yaml-cpp/yaml.h>
 
@@ -44,7 +45,12 @@ public:
      * @param argv argv from program start
      * @return false if program should exit
      */
-    bool parse(int argc, char **argv);
+    bool parse_command_line(int argc, char **argv);
+
+    /**
+     * Apply command line arguments to configuration.
+     */
+    void apply_command_line();
 
     /**
      * Read configuration file.
@@ -52,6 +58,12 @@ public:
      * @return false if program should exit
      */
     bool read_config_file(std::filesystem::path config_path);
+
+    /**
+     * Path to configuration file.
+     * @return path to configuration file
+     */
+    std::filesystem::path& config_path() { return _config_path; }
 
     /**
      * Path to disk image.
@@ -137,6 +149,9 @@ public:
     bool tape_autostart_enabled() const { return _tape_autostart_enabled; }
 
 protected:
+    argparse::ArgumentParser parsed_arguments;
+
+    std::filesystem::path _config_path;
     bool _start_in_monitor;
     bool _use_oric1_rom;
     std::filesystem::path _disk_paths[4];

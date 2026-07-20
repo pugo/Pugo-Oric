@@ -60,8 +60,14 @@ int main(int argc, char *argv[])
 
     // Read config file.
     Config config;
+
+    // Read config from command line flags. Can override file config.
+    if (! config.parse_command_line(argc, argv)) {
+        return 1;
+    }
+
     try {
-        if (! config.read_config_file("auric.yaml")) {
+        if (! config.read_config_file(config.config_path())) {
             return 2;
         }
     }
@@ -70,10 +76,7 @@ int main(int argc, char *argv[])
         return 2;
     }
 
-    // Read config from command line flags. Can override file config.
-    if (! config.parse(argc, argv)) {
-        return 1;
-    }
+    config.apply_command_line();
 
     auto oric = std::make_unique<Oric>(config);
     init_signals();

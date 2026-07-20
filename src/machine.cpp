@@ -122,12 +122,10 @@ void Machine::init(Frontend* frontend)
 
 void Machine::init_storage()
 {
-    if (oric.get_config().tape_turbo_enabled()) {
-        auto* found_patch = RomPatcher::find_patch(oric_rom);
-        if (found_patch) {
-            rom_patch = found_patch;
-            has_tape_turbo = true;
-        }
+    auto* found_patch = RomPatcher::find_patch(oric_rom);
+    if (found_patch) {
+        rom_patch = found_patch;
+        has_tape_turbo = true;
     }
 
     init_disk();
