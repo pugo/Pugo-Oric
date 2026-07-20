@@ -31,7 +31,6 @@
 #include "memory.hpp"
 #include "frontends/sdl/frontend.hpp"
 
-volatile std::sig_atomic_t sigint_received = 0;
 
 namespace
 {
@@ -50,7 +49,6 @@ std::string_view trim_view(std::string_view str)
 }
 
 }
-
 
 Oric::Oric(Config& config) :
     config(config),
@@ -141,10 +139,6 @@ void Oric::run()
     bool do_run{true};
 
     while (do_run) {
-        if (handle_sigint()) {
-            continue;
-        }
-
         switch (state) {
             case STATE_RUN:
                 machine->run_until_frame_or_break(this);
@@ -160,21 +154,10 @@ void Oric::run()
     frontend->close_sound();
 }
 
-bool Oric::handle_sigint()
+void Oric::handle_sigint()
 {
-    if (!sigint_received) {
-        return false;
-    }
-
-    sigint_received = 0;
-
-    if (state == STATE_HALTED) {
-        state = STATE_QUIT;
-        return true;
-    }
-
-    break_execution();
-    return true;
+    state = STATE_QUIT;
+    machine->stop();
 }
 
 

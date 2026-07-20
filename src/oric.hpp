@@ -87,10 +87,10 @@ public:
     void do_quit();
 
     /**
-     * Handle pending SIGINT from the main thread.
-     * @return true if the current run loop should stop immediately.
+     * Handle pending SIGINT from system.
      */
-    bool handle_sigint();
+    void handle_sigint();
+
     DebuggerController::Result submit_debugger_command(const std::string& command_line);
 
 protected:

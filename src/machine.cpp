@@ -269,8 +269,6 @@ void Machine::run(Oric* oric)
 
 void Machine::run_until_frame_or_break(Oric* oric)
 {
-    break_exec = false;
-
     if (!frame_timer_initialized) {
         next_frame_tp = hrc::now();
         frame_timer_initialized = true;
@@ -279,10 +277,6 @@ void Machine::run_until_frame_or_break(Oric* oric)
     cycle_count += cycles_per_raster;
 
     while (! break_exec) {
-        if (oric->handle_sigint()) {
-            return;
-        }
-
         if (sound_paused) {
             sound_pause_counter += 1;
 

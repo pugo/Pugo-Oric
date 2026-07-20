@@ -71,7 +71,6 @@ For details about the ROM files, see [ROMS/README_ROMS.md](ROMS/README_ROMS.md).
 ```
 $ ./build/auric
 ```
-
 ### Command line arguments
 
 Run the emulator with flag `-?` (or `--help`) to see available parameters.
@@ -99,6 +98,13 @@ Optional arguments:
   -m, --monitor         start with GUI debugger open 
   -v, --verbose         verbose output 
 ```
+
+### Exiting
+
+To exit the emulator, use any of the following alternatives.
+
+* Close the emulator window.
+* Press `CTRL-C` _in the console window_.
 
 ### Main menu
 
@@ -157,21 +163,9 @@ If a Microdisk image is assigned, and data is written to the disk,
 then the changes will be saved to the image file automatically.
 There is no write protection mechanism.
 
-## Exiting
-
-Since the emulator does not have any GUI with interaction at this point
-the best way is to simply close the window.
-
-It is also possible to press `ctrl-c` in the terminal window where the
-emulator was started. On the first press of `ctrl-c` the emulator will
-enter the monitor mode. See the monitor section below for more 
-information about the monitor. To exit for real, press `ctrl-c` a second 
-time.
-
 ## Monitor/Debugger
 
-You can at any time enter a monitor mode by pressing `ctrl-b` inside the emulator
-or by pressing `ctrl-c` in the terminal.
+You can at any time enter a monitor mode by pressing `ctrl-b` inside the emulator.
 
 The monitor is shown as a panel in the emulation window. It allows you to 
 inspect the state of the emulated computer, set breakpoints, and more.
