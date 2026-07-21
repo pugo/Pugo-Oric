@@ -108,6 +108,10 @@ void Gui::render()
             }
         }
         ImGui::SameLine();
+        if (ImGui::Button("Rewind")) {
+            oric.get_machine().rewind_tape();
+        }
+        ImGui::SameLine();
         if (ImGui::Button("Eject tape")) {
             oric.get_machine().eject_tape();
         }

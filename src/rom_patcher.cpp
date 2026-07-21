@@ -32,6 +32,14 @@ constexpr std::array<RomPatch, 2> rom_patches{{
         .get_sync_loop_pc = 0xe720,
         .read_byte_pc = 0xe6c9,
         .read_byte_end_pc = 0xe6fb,
+        .write_byte_pc = 0xe65e,
+        .write_byte_end_pc = 0xe68a,
+        .write_block_pc = 0xe607,
+        .write_block_end_pc = 0xe644,
+        .write_header_base_addr = 0x02a7,
+        .write_name_addr = 0x027f,
+        .write_data_start_addr = 0x02a9,
+        .write_data_end_addr = 0x02ab,
         .basic_line_input_pc = 0xc5e8,
         .read_byte_set_carry = false,
         .read_byte_store_byte_addr = 0x002f,
@@ -45,6 +53,14 @@ constexpr std::array<RomPatch, 2> rom_patches{{
         .get_sync_loop_pc = 0xe681,
         .read_byte_pc = 0xe630,
         .read_byte_end_pc = 0xe65b,
+        .write_byte_pc = 0xe5c6,
+        .write_byte_end_pc = 0xe5f2,
+        .write_block_pc = 0xe57b,
+        .write_block_end_pc = 0xe5ba,
+        .write_header_base_addr = 0x005d,
+        .write_name_addr = 0x0035,
+        .write_data_start_addr = 0x005f,
+        .write_data_end_addr = 0x0061,
         .basic_line_input_pc = 0xc5f7,
         .read_byte_set_carry = false,
         .read_byte_store_byte_addr = 0x002f,
@@ -72,4 +88,3 @@ const RomPatch* RomPatcher::find_patch(const Memory& rom)
     spdlog::info("Tape: turbo not supported for ROM SHA-1 {}", rom_sha1);
     return nullptr;
 }
-

@@ -19,7 +19,9 @@
 #define TAPE_TAP_H
 
 #include <filesystem>
+#include <fstream>
 #include <optional>
+#include <span>
 
 #include "chip/mos6522.hpp"
 #include "tape.hpp"
@@ -49,7 +51,7 @@ public:
 
     TapeTap(MOS6522& via, const std::filesystem::path& path);
 
-    virtual ~TapeTap() = default;
+    virtual ~TapeTap();
 
     /**
      * Initialize tape.
@@ -74,13 +76,13 @@ public:
     void motor_on(bool motor_on) override;
 
     /**
-     * Intercept a ROM tape routine before CPU opcode fetch. Allows turbo loading.
+     * Intercept a ROM tape routine before CPU opcode fetch. Allows turbo loading and saving.
      * @param cpu reference to CPU
      * @param ram reference to RAM
      * @param oric_rom_enabled true if Oric ROM is enabled
      * @return true if the tape handled this CPU step.
      */
-    bool intercept_read(MOS6502& cpu, Memory& ram, bool oric_rom_enabled) override { return false; };
+    bool intercept(MOS6502& cpu, Memory& ram, bool oric_rom_enabled) override { return false; };
 
 protected:
     /**
@@ -88,6 +90,12 @@ protected:
      * @return true if a TAP file has been loaded.
      */
     bool has_tap_data() const;
+
+    /**
+     * Check if a TAP header starts at the current tape position.
+     * @return true if a loadable header is available at the current position.
+     */
+    bool has_tap_header_at_current_pos() const;
 
     /**
      * Seek from the current tape position to the next TAP sync marker.
@@ -100,6 +108,25 @@ protected:
      * @return next byte if available.
      */
     std::optional<uint8_t> read_next_tap_byte();
+
+    /**
+     * Write one logical TAP byte to the tape image and in-memory data.
+     * @param byte byte to write
+     * @return true if the byte was written.
+     */
+    bool write_tap_byte(uint8_t byte);
+
+    /**
+     * Write logical TAP bytes to the tape image and in-memory data.
+     * @param bytes bytes to write
+     * @return true if the bytes were written.
+     */
+    bool write_tap_bytes(std::span<const uint8_t> bytes);
+
+    /**
+     * Close the TAP write stream if saving has opened it.
+     */
+    void close_tap_write_file();
 
     /**
      * Read tape header.
@@ -152,6 +179,7 @@ protected:
 
     std::vector<uint8_t> memory_vector;
     uint8_t* data;
+    std::fstream write_file;
 
     static const int Pulse_1 = 208;
     static const int Pulse_0 = 416;

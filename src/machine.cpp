@@ -237,8 +237,15 @@ bool Machine::load_tape(std::filesystem::path path)
         tape = std::make_unique<TapeTapNormal>(*mos_6522, path);
     }
 
-    if (oric.get_config().tape_autostart_enabled()) {
+    std::error_code error;
+    const bool tape_exists = std::filesystem::exists(path, error);
+    const auto existing_tape_size = tape_exists ? std::filesystem::file_size(path, error) : 0;
+
+    if (oric.get_config().tape_autostart_enabled() && tape_exists && !error && existing_tape_size > 0) {
         tape_autostarter = std::make_unique<TapeAutostarter>();
+    }
+    else {
+        tape_autostarter.reset();
     }
 
     return tape->init();
@@ -246,7 +253,11 @@ bool Machine::load_tape(std::filesystem::path path)
 
 bool Machine::try_tape_turbo_intercept()
 {
-    if (!tape->intercept_read(*cpu, memory, oric_rom_enabled)) {
+    if (!oric_rom_enabled || !tape->is_motor_running()) {
+        return false;
+    }
+
+    if (!tape->intercept(*cpu, memory, oric_rom_enabled)) {
         return false;
     }
 
@@ -443,15 +454,10 @@ void Machine::insert_tape(std::filesystem::path path)
 {
     spdlog::info("Loading tape from: {}", path.string());
 
-    if (! std::filesystem::exists(path)) {
-        spdlog::error("Tape file not found");
-        frontend->get_status_bar().show_text_for("Tape file not found", 2s);
-        tape = std::make_unique<TapeBlank>();
-        return;
-    }
-
     if (!load_tape(path)) {
         frontend->get_status_bar().show_text_for("Failed to load tape", 2s);
+        tape = std::make_unique<TapeBlank>();
+        return;
     }
 
     frontend->get_status_bar().show_text_for("Tape inserted", 2s);
@@ -462,6 +468,18 @@ void Machine::eject_tape()
     spdlog::info("Ejecting tape");
     tape = std::make_unique<TapeBlank>();
     frontend->get_status_bar().show_text_for("Tape ejected", 2s);
+}
+
+void Machine::rewind_tape()
+{
+    if (tape->is_motor_running()) {
+        frontend->get_status_bar().show_text_for("Stop tape before rewind", 2s);
+        return;
+    }
+
+    spdlog::info("Rewinding tape");
+    tape->reset();
+    frontend->get_status_bar().show_text_for("Tape rewound", 2s);
 }
 
 void Machine::insert_disk(std::filesystem::path path, uint8_t drive_number)

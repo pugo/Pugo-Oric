@@ -57,13 +57,13 @@ public:
     void exec(uint8_t cycles) override;
 
     /**
-     * Intercept a ROM tape routine before CPU opcode fetch. Allows turbo loading.
+     * Intercept a ROM tape routine before CPU opcode fetch. Allows turbo loading and saving.
      * @param cpu reference to CPU
      * @param ram reference to RAM
      * @param oric_rom_enabled true if Oric ROM is enabled
      * @return true if the tape handled this CPU step.
      */
-    bool intercept_read(MOS6502& cpu, Memory& ram, bool oric_rom_enabled) override { return false; };
+    bool intercept(MOS6502& cpu, Memory& ram, bool oric_rom_enabled) override { return false; };
 
 protected:
 };

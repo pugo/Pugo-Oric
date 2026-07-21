@@ -28,6 +28,14 @@ struct RomPatch {
     uint16_t get_sync_loop_pc;
     uint16_t read_byte_pc;
     uint16_t read_byte_end_pc;
+    uint16_t write_byte_pc;
+    uint16_t write_byte_end_pc;
+    uint16_t write_block_pc;
+    uint16_t write_block_end_pc;
+    uint16_t write_header_base_addr;
+    uint16_t write_name_addr;
+    uint16_t write_data_start_addr;
+    uint16_t write_data_end_addr;
     std::optional<uint16_t> basic_line_input_pc;
     bool read_byte_set_carry;
     std::optional<uint16_t> read_byte_store_byte_addr;

@@ -192,6 +192,7 @@ public:
 
     void insert_tape(std::filesystem::path path);
     void eject_tape();
+    void rewind_tape();
 
     void insert_disk(std::filesystem::path path, uint8_t drive_number = 0);
     void eject_disk(uint8_t drive_number);

@@ -141,6 +141,22 @@ To manually load any tape program from the emulator you can try the following.
 CLOAD""
 ```
 
+### Saving to tape image
+
+Auric supports saving to TAP files. When writing to file from the emulator, the data will
+be saved to the TAP file automatically.
+
+The file to write to is specified with the `--tape` or `-t` command line argument.
+
+It is possible to write multiple files to the same TAP file. The emulator will append the
+new data to the end of the file. Loading with a specified file name will load the first
+following file with that name in the TAP file.
+
+The main menu (toggle with `F1`) has a "Rewind" button that will rewind the tape to the
+beginning of the TAP file.
+
+There is no write protection mechanism.
+
 ### Loading from disk image
 
 Auric supports loading from Microdisk images.
@@ -219,7 +235,7 @@ The timeline is something like:
 * **2026:** Microdisk loading and saving, moved to SDL3,
         in emulation GUI, multi drive support, free window resizing, memory map view,
         Windows 10/11 support (thanks Dagfinn Dybvig!), Tape turbo loading,
-        Tape autostart, in emulation window debugger.
+        Tape autostart, in emulation window debugger, tape saving.
 
 
 ## Contributions

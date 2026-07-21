@@ -16,6 +16,7 @@
 // =========================================================================
 
 #include <spdlog/spdlog.h>
+#include <algorithm>
 #include <fstream>
 #include <cstdlib>
 #include <format>
@@ -28,8 +29,8 @@
 
 
 TapeTap::TapeTap(MOS6522& via, const std::filesystem::path& path) :
-    via(via),
     path(path),
+    via(via),
     tape_size(0),
     tape_state(TapeState::Idle),
     sync_end(0),
@@ -43,8 +44,17 @@ TapeTap::TapeTap(MOS6522& via, const std::filesystem::path& path) :
 {
 }
 
+
+TapeTap::~TapeTap()
+{
+    close_tap_write_file();
+}
+
+
 void TapeTap::reset()
 {
+    close_tap_write_file();
+
     motor_running = false;
     tape_state = TapeState::Idle;
     sync_end = 0;
@@ -63,8 +73,12 @@ bool TapeTap::init()
     spdlog::info("Tape: Reading TAP file '{}'", path.string());
 
     if (!std::filesystem::exists(path)) {
-        spdlog::warn("Tape: TAP file does not exist");
-        return false;
+        spdlog::info("Tape: creating TAP file '{}'", path.string());
+        std::ofstream create_file(path, std::ios::binary);
+        if (!create_file) {
+            spdlog::warn("Tape: unable to create TAP file");
+            return false;
+        }
     }
 
     tape_size = std::filesystem::file_size(path);
@@ -105,6 +119,8 @@ void TapeTap::motor_on(bool motor_on)
         tape_state = TapeState::ParseHeader;
     }
     else {
+        close_tap_write_file();
+
         if (bit_index > 0) {
             // stopped mid-byte: drop the partial byte on resume
             spdlog::debug("Skipped one byte at resume (pos now {})", tape_pos);
@@ -117,6 +133,30 @@ void TapeTap::motor_on(bool motor_on)
 bool TapeTap::has_tap_data() const
 {
     return data != nullptr && tape_size > 0;
+}
+
+
+bool TapeTap::has_tap_header_at_current_pos() const
+{
+    if (!has_tap_data() || tape_pos >= tape_size) {
+        return false;
+    }
+
+    size_t sync_len = 0;
+    while (tape_pos + sync_len < tape_size && data[tape_pos + sync_len] == 0x16) {
+        ++sync_len;
+    }
+
+    if (sync_len < 3) {
+        return false;
+    }
+
+    const size_t header_marker_pos = tape_pos + sync_len;
+    if (header_marker_pos >= tape_size || data[header_marker_pos] != 0x24) {
+        return false;
+    }
+
+    return sync_len + 10 < tape_size - tape_pos;
 }
 
 
@@ -162,6 +202,57 @@ std::optional<uint8_t> TapeTap::read_next_tap_byte()
     }
 
     return data[tape_pos++];
+}
+
+
+bool TapeTap::write_tap_byte(uint8_t byte)
+{
+    return write_tap_bytes(std::span<const uint8_t>(&byte, 1));
+}
+
+
+bool TapeTap::write_tap_bytes(std::span<const uint8_t> bytes)
+{
+    if (!write_file.is_open()) {
+        write_file.clear();
+        write_file.open(path, std::ios::binary | std::ios::in | std::ios::out);
+    }
+
+    if (!write_file) {
+        spdlog::warn("Tape: unable to open TAP file for writing");
+        return false;
+    }
+
+    const size_t write_pos = tape_pos;
+    const size_t write_end = write_pos + bytes.size();
+
+    write_file.seekp(static_cast<std::streamoff>(write_pos), std::ios::beg);
+    write_file.write(reinterpret_cast<const char*>(bytes.data()), static_cast<std::streamsize>(bytes.size()));
+    if (!write_file) {
+        spdlog::warn("Tape: unable to write TAP data");
+        return false;
+    }
+
+    if (memory_vector.size() < write_pos) {
+        memory_vector.resize(write_pos, 0x00);
+    }
+    if (memory_vector.size() < write_end) {
+        memory_vector.resize(write_end);
+    }
+
+    std::copy(bytes.begin(), bytes.end(), memory_vector.begin() + write_pos);
+    data = memory_vector.data();
+    tape_size = memory_vector.size();
+    tape_pos = static_cast<uint32_t>(write_end);
+    return true;
+}
+
+
+void TapeTap::close_tap_write_file()
+{
+    if (write_file.is_open()) {
+        write_file.close();
+    }
 }
 
 
