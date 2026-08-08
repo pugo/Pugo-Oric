@@ -15,29 +15,20 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>
 // =========================================================================
 
-#include <print>
+#ifndef FRONTENDS_SDL_TEXTDIALOG_H
+#define FRONTENDS_SDL_TEXTDIALOG_H
 
-#include "tape_blank.hpp"
+#include <string>
+#include <SDL3/SDL.h>
 
-
-void TapeBlank::reset()
-{}
-
-bool TapeBlank::init()
+/**
+ * Show a simple error dialog using SDL message box.
+ * @param title title text
+ * @param text body text
+ */
+void simple_error_dialog(std::string_view title, std::string_view text)
 {
-    return true;
+    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, title.data(), text.data(), nullptr);
 }
 
-void TapeBlank::print_stat()
-{
-    std::println("Blank Tape.");;
-}
-
-void TapeBlank::motor_on(bool motor_on)
-{
-    motor_running = motor_on;
-}
-
-void TapeBlank::exec(uint8_t cycles)
-{}
-
+#endif // FRONTENDS_SDL_TEXTDIALOG_H

@@ -55,9 +55,8 @@ public:
     /**
      * Read configuration file.
      * @param config_path path to configuration file
-     * @return false if program should exit
      */
-    bool read_config_file(std::filesystem::path config_path);
+    void read_config_file(std::filesystem::path config_path);
 
     /**
      * Path to configuration file.

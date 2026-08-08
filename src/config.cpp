@@ -31,7 +31,7 @@
 
 
 Config::Config() :
-    parsed_arguments("oric", AURIC_VERSION, argparse::default_arguments::none),
+    parsed_arguments("auric", AURIC_VERSION, argparse::default_arguments::none),
     _config_path{"auric.yaml"},
     _start_in_monitor{false},
     _use_oric1_rom{false},
@@ -152,22 +152,21 @@ void Config::apply_command_line()
 }
 
 
-bool Config::read_config_file(std::filesystem::path config_path)
+void Config::read_config_file(std::filesystem::path config_path)
 {
     YAML::Node yaml_config;
     try {
         yaml_config = YAML::LoadFile(config_path.string());
     }
     catch (YAML::Exception& e) {
-        std::println("Error parsing config file: {}", e.what());
-        return false;
+        throw std::runtime_error(std::format("Failed to parse config file '{}':\n\n{}", config_path.string(), e.what()));
     }
 
     if (yaml_config["roms"]["roms_directory"]) {
         _roms_path = yaml_config["roms"]["roms_directory"].as<std::string>();
 
         if (!is_directory(_roms_path)) {
-            std::println("ROMs directory '{}' is not a directory", _roms_path.string());
+            throw std::runtime_error(std::format("ROMs directory '{}' is not a directory.", _roms_path.string()));
         }
 
         _rom_names[RomType::Oric1] = yaml_config["roms"]["file_names"]["oric_1"].as<std::string>();
@@ -222,6 +221,4 @@ bool Config::read_config_file(std::filesystem::path config_path)
             _tape_autostart_enabled = yaml_config["tape"]["autostart_enabled"].as<bool>();
         }
     }
-
-    return true;
 }

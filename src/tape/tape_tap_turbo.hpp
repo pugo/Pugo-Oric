@@ -33,7 +33,7 @@ class TapeTapTurbo : public TapeTapNormal
 public:
     TapeTapTurbo(MOS6522& via, const std::filesystem::path& path, const RomPatch& patch);
 
-    virtual ~TapeTapTurbo() = default;
+    ~TapeTapTurbo() override = default;
 
     /**
      * Reset tape postion.

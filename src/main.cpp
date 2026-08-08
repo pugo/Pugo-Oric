@@ -18,6 +18,7 @@
 #include <csignal>
 #include <print>
 
+#include "frontends/sdl/text_dialog.hpp"
 #include "oric.hpp"
 
 std::unique_ptr<Oric> oric = nullptr;
@@ -61,19 +62,18 @@ int main(int argc, char *argv[])
 
     // Read config file.
     Config config;
-
+    
     // Read config from command line flags. Can override file config.
     if (! config.parse_command_line(argc, argv)) {
         return 1;
     }
 
     try {
-        if (! config.read_config_file(config.config_path())) {
-            return 2;
-        }
+        config.read_config_file(config.config_path());
     }
     catch (const std::exception &err) {
         std::println("Error reading config file: {}", err.what());
+        simple_error_dialog("Configuration error", err.what());
         return 2;
     }
 
@@ -87,6 +87,7 @@ int main(int argc, char *argv[])
     }
     catch (const std::exception &err) {
         std::println("Error initializing: {}", err.what());
+        simple_error_dialog("Initialization error", err.what());
         return 3;
     }
 

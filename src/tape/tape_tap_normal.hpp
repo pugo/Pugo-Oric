@@ -29,7 +29,7 @@ class TapeTapNormal : public TapeTap
 public:
     TapeTapNormal(MOS6522& via, const std::filesystem::path& path);
 
-    virtual ~TapeTapNormal() = default;
+    ~TapeTapNormal() override = default;
 
     /**
      * Reset tape postion.

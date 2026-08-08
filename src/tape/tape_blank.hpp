@@ -26,8 +26,9 @@ class MOS6502;
 class TapeBlank : public Tape
 {
 public:
-    TapeBlank();
-    virtual ~TapeBlank();
+    TapeBlank() = default;
+
+    ~TapeBlank() override = default;
 
     /**
      * Initialize tape.
